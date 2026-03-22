@@ -37,6 +37,10 @@ class Ghost(Actor):
             self.target_x = pacman.x
             self.target_y = pacman.y
 
+    def _update_mode(self) -> None:
+        pacman = self.ctx.pacman
+        self.mode = "frightened" if getattr(pacman, "rage", False) else "chase"
+
     def _is_reverse_direction(self, dx: int, dy: int) -> bool:
         return (dx, dy) == (-self.last_dx, -self.last_dy) and (self.last_dx, self.last_dy) != (0, 0)
 
@@ -44,10 +48,10 @@ class Ghost(Actor):
         """Find the best move towards the target using simple pathfinding"""
         directions = [(0, -1), (0, 1), (-1, 0), (1, 0)
                       ]  # Up, Down, Left, Right
-        best_distance = float('inf')
+        best_score = float('inf')
         best_move = (0, 0)
         reverse_move = (0, 0)
-        reverse_distance = float('inf')
+        reverse_score = float('inf')
 
         for dx, dy in directions:
             new_x = self.x + dx
@@ -61,21 +65,21 @@ class Ghost(Actor):
             if cell is None or cell.is_blocking(self):
                 continue
 
-            # Calculate distance to target
             distance = abs(new_x - self.target_x) + abs(new_y - self.target_y)
+            score = -distance if self.mode == "frightened" else distance
 
             # Prefer continuing in current direction, then shortest distance
             if (dx, dy) == (self.last_dx, self.last_dy):
-                distance -= 0.5  # Slight preference for current direction
+                score -= 0.5  # Slight preference for current direction
 
             if self._is_reverse_direction(dx, dy):
-                if distance < reverse_distance:
-                    reverse_distance = distance
+                if score < reverse_score:
+                    reverse_score = score
                     reverse_move = (dx, dy)
                 continue
 
-            if distance < best_distance:
-                best_distance = distance
+            if score < best_score:
+                best_score = score
                 best_move = (dx, dy)
 
         if best_move != (0, 0):
@@ -92,6 +96,8 @@ class Ghost(Actor):
 
         if getattr(pacman, "state", None) in ("DEATH", "NONE"):
             return
+
+        self._update_mode()
 
         # Update target based on personality
         self.update_target()
