@@ -30,6 +30,9 @@ class Actor(ABC):
     def process(self) -> None:
         pass
 
+    def enable_rage(self, ticks: int) -> None:
+        pass
+
     def kill(self) -> None:
         pass
 

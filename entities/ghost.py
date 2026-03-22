@@ -154,16 +154,8 @@ class Pinky(Ghost):
         """Target 4 tiles ahead of Pacman's direction"""
         pacman = self.ctx.pacman
         if pacman:
-            # Get Pacman's direction (simplified)
-            if hasattr(pacman, 'last_dx') and hasattr(pacman, 'last_dy'):
-                target_x = pacman.x + pacman.last_dx * 4
-                target_y = pacman.y + pacman.last_dy * 4
-            else:
-                target_x = pacman.x
-                target_y = pacman.y
-
-            self.target_x = target_x
-            self.target_y = target_y
+            self.target_x = pacman.x + pacman.last_dx * 4
+            self.target_y = pacman.y + pacman.last_dy * 4
 
 
 class Inky(Ghost):
