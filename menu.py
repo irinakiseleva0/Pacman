@@ -114,6 +114,25 @@ class Menu(Scene):
 
         self.ctx.start_new_game()
 
+    def _difficulty_summary_lines(self) -> list[str]:
+        if self.difficulty == "Easy":
+            return [
+                "Lives: 5  Rage: long",
+                "Ghosts: lighter pressure",
+                "Score: generous rewards",
+            ]
+        if self.difficulty == "Hard":
+            return [
+                "Lives: 2  Rage: short",
+                "Ghosts: aggressive pressure",
+                "Score: reduced rewards",
+            ]
+        return [
+            "Lives: 3  Rage: standard",
+            "Ghosts: balanced pressure",
+            "Score: standard rewards",
+        ]
+
     def draw(self) -> None:
         pyray.draw_text("PACMAN", 140, 90, 48, colors.YELLOW)
 
@@ -129,6 +148,11 @@ class Menu(Scene):
             colors.RED
         pyray.draw_text(f"Selected: {self.difficulty}",
                         120, 280, 20, selected_color)
+
+        summary_y = 308
+        for line in self._difficulty_summary_lines():
+            pyray.draw_text(line, 100, summary_y, 18, colors.LIGHTGRAY)
+            summary_y += 22
 
         # Action buttons
         self._draw_button(self.btn_start, "START GAME")
