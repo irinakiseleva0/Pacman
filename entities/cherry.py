@@ -1,0 +1,39 @@
+from __future__ import annotations
+import pyray
+from raylib import colors
+from cell import Cell, Actor
+from assets.assets import Assets
+
+class Cherry(Cell):
+    TEX = "sprites/consumables/cherry.png"
+    SCORE = 500
+    RESPAWN_TICKS = 150
+
+    def __init__(self, ctx):
+        super().__init__(ctx)
+        self.enabled = True
+        self.timer = 0
+        self.image = Assets.texture(self.TEX)
+
+    def on_enter(self, actor: Actor) -> None:
+        if not self.enabled:
+            return
+        if getattr(actor, "kind", "pacman") != "pacman":
+            return
+
+        self.enabled = False
+        self.ctx.score += self.SCORE
+        self.timer = self.RESPAWN_TICKS
+
+    # если хочешь респавн — это уже "tick", но можно оставить здесь
+    def tick(self) -> None:
+        if self.timer > 0:
+            self.timer -= 1
+            if self.timer == 0:
+                self.enabled = True
+
+    def draw(self) -> None:
+        if not self.enabled:
+            return
+        cfg = self.ctx.cfg
+        pyray.draw_texture_ex(self.image, (self.x*cfg.RES, self.y*cfg.RES), 0.0, 1.0, colors.WHITE)
