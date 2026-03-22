@@ -48,12 +48,28 @@ class PauseScene(Scene):
         )
 
         pyray.draw_text("PAUSED", 150, 150, 40, colors.YELLOW)
+        self._draw_summary()
 
         self._draw_button(154, 220, "RESUME")
         self._draw_button(154, 280, "MENU")
         self._draw_button(154, 340, "EXIT")
 
         pyray.draw_text("ESC or P = RESUME", 130, 410, 16, colors.WHITE)
+
+    def _draw_summary(self) -> None:
+        summary_lines = [
+            f"Score: {self.ctx.score}",
+            f"Lives: {self.ctx.lives}",
+            f"Mode: {self.ctx.difficulty.upper()}",
+            f"Ghosts: {self.ctx.ghost_mode.upper()}",
+        ]
+
+        y = 188
+        for line in summary_lines:
+            tw = pyray.measure_text(line, 18)
+            x = (self.ctx.cfg.window_width - tw) // 2
+            pyray.draw_text(line, x, y, 18, colors.LIGHTGRAY)
+            y += 20
 
     def _draw_button(self, x: int, y: int, text: str):
         rect = pyray.Rectangle(x, y, 140, 45)
