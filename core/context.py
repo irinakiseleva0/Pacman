@@ -22,6 +22,7 @@ class Config:
     cherry_respawn_ticks: int = 150
     ghost_chase_ticks: int = 120
     ghost_scatter_ticks: int = 40
+    ready_duration_ticks: int = 45
 
     # Score Values
     seed_score: int = 10

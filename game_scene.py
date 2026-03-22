@@ -11,8 +11,6 @@ from entities.seeds import Seed
 
 
 class GameScene(Scene):
-    READY_TICKS = 45
-
     def __init__(self, ctx) -> None:
         super().__init__()
         self.ctx = ctx
@@ -36,7 +34,7 @@ class GameScene(Scene):
         self.ctx.reset_ghost_mode_cycle()
         self.ctx.game_map = Map(self.ctx, path=map_path)
         self.ctx.should_resume_game = False
-        self.ready_ticks = self.READY_TICKS
+        self.ready_ticks = self.ctx.cfg.ready_duration_ticks
 
     def update(self, dt: float) -> None:
         game_map = self.ctx.game_map
@@ -56,6 +54,8 @@ class GameScene(Scene):
 
         if self.ready_ticks > 0:
             self.ready_ticks -= 1
+            if self.ready_ticks == 0:
+                self.ctx.screen_flash.flash(colors.WHITE, 0.15, 0.12)
         elif self.tick_counter >= self.ctx.cfg.logic_tick_rate:
             self.tick_counter = 0
             self.ctx.advance_ghost_mode_cycle()
@@ -98,7 +98,7 @@ class GameScene(Scene):
         self.ctx.reset_ghost_mode_cycle()
         self.ctx.game_map = Map(self.ctx, path=map_path)
         self.tick_counter = 0
-        self.ready_ticks = self.READY_TICKS
+        self.ready_ticks = self.ctx.cfg.ready_duration_ticks
 
     def draw(self) -> None:
         game_map = self.ctx.game_map
