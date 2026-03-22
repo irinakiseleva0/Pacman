@@ -35,6 +35,10 @@ class GameScene(Scene):
             self.request_switch(0)
             return
 
+        if pyray.is_key_pressed(pyray.KEY_P):
+            self.request_switch(3)
+            return
+
         self.tick_counter += 1
         game_map.frame()
 

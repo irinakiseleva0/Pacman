@@ -7,6 +7,7 @@ from core.context import GameContext
 from menu import Menu
 from game_scene import GameScene
 from result_scene import ResultScene
+from pause_scene import PauseScene
 
 
 class Game:
@@ -18,6 +19,7 @@ class Game:
             Menu(self.ctx),         # 0
             GameScene(self.ctx),    # 1
             ResultScene(self.ctx),  # 2
+            PauseScene(self.ctx),   # 3
         ]
 
     @property

@@ -153,6 +153,7 @@ KEY_W = rl.KEY_W
 KEY_A = rl.KEY_A
 KEY_S = rl.KEY_S
 KEY_D = rl.KEY_D
+KEY_P = rl.KEY_P
 KEY_UP = rl.KEY_UP
 KEY_DOWN = rl.KEY_DOWN
 KEY_LEFT = rl.KEY_LEFT
