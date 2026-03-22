@@ -4,6 +4,7 @@ import pyray
 from raylib import colors
 
 from core.scene import Scene
+from core.scene_ids import MENU_SCENE, PAUSE_SCENE, RESULT_SCENE
 from maps.class_map import Map
 from entities.pacman import State
 from entities.seeds import Seed
@@ -37,11 +38,11 @@ class GameScene(Scene):
             return
 
         if pyray.is_key_pressed(pyray.KEY_ESCAPE):
-            self.request_switch(0)
+            self.request_switch(MENU_SCENE)
             return
 
         if pyray.is_key_pressed(pyray.KEY_P):
-            self.request_switch(3)
+            self.request_switch(PAUSE_SCENE)
             return
 
         self.tick_counter += 1
@@ -68,7 +69,7 @@ class GameScene(Scene):
 
         if self.remaining_seeds() == 0:
             self.ctx.last_result = "level_complete"
-            self.request_switch(2)
+            self.request_switch(RESULT_SCENE)
             return
 
     def handle_pacman_death(self) -> None:
@@ -80,7 +81,7 @@ class GameScene(Scene):
 
         if self.ctx.lives <= 0:
             self.ctx.last_result = "lose"
-            self.request_switch(2)
+            self.request_switch(RESULT_SCENE)
             return
 
         # Reload current level's map

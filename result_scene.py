@@ -4,6 +4,7 @@ import pyray
 from raylib import colors
 
 from core.scene import Scene
+from core.scene_ids import GAME_SCENE, MENU_SCENE
 from utils.score_storage import save_high_score
 
 
@@ -42,18 +43,18 @@ class ResultScene(Scene):
 
                     # Go to next level
                     self.ctx.next_level()
-                    self.request_switch(1)  # Back to game
+                    self.request_switch(GAME_SCENE)
                 else:
                     # All levels complete - game won entirely
                     self.ctx.last_result = "game_won"
             elif self.ctx.last_result == "game_won":
                 # Back to menu after winning all levels
                 self.ctx.reset_run_state()
-                self.request_switch(0)
+                self.request_switch(MENU_SCENE)
             else:  # "lose"
                 # Back to menu after losing
                 self.ctx.reset_run_state()
-                self.request_switch(0)
+                self.request_switch(MENU_SCENE)
 
     def draw(self) -> None:
         if self.ctx.last_result == "level_complete":

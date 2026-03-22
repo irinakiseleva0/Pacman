@@ -4,6 +4,7 @@ import pyray
 from raylib import colors
 
 from core.scene import Scene
+from core.scene_ids import EXIT_SCENE, GAME_SCENE
 
 
 class Menu(Scene):
@@ -69,9 +70,9 @@ class Menu(Scene):
             self._apply_difficulty()
             # Add start game effect
             self.ctx.screen_flash.flash(colors.YELLOW, 0.3, 0.4)
-            self.request_switch(1)
+            self.request_switch(GAME_SCENE)
         if self._button_clicked(self.btn_exit):
-            self.request_switch(-1)
+            self.request_switch(EXIT_SCENE)
 
     def _apply_difficulty(self) -> None:
         """Apply difficulty settings to the game config."""

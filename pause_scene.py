@@ -4,6 +4,7 @@ import pyray
 from raylib import colors
 
 from core.scene import Scene
+from core.scene_ids import EXIT_SCENE, GAME_SCENE, MENU_SCENE
 from utils.visual_effects import with_alpha
 
 
@@ -16,7 +17,7 @@ class PauseScene(Scene):
         # ESC or P -> resume back to game
         if pyray.is_key_pressed(pyray.KEY_ESCAPE) or pyray.is_key_pressed(pyray.KEY_P):
             self.ctx.should_resume_game = True
-            self.request_switch(1)
+            self.request_switch(GAME_SCENE)
             return
 
         # mouse buttons
@@ -25,18 +26,18 @@ class PauseScene(Scene):
         # Resume button
         if self._click_in_rect(mx, my, 154, 220, 140, 45):
             self.ctx.should_resume_game = True
-            self.request_switch(1)
+            self.request_switch(GAME_SCENE)
             return
 
         # Back to Menu button
         if self._click_in_rect(mx, my, 154, 280, 140, 45):
             self.ctx.reset_run_state()
-            self.request_switch(0)
+            self.request_switch(MENU_SCENE)
             return
 
         # Exit button
         if self._click_in_rect(mx, my, 154, 340, 140, 45):
-            self.request_switch(-1)
+            self.request_switch(EXIT_SCENE)
             return
 
     def draw(self) -> None:

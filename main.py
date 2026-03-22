@@ -4,6 +4,7 @@ import pyray
 
 from assets.assets import Assets
 from core.context import GameContext
+from core.scene_ids import EXIT_SCENE, GAME_SCENE, MENU_SCENE, PAUSE_SCENE, RESULT_SCENE
 from menu import Menu
 from game_scene import GameScene
 from result_scene import ResultScene
@@ -14,12 +15,12 @@ class Game:
     def __init__(self) -> None:
         self.ctx = GameContext()
 
-        self.current_scene_index = 0
+        self.current_scene_index = MENU_SCENE
         self.scenes = [
-            Menu(self.ctx),         # 0
-            GameScene(self.ctx),    # 1
-            ResultScene(self.ctx),  # 2
-            PauseScene(self.ctx),   # 3
+            Menu(self.ctx),
+            GameScene(self.ctx),
+            ResultScene(self.ctx),
+            PauseScene(self.ctx),
         ]
 
     @property
@@ -32,7 +33,7 @@ class Game:
         pyray.init_window(cfg.window_width, cfg.window_height, "Pacman")
         pyray.set_target_fps(cfg.fps)
 
-        self.current_scene_index = 0
+        self.current_scene_index = MENU_SCENE
         self.current_scene.enter_tree()
 
         try:
@@ -43,7 +44,7 @@ class Game:
 
                 nxt = self.current_scene.consume_switch_request()
                 if nxt is not None:
-                    if nxt == -1:
+                    if nxt == EXIT_SCENE:
                         break
                     self.switch_scene(nxt)
 
