@@ -1,7 +1,7 @@
 from __future__ import annotations
 import pyray
 from raylib import colors
-from cell import Cell, Actor
+from entities.cell import Cell, Actor
 from assets.assets import Assets
 
 class Cherry(Cell):

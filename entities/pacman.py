@@ -2,12 +2,9 @@ from __future__ import annotations
 
 import pyray
 
-from cell import Cell
-from animated_sprite import Sprite
+from entities.cell import Cell
+from utils.animated_sprite import Sprite
 from assets.assets import Assets
-
-from entities.wall import Wall
-from entities.door import Door
 
 
 class State:
@@ -23,10 +20,13 @@ class Pacman(Cell):
     DEATH_FPS = 1
     _images_cache = None
 
-    def __init__(self, ctx):
+    def __init__(self, ctx) -> None:
         super().__init__(ctx)
 
+        self.kind = "pacman"
         self.state = State.UP
+        self.next_state = self.state
+
         self.rage = False
         self.rage_timer = 0
         self.death_timer = 0
@@ -48,30 +48,83 @@ class Pacman(Cell):
             "DEATH": [f"{base}death/death_{i}.png" for i in range(1, 11)],
             "NONE": [],
         }
-        return {k: [Assets.texture(p) for p in v] for k, v in paths.items()}
+        return {key: [Assets.texture(path) for path in value] for key, value in paths.items()}
+
+    def enable_rage(self, ticks: int) -> None:
+        if self.state in (State.DEAD, State.NONE):
+            return
+
+        self.rage = True
+        self.rage_timer = ticks
+
+    def kill(self) -> None:
+        if self.state in (State.DEAD, State.NONE):
+            return
+
+        self.rage = False
+        self.rage_timer = 0
+        self.death_timer = 0
+        self.state = State.DEAD
+        self.next_state = State.DEAD
+        self.pacman_sprite.set_key(State.DEAD, True)
 
     def draw(self) -> None:
         if self.state == State.NONE:
             return
+
         cfg = self.ctx.cfg
-        self.pacman_sprite.draw((self.x * cfg.RES, self.y * cfg.RES))
+        self.pacman_sprite.draw(
+            (self.x * cfg.tile_size, self.y * cfg.tile_size))
+
+    def _direction_to_delta(self, state: str) -> tuple[int, int]:
+        if state == State.RIGHT:
+            return 1, 0
+        if state == State.LEFT:
+            return -1, 0
+        if state == State.UP:
+            return 0, -1
+        if state == State.DOWN:
+            return 0, 1
+        return 0, 0
+
+    def _can_move_in_direction(self, state: str) -> bool:
+        game_map = self.ctx.game_map
+        if game_map is None:
+            return False
+
+        dx, dy = self._direction_to_delta(state)
+        if dx == 0 and dy == 0:
+            return False
+
+        next_cell = game_map.get_cell(self.x + dx, self.y + dy)
+        if next_cell is None:
+            return False
+
+        return not next_cell.is_blocking(self)
+
+    def _apply_buffered_turn(self) -> None:
+        if self.next_state in (State.NONE, State.DEAD):
+            return
+
+        if self._can_move_in_direction(self.next_state):
+            if self.state != self.next_state:
+                self.state = self.next_state
+                self.pacman_sprite.set_key(self.state, False)
 
     def process(self) -> None:
         if self.state in (State.NONE, State.DEAD):
             return
 
-        dx, dy = 0, 0
-        if self.state == State.RIGHT: dx = 1
-        elif self.state == State.LEFT: dx = -1
-        elif self.state == State.UP: dy = -1
-        elif self.state == State.DOWN: dy = 1
-        m = self.ctx.game_map
-        if not m:
+        game_map = self.ctx.game_map
+        if game_map is None:
             return
 
-        res = m.try_move(self, dx, dy)
-        if res.moved:
-            self.processed = True
+        self._apply_buffered_turn()
+
+        dx, dy = self._direction_to_delta(self.state)
+        result = game_map.try_move(self, dx, dy)
+
+        if result.moved:
             self.pacman_sprite.move_forward()
 
     def frame(self, x: int, y: int) -> None:
@@ -82,11 +135,13 @@ class Pacman(Cell):
 
         if self.state == State.DEAD:
             self.death_timer += 1
+
             if self.death_timer % Pacman.DEATH_FPS == 0:
                 self.pacman_sprite.move_forward()
-                frames = self.pacman_sprite.texture_dictionary[self.state]
-                if self.pacman_sprite.frame_index == len(frames) - 1:
+                frames = self.pacman_sprite.texture_dictionary[State.DEAD]
+                if self.pacman_sprite.frame_index >= len(frames) - 1:
                     self.state = State.NONE
+
             return
 
         if self.rage_timer > 0:
@@ -96,11 +151,15 @@ class Pacman(Cell):
 
         keys = {
             pyray.KEY_W: State.UP,
+            pyray.KEY_UP: State.UP,
             pyray.KEY_A: State.LEFT,
+            pyray.KEY_LEFT: State.LEFT,
             pyray.KEY_S: State.DOWN,
+            pyray.KEY_DOWN: State.DOWN,
             pyray.KEY_D: State.RIGHT,
+            pyray.KEY_RIGHT: State.RIGHT,
         }
-        for key, st in keys.items():
+
+        for key, state in keys.items():
             if pyray.is_key_pressed(key):
-                self.state = st
-                self.pacman_sprite.set_key(self.state, False)
+                self.next_state = state

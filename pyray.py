@@ -99,7 +99,8 @@ def measure_text(text, font_size: int) -> int:
 
 
 def draw_texture_ex(texture, position, rotation=0.0, scale=1.0, tint=colors.WHITE):
-    rl.DrawTextureEx(texture, _as_vec2(position), float(rotation), float(scale), tint)
+    rl.DrawTextureEx(texture, _as_vec2(position),
+                     float(rotation), float(scale), tint)
 
 
 def draw_rectangle_rec(rect, color):
@@ -108,6 +109,10 @@ def draw_rectangle_rec(rect, color):
 
 def draw_rectangle_lines_ex(rect, line_thick, color):
     rl.DrawRectangleLinesEx(_as_rect(rect), float(line_thick), color)
+
+
+def draw_circle(center_x: int, center_y: int, radius: int, color):
+    rl.DrawCircle(int(center_x), int(center_y), int(radius), color)
 
 
 # -------------------------
@@ -148,6 +153,10 @@ KEY_W = rl.KEY_W
 KEY_A = rl.KEY_A
 KEY_S = rl.KEY_S
 KEY_D = rl.KEY_D
+KEY_UP = rl.KEY_UP
+KEY_DOWN = rl.KEY_DOWN
+KEY_LEFT = rl.KEY_LEFT
+KEY_RIGHT = rl.KEY_RIGHT
 KEY_ESCAPE = rl.KEY_ESCAPE
 
 

@@ -1,50 +1,60 @@
 from __future__ import annotations
+
 import pyray
 from raylib import colors
-from cell import Cell, Actor
-from assets.assets import Assets
+
+from entities.cell import Cell
+
 
 class Seed(Cell):
-    TEX = "sprites/consumables/small_dot.png"
-    SCORE = 50
+    """Small seed/dot that Pacman can eat for points."""
 
-    def __init__(self, ctx):
+    def __init__(self, ctx) -> None:
         super().__init__(ctx)
         self.enabled = True
-        self.image = Assets.texture(self.TEX)
 
-    def on_enter(self, actor: Actor) -> None:
-        if not self.enabled:
-            return
-        # можно ограничить: только pacman
-        if getattr(actor, "kind", "pacman") != "pacman":
-            return
+    def is_blocking(self, actor) -> bool:
+        return False
 
-        self.enabled = False
-        self.ctx.score += self.SCORE
+    def on_enter(self, actor) -> None:
+        if getattr(actor, "kind", None) == "pacman" and self.enabled:
+            self.enabled = False
+            self.ctx.score += 10
 
     def draw(self) -> None:
         if not self.enabled:
             return
+
         cfg = self.ctx.cfg
-        pyray.draw_texture_ex(self.image, (self.x*cfg.RES, self.y*cfg.RES), 0.0, 1.0, colors.WHITE)
+        tile = cfg.tile_size
+        px = self.x * tile + tile // 2
+        py = self.y * tile + tile // 2
+        pyray.draw_circle(px, py, 2, colors.YELLOW)
 
-class LargeSeed(Seed):
-    TEX = "sprites/consumables/big_dot.png"
-    SCORE = 100
-    RAGE_TICKS = 10
 
-    def __init__(self, ctx):
+class LargeSeed(Cell):
+    """Large seed/power-up that Pacman can eat to enter rage mode."""
+
+    def __init__(self, ctx) -> None:
         super().__init__(ctx)
-        self.image = Assets.texture(self.TEX)
+        self.enabled = True
 
-    def on_enter(self, actor: Actor) -> None:
+    def is_blocking(self, actor) -> bool:
+        return False
+
+    def on_enter(self, actor) -> None:
+        if getattr(actor, "kind", None) == "pacman" and self.enabled:
+            self.enabled = False
+            self.ctx.score += 50
+            if hasattr(actor, "enable_rage"):
+                actor.enable_rage(300)  # 300 ticks = ~18 seconds at 16 fps
+
+    def draw(self) -> None:
         if not self.enabled:
             return
-        if getattr(actor, "kind", "pacman") != "pacman":
-            return
 
-        self.enabled = False
-        self.ctx.score += self.SCORE
-        actor.rage = True
-        actor.rage_timer = self.RAGE_TICKS
+        cfg = self.ctx.cfg
+        tile = cfg.tile_size
+        px = self.x * tile + tile // 2
+        py = self.y * tile + tile // 2
+        pyray.draw_circle(px, py, 4, colors.MAGENTA)

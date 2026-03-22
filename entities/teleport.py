@@ -1,20 +1,21 @@
 from __future__ import annotations
-from cell import Cell, Actor
+
+from entities.cell import Cell, Actor
+
 
 class Teleport(Cell):
     def draw(self) -> None:
-        return
+        pass
 
     def on_enter(self, actor: Actor) -> None:
-        m = self.ctx.game_map
-        if not m:
-            return
-        if getattr(actor, "kind", "pacman") != "pacman":
+        game_map = self.ctx.game_map
+        if game_map is None:
             return
 
-        # если вошел на teleport на левом краю — переносим вправо и наоборот
+        if getattr(actor, "kind", None) != "pacman":
+            return
+
         if actor.x == 0:
-            actor.x = m.width - 2
-        elif actor.x == m.width - 1:
+            actor.x = game_map.width - 2
+        elif actor.x == game_map.width - 1:
             actor.x = 1
-
