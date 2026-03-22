@@ -29,6 +29,7 @@ class GameScene(Scene):
 
         # Load the current level's map
         map_path = self.ctx.get_map_path()
+        self.ctx.reset_ghost_mode_cycle()
         self.ctx.game_map = Map(self.ctx, path=map_path)
         self.ctx.should_resume_game = False
 
@@ -50,6 +51,7 @@ class GameScene(Scene):
 
         if self.tick_counter >= self.ctx.cfg.logic_tick_rate:
             self.tick_counter = 0
+            self.ctx.advance_ghost_mode_cycle()
             game_map.process()
 
         # Update visual effects
@@ -86,6 +88,7 @@ class GameScene(Scene):
 
         # Reload current level's map
         map_path = self.ctx.get_map_path()
+        self.ctx.reset_ghost_mode_cycle()
         self.ctx.game_map = Map(self.ctx, path=map_path)
 
     def draw(self) -> None:

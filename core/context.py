@@ -49,6 +49,8 @@ class GameContext:
     current_level: int = 1
     last_result: str = ""
     should_resume_game: bool = False
+    ghost_mode: str = "chase"
+    ghost_mode_timer: int = 0
 
     # Visual effects systems
     particles: ParticleSystem = field(default_factory=ParticleSystem)
@@ -72,12 +74,30 @@ class GameContext:
         self.current_level = 1
         self.last_result = ""
         self.should_resume_game = False
+        self.reset_ghost_mode_cycle()
         self.pacman = None
         self.game_map = None
 
     def start_new_game(self) -> None:
         """Start a new game using the current config."""
         self.reset_run_state()
+
+    def reset_ghost_mode_cycle(self) -> None:
+        self.ghost_mode = "chase"
+        self.ghost_mode_timer = 0
+
+    def advance_ghost_mode_cycle(self) -> None:
+        self.ghost_mode_timer += 1
+
+        chase_ticks = 120
+        scatter_ticks = 40
+        cycle_length = chase_ticks + scatter_ticks
+        cycle_tick = self.ghost_mode_timer % cycle_length
+
+        if cycle_tick < chase_ticks:
+            self.ghost_mode = "chase"
+        else:
+            self.ghost_mode = "scatter"
 
     def get_map_path(self, level: Optional[int] = None) -> str:
         """Get the map file path for a given level (1-indexed)."""

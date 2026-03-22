@@ -18,6 +18,7 @@ class Ghost(Actor):
         self.target_x = 0
         self.target_y = 0
         self.mode = "chase"  # chase, scatter, frightened
+        self.scatter_target = (0, 0)
 
     def _get_draw_color(self):
         pacman = self.ctx.pacman
@@ -51,7 +52,11 @@ class Ghost(Actor):
 
     def _update_mode(self) -> None:
         pacman = self.ctx.pacman
-        self.mode = "frightened" if getattr(pacman, "rage", False) else "chase"
+        if getattr(pacman, "rage", False):
+            self.mode = "frightened"
+            return
+
+        self.mode = self.ctx.ghost_mode
 
     def _is_reverse_direction(self, dx: int, dy: int) -> bool:
         return (dx, dy) == (-self.last_dx, -self.last_dy) and (self.last_dx, self.last_dy) != (0, 0)
@@ -111,8 +116,11 @@ class Ghost(Actor):
 
         self._update_mode()
 
-        # Update target based on personality
-        self.update_target()
+        if self.mode == "scatter":
+            self.target_x, self.target_y = self.scatter_target
+        else:
+            # Update target based on personality
+            self.update_target()
 
         # Get best move towards target
         dx, dy = self.get_best_move(game_map)
@@ -132,6 +140,7 @@ class Blinky(Ghost):
         self.color = colors.RED
         self.last_dx = 0
         self.last_dy = 0
+        self.scatter_target = (self.ctx.cfg.map_width - 2, 1)
 
     def update_target(self) -> None:
         """Always target Pacman's current position"""
@@ -149,6 +158,7 @@ class Pinky(Ghost):
         self.color = colors.MAGENTA  # Pink-ish
         self.last_dx = 0
         self.last_dy = 0
+        self.scatter_target = (1, 1)
 
     def update_target(self) -> None:
         """Target 4 tiles ahead of Pacman's direction"""
@@ -166,6 +176,7 @@ class Inky(Ghost):
         self.color = colors.SKYBLUE
         self.last_dx = 0
         self.last_dy = 0
+        self.scatter_target = (self.ctx.cfg.map_width - 2, self.ctx.cfg.map_height - 2)
 
     def update_target(self) -> None:
         """Target based on Pacman's position and Blinky's position"""
@@ -198,7 +209,7 @@ class Clyde(Ghost):
         self.color = colors.ORANGE
         self.last_dx = 0
         self.last_dy = 0
-        self.scatter_target = (0, 30)  # Bottom-left corner
+        self.scatter_target = (1, self.ctx.cfg.map_height - 2)
 
     def update_target(self) -> None:
         """Chase when far from Pacman, scatter when close"""
