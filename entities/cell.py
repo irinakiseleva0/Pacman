@@ -10,10 +10,22 @@ class Actor(ABC):
         self.ctx = ctx
         self.x = 0
         self.y = 0
+        self.spawn_x = 0
+        self.spawn_y = 0
 
     def frame(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
+
+    def set_spawn(self, x: int, y: int) -> None:
+        self.spawn_x = x
+        self.spawn_y = y
+        self.x = x
+        self.y = y
+
+    def reset_to_spawn(self) -> None:
+        self.x = self.spawn_x
+        self.y = self.spawn_y
 
     @abstractmethod
     def draw(self) -> None:

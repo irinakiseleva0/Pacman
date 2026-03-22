@@ -139,12 +139,7 @@ class Map:
 
                 actor = self._create_actor(symbol)
                 if actor is not None:
-                    if hasattr(actor, "set_spawn"):
-                        actor.set_spawn(x, y)
-                    else:
-                        actor.x = x
-                        actor.y = y
-
+                    actor.set_spawn(x, y)
                     self.add_actor(actor)
 
                     if isinstance(actor, Pacman):
