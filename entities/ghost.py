@@ -37,12 +37,17 @@ class Ghost(Actor):
             self.target_x = pacman.x
             self.target_y = pacman.y
 
+    def _is_reverse_direction(self, dx: int, dy: int) -> bool:
+        return (dx, dy) == (-self.last_dx, -self.last_dy) and (self.last_dx, self.last_dy) != (0, 0)
+
     def get_best_move(self, game_map) -> Tuple[int, int]:
         """Find the best move towards the target using simple pathfinding"""
         directions = [(0, -1), (0, 1), (-1, 0), (1, 0)
                       ]  # Up, Down, Left, Right
         best_distance = float('inf')
         best_move = (0, 0)
+        reverse_move = (0, 0)
+        reverse_distance = float('inf')
 
         for dx, dy in directions:
             new_x = self.x + dx
@@ -63,11 +68,20 @@ class Ghost(Actor):
             if (dx, dy) == (self.last_dx, self.last_dy):
                 distance -= 0.5  # Slight preference for current direction
 
+            if self._is_reverse_direction(dx, dy):
+                if distance < reverse_distance:
+                    reverse_distance = distance
+                    reverse_move = (dx, dy)
+                continue
+
             if distance < best_distance:
                 best_distance = distance
                 best_move = (dx, dy)
 
-        return best_move
+        if best_move != (0, 0):
+            return best_move
+
+        return reverse_move
 
     def process(self) -> None:
         game_map = self.ctx.game_map
