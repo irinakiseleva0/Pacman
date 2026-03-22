@@ -17,7 +17,6 @@ class State:
 
 
 class Pacman(Cell):
-    DEATH_FPS = 1
     _images_cache = None
 
     def __init__(self, ctx) -> None:
@@ -136,7 +135,7 @@ class Pacman(Cell):
         if self.state == State.DEAD:
             self.death_timer += 1
 
-            if self.death_timer % Pacman.DEATH_FPS == 0:
+            if self.death_timer % self.ctx.cfg.death_animation_fps == 0:
                 self.pacman_sprite.move_forward()
                 frames = self.pacman_sprite.texture_dictionary[State.DEAD]
                 if self.pacman_sprite.frame_index >= len(frames) - 1:

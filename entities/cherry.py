@@ -7,8 +7,6 @@ from assets.assets import Assets
 
 class Cherry(Cell):
     TEX = "sprites/consumables/cherry.png"
-    SCORE = 500
-    RESPAWN_TICKS = 150
 
     def __init__(self, ctx):
         super().__init__(ctx)
@@ -23,8 +21,8 @@ class Cherry(Cell):
             return
 
         self.enabled = False
-        self.ctx.score += self.SCORE
-        self.timer = self.RESPAWN_TICKS
+        self.ctx.score += self.ctx.cfg.cherry_score
+        self.timer = self.ctx.cfg.cherry_respawn_ticks
 
     # если хочешь респавн — это уже "tick", но можно оставить здесь
     def tick(self) -> None:

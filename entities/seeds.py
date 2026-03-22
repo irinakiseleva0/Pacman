@@ -19,7 +19,7 @@ class Seed(Cell):
     def on_enter(self, actor) -> None:
         if getattr(actor, "kind", None) == "pacman" and self.enabled:
             self.enabled = False
-            self.ctx.score += 10
+            self.ctx.score += self.ctx.cfg.seed_score
 
     def draw(self) -> None:
         if not self.enabled:
@@ -45,9 +45,9 @@ class LargeSeed(Cell):
     def on_enter(self, actor) -> None:
         if getattr(actor, "kind", None) == "pacman" and self.enabled:
             self.enabled = False
-            self.ctx.score += 50
+            self.ctx.score += self.ctx.cfg.large_seed_score
             if hasattr(actor, "enable_rage"):
-                actor.enable_rage(300)  # 300 ticks = ~18 seconds at 16 fps
+                actor.enable_rage(self.ctx.cfg.rage_duration_ticks)
 
     def draw(self) -> None:
         if not self.enabled:

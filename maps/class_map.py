@@ -89,7 +89,7 @@ class Map:
         if getattr(pacman, "rage", False):
             if hasattr(ghost, "reset_to_spawn"):
                 ghost.reset_to_spawn()
-            self.ctx.score += 200
+            self.ctx.score += self.ctx.cfg.ghost_score
         else:
             if hasattr(pacman, "kill"):
                 pacman.kill()

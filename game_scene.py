@@ -14,14 +14,13 @@ class GameScene(Scene):
         super().__init__()
         self.ctx = ctx
         self.tick_counter = 0
-        self.logic_tick_rate = 3
 
     def enter_tree(self) -> None:
         self.tick_counter = 0
 
         if self.ctx.last_result in ("win", "lose"):
             self.ctx.score = 0
-            self.ctx.lives = 3
+            self.ctx.lives = self.ctx.cfg.initial_lives
             self.ctx.last_result = ""
 
         self.ctx.game_map = Map(self.ctx)
@@ -42,7 +41,7 @@ class GameScene(Scene):
         self.tick_counter += 1
         game_map.frame()
 
-        if self.tick_counter >= self.logic_tick_rate:
+        if self.tick_counter >= self.ctx.cfg.logic_tick_rate:
             self.tick_counter = 0
             game_map.process()
 
