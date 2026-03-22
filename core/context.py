@@ -7,6 +7,76 @@ from utils.score_storage import load_high_score
 from utils.visual_effects import ParticleSystem, ScreenShake, FloatingTextSystem, ScreenFlash
 
 
+@dataclass(frozen=True)
+class DifficultyPreset:
+    logic_tick_rate: int
+    rage_duration_ticks: int
+    cherry_respawn_ticks: int
+    ghost_chase_ticks: int
+    ghost_scatter_ticks: int
+    initial_lives: int
+    seed_score: int
+    large_seed_score: int
+    cherry_score: int
+    ghost_score: int
+    summary_lines: tuple[str, str, str]
+
+
+DIFFICULTY_PRESETS: dict[str, DifficultyPreset] = {
+    "Easy": DifficultyPreset(
+        logic_tick_rate=2,
+        rage_duration_ticks=450,
+        cherry_respawn_ticks=200,
+        ghost_chase_ticks=90,
+        ghost_scatter_ticks=70,
+        initial_lives=5,
+        seed_score=15,
+        large_seed_score=75,
+        cherry_score=750,
+        ghost_score=300,
+        summary_lines=(
+            "Lives: 5  Rage: long",
+            "Ghosts: lighter pressure",
+            "Score: generous rewards",
+        ),
+    ),
+    "Normal": DifficultyPreset(
+        logic_tick_rate=3,
+        rage_duration_ticks=300,
+        cherry_respawn_ticks=150,
+        ghost_chase_ticks=120,
+        ghost_scatter_ticks=40,
+        initial_lives=3,
+        seed_score=10,
+        large_seed_score=50,
+        cherry_score=500,
+        ghost_score=200,
+        summary_lines=(
+            "Lives: 3  Rage: standard",
+            "Ghosts: balanced pressure",
+            "Score: standard rewards",
+        ),
+    ),
+    "Hard": DifficultyPreset(
+        logic_tick_rate=4,
+        rage_duration_ticks=200,
+        cherry_respawn_ticks=100,
+        ghost_chase_ticks=150,
+        ghost_scatter_ticks=25,
+        initial_lives=2,
+        seed_score=5,
+        large_seed_score=25,
+        cherry_score=250,
+        ghost_score=100,
+        summary_lines=(
+            "Lives: 2  Rage: short",
+            "Ghosts: aggressive pressure",
+            "Score: reduced rewards",
+        ),
+    ),
+}
+
+
 @dataclass
 class Config:
     # Display & Map
@@ -85,6 +155,25 @@ class GameContext:
     def start_new_game(self) -> None:
         """Start a new game using the current config."""
         self.reset_run_state()
+
+    def apply_difficulty(self, difficulty: str) -> None:
+        preset = DIFFICULTY_PRESETS[difficulty]
+        self.difficulty = difficulty
+
+        self.cfg.logic_tick_rate = preset.logic_tick_rate
+        self.cfg.rage_duration_ticks = preset.rage_duration_ticks
+        self.cfg.cherry_respawn_ticks = preset.cherry_respawn_ticks
+        self.cfg.ghost_chase_ticks = preset.ghost_chase_ticks
+        self.cfg.ghost_scatter_ticks = preset.ghost_scatter_ticks
+        self.cfg.initial_lives = preset.initial_lives
+        self.cfg.seed_score = preset.seed_score
+        self.cfg.large_seed_score = preset.large_seed_score
+        self.cfg.cherry_score = preset.cherry_score
+        self.cfg.ghost_score = preset.ghost_score
+
+    def difficulty_summary_lines(self, difficulty: Optional[str] = None) -> tuple[str, str, str]:
+        key = difficulty or self.difficulty
+        return DIFFICULTY_PRESETS[key].summary_lines
 
     def reset_ghost_mode_cycle(self) -> None:
         self.ghost_mode = "chase"
