@@ -56,6 +56,33 @@ class ResultScene(Scene):
                 self.ctx.reset_run_state()
                 self.request_switch(MENU_SCENE)
 
+    def _summary_lines(self) -> list[str]:
+        if self.ctx.last_result == "level_complete":
+            if self.ctx.current_level < self.TOTAL_LEVELS:
+                return [
+                    "Board cleared successfully.",
+                    "Carry your score into the next level.",
+                    "Take a breath, the ghosts will reset.",
+                ]
+            return [
+                "Final level cleared.",
+                "One more step to close out the run.",
+                "Your score is locked in.",
+            ]
+
+        if self.ctx.last_result == "game_won":
+            return [
+                "All levels completed.",
+                "A full win has been recorded.",
+                "Return to menu to start a new run.",
+            ]
+
+        return [
+            "Pacman ran out of lives.",
+            "Your high score has been saved.",
+            "Return to menu to try again.",
+        ]
+
     def draw(self) -> None:
         if self.ctx.last_result == "level_complete":
             result_text = f"LEVEL {self.ctx.current_level} COMPLETE!"
@@ -80,8 +107,13 @@ class ResultScene(Scene):
                 f"Final Score: {self.ctx.score}", 120, 170, 24, colors.WHITE)
 
         pyray.draw_text(
-            f"High Score: {self.ctx.high_score}", 120, 210, 24, colors.YELLOW
+            f"High Score: {self.ctx.high_score}", 120, 202, 24, colors.YELLOW
         )
+
+        summary_y = 242
+        for line in self._summary_lines():
+            pyray.draw_text(line, 72, summary_y, 18, colors.LIGHTGRAY)
+            summary_y += 24
 
         self._draw_button(self.btn_action, button_text)
 
