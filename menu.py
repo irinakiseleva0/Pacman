@@ -80,6 +80,8 @@ class Menu(Scene):
             self.ctx.cfg.logic_tick_rate = 2  # Slower game
             self.ctx.cfg.rage_duration_ticks = 450  # Longer power-ups
             self.ctx.cfg.cherry_respawn_ticks = 200  # Slower cherry respawn
+            self.ctx.cfg.ghost_chase_ticks = 90
+            self.ctx.cfg.ghost_scatter_ticks = 70
             self.ctx.cfg.initial_lives = 5  # More lives
             # Higher scores for easy mode
             self.ctx.cfg.seed_score = 15
@@ -90,6 +92,8 @@ class Menu(Scene):
             self.ctx.cfg.logic_tick_rate = 3
             self.ctx.cfg.rage_duration_ticks = 300
             self.ctx.cfg.cherry_respawn_ticks = 150
+            self.ctx.cfg.ghost_chase_ticks = 120
+            self.ctx.cfg.ghost_scatter_ticks = 40
             self.ctx.cfg.initial_lives = 3
             self.ctx.cfg.seed_score = 10
             self.ctx.cfg.large_seed_score = 50
@@ -99,6 +103,8 @@ class Menu(Scene):
             self.ctx.cfg.logic_tick_rate = 4  # Faster game
             self.ctx.cfg.rage_duration_ticks = 200  # Shorter power-ups
             self.ctx.cfg.cherry_respawn_ticks = 100  # Faster cherry respawn
+            self.ctx.cfg.ghost_chase_ticks = 150
+            self.ctx.cfg.ghost_scatter_ticks = 25
             self.ctx.cfg.initial_lives = 2  # Fewer lives
             # Lower scores for hard mode
             self.ctx.cfg.seed_score = 5
