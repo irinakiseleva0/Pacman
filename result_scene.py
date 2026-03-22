@@ -10,11 +10,12 @@ from utils.score_storage import save_high_score
 class ResultScene(Scene):
     BTN_W = 180
     BTN_H = 50
+    TOTAL_LEVELS = 3
 
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
-        self.btn_menu = None
+        self.btn_action = None
 
     def enter_tree(self) -> None:
         # Save high score when entering result screen
@@ -23,7 +24,7 @@ class ResultScene(Scene):
         cx = self.ctx.cfg.window_width // 2
         cy = self.ctx.cfg.window_height // 2
 
-        self.btn_menu = pyray.Rectangle(
+        self.btn_action = pyray.Rectangle(
             cx - self.BTN_W // 2,
             cy + 100,
             self.BTN_W,
@@ -31,22 +32,59 @@ class ResultScene(Scene):
         )
 
     def update(self, dt: float) -> None:
-        if self._button_clicked(self.btn_menu):
-            self.request_switch(0)
+        if self._button_clicked(self.btn_action):
+            if self.ctx.last_result == "level_complete":
+                # Check if there are more levels
+                if self.ctx.current_level < self.TOTAL_LEVELS:
+                    # Go to next level
+                    self.ctx.next_level()
+                    self.request_switch(1)  # Back to game
+                else:
+                    # All levels complete - game won entirely
+                    self.ctx.last_result = "game_won"
+                    # Show victory screen by reloading this scene
+                    self.enter_tree()
+            elif self.ctx.last_result == "game_won":
+                # Back to menu after winning all levels
+                self.ctx.score = 0
+                self.ctx.current_level = 1
+                self.ctx.last_result = ""
+                self.request_switch(0)
+            else:  # "lose"
+                # Back to menu after losing
+                self.ctx.score = 0
+                self.ctx.current_level = 1
+                self.ctx.last_result = ""
+                self.request_switch(0)
 
     def draw(self) -> None:
-        # Draw result based on last_result
-        result_text = "YOU WIN!" if self.ctx.last_result == "win" else "GAME OVER"
-        result_color = colors.GREEN if self.ctx.last_result == "win" else colors.RED
+        if self.ctx.last_result == "level_complete":
+            result_text = f"LEVEL {self.ctx.current_level} COMPLETE!"
+            result_color = colors.GREEN
+            button_text = "NEXT LEVEL" if self.ctx.current_level < self.TOTAL_LEVELS else "FINISH GAME"
+        elif self.ctx.last_result == "game_won":
+            result_text = "YOU WON THE GAME!"
+            result_color = colors.GOLD
+            button_text = "BACK TO MENU"
+        else:  # "lose"
+            result_text = "GAME OVER"
+            result_color = colors.RED
+            button_text = "BACK TO MENU"
 
-        pyray.draw_text(result_text, 120, 100, 48, result_color)
+        pyray.draw_text(result_text, 60, 100, 48, result_color)
+
+        if self.ctx.last_result == "level_complete":
+            pyray.draw_text(
+                f"Current Score: {self.ctx.score}", 120, 170, 24, colors.WHITE)
+        else:
+            pyray.draw_text(
+                f"Final Score: {self.ctx.score}", 120, 170, 24, colors.WHITE)
+
         pyray.draw_text(
-            f"Final Score: {self.ctx.score}", 150, 170, 24, colors.WHITE)
-        pyray.draw_text(
-            f"High Score: {self.ctx.high_score}", 150, 210, 24, colors.YELLOW
+            f"High Score: {self.ctx.high_score}", 120, 210, 24, colors.YELLOW
         )
 
-        self._draw_button(self.btn_menu, "BACK TO MENU")
+        self._draw_button(self.btn_action, button_text)
 
     def _button_clicked(self, rect) -> bool:
         mouse = pyray.get_mouse_position()

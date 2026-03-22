@@ -18,12 +18,21 @@ class GameScene(Scene):
     def enter_tree(self) -> None:
         self.tick_counter = 0
 
-        if self.ctx.last_result in ("win", "lose"):
+        # Only reset score/lives at the start of a fresh game
+        if self.ctx.last_result == "lose":
+            # Death: reset current level, reset lives
             self.ctx.score = 0
+            self.ctx.current_level = 1
+            self.ctx.lives = self.ctx.cfg.initial_lives
+            self.ctx.last_result = ""
+        elif self.ctx.last_result == "level_complete":
+            # Level won: keep score, restore lives, prepare next level
             self.ctx.lives = self.ctx.cfg.initial_lives
             self.ctx.last_result = ""
 
-        self.ctx.game_map = Map(self.ctx)
+        # Load the current level's map
+        map_path = self.ctx.get_map_path()
+        self.ctx.game_map = Map(self.ctx, path=map_path)
 
     def update(self, dt: float) -> None:
         game_map = self.ctx.game_map
@@ -54,7 +63,7 @@ class GameScene(Scene):
             return
 
         if self.remaining_seeds() == 0:
-            self.ctx.last_result = "win"
+            self.ctx.last_result = "level_complete"
             self.request_switch(2)
             return
 
@@ -66,7 +75,9 @@ class GameScene(Scene):
             self.request_switch(2)
             return
 
-        self.ctx.game_map = Map(self.ctx)
+        # Reload current level's map
+        map_path = self.ctx.get_map_path()
+        self.ctx.game_map = Map(self.ctx, path=map_path)
 
     def draw(self) -> None:
         game_map = self.ctx.game_map
@@ -96,9 +107,17 @@ class GameScene(Scene):
         )
 
         pyray.draw_text(
-            f"Rage: {rage_text}",
+            f"Level: {self.ctx.current_level}",
             10,
             58,
+            20,
+            colors.CYAN,
+        )
+
+        pyray.draw_text(
+            f"Rage: {rage_text}",
+            10,
+            82,
             20,
             colors.YELLOW if rage_text == "ON" else colors.GRAY,
         )
@@ -106,7 +125,7 @@ class GameScene(Scene):
         pyray.draw_text(
             f"Seeds left: {self.remaining_seeds()}",
             10,
-            82,
+            106,
             20,
             colors.WHITE,
         )
@@ -114,7 +133,7 @@ class GameScene(Scene):
         pyray.draw_text(
             f"High score: {self.ctx.high_score}",
             10,
-            106,
+            130,
             20,
             colors.WHITE,
         )

@@ -45,6 +45,7 @@ class GameContext:
     score: int = 0
     high_score: int = field(default_factory=load_high_score)
     lives: int = field(default=3)
+    current_level: int = 1
     last_result: str = ""
 
     pacman: Optional[object] = None
@@ -54,3 +55,15 @@ class GameContext:
         # Initialize lives from config if not already set
         if self.lives == 3:
             self.lives = self.cfg.initial_lives
+
+    def get_map_path(self, level: Optional[int] = None) -> str:
+        """Get the map file path for a given level (1-indexed)."""
+        level = level or self.current_level
+        if level == 1:
+            return "maps/pacman_map.txt"
+        return f"maps/pacman_map{level}.txt"
+
+    def next_level(self) -> None:
+        """Advance to the next level."""
+        self.current_level += 1
+        self.lives = self.cfg.initial_lives
