@@ -76,6 +76,8 @@ class Menu(Scene):
 
     def _apply_difficulty(self) -> None:
         """Apply difficulty settings to the game config."""
+        self.ctx.difficulty = self.difficulty
+
         if self.difficulty == "Easy":
             self.ctx.cfg.logic_tick_rate = 2  # Slower game
             self.ctx.cfg.rage_duration_ticks = 450  # Longer power-ups

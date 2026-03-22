@@ -177,9 +177,19 @@ class GameScene(Scene):
         )
 
         pyray.draw_text(
-            f"High score: {self.ctx.high_score}",
+            f"Mode: {self.ctx.difficulty.upper()}",
             10,
             154,
+            20,
+            colors.GREEN if self.ctx.difficulty == "Easy"
+            else colors.RED if self.ctx.difficulty == "Hard"
+            else colors.YELLOW,
+        )
+
+        pyray.draw_text(
+            f"High score: {self.ctx.high_score}",
+            10,
+            178,
             20,
             colors.WHITE,
         )

@@ -46,6 +46,7 @@ class Config:
 class GameContext:
     cfg: Config = field(default_factory=Config)
 
+    difficulty: str = "Normal"
     score: int = 0
     high_score: int = field(default_factory=load_high_score)
     lives: int = field(default=3)
