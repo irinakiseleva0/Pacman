@@ -21,6 +21,11 @@ class Seed(Cell):
             self.enabled = False
             self.ctx.score += self.ctx.cfg.seed_score
 
+            # Add visual effects
+            self.ctx.particles.create_dot_eat_effect(self.x, self.y)
+            self.ctx.floating_text.add_score_text(
+                self.ctx.cfg.seed_score, self.x, self.y)
+
     def draw(self) -> None:
         if not self.enabled:
             return
@@ -48,6 +53,13 @@ class LargeSeed(Cell):
             self.ctx.score += self.ctx.cfg.large_seed_score
             if hasattr(actor, "enable_rage"):
                 actor.enable_rage(self.ctx.cfg.rage_duration_ticks)
+
+            # Add visual effects
+            self.ctx.particles.create_large_seed_eat_effect(self.x, self.y)
+            self.ctx.floating_text.add_score_text(
+                self.ctx.cfg.large_seed_score, self.x, self.y)
+            self.ctx.screen_shake.shake(6.0, 0.4)
+            self.ctx.screen_flash.flash(colors.WHITE, 0.2, 0.15)
 
     def draw(self) -> None:
         if not self.enabled:

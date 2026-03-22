@@ -24,6 +24,13 @@ class Cherry(Cell):
         self.ctx.score += self.ctx.cfg.cherry_score
         self.timer = self.ctx.cfg.cherry_respawn_ticks
 
+        # Add visual effects
+        self.ctx.particles.create_large_seed_eat_effect(
+            self.x, self.y)  # Reuse large effect for cherry
+        self.ctx.floating_text.add_score_text(
+            self.ctx.cfg.cherry_score, self.x, self.y)
+        self.ctx.screen_shake.shake(5.0, 0.35)
+
     # если хочешь респавн — это уже "tick", но можно оставить здесь
     def tick(self) -> None:
         if self.timer > 0:

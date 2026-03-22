@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from utils.score_storage import load_high_score
+from utils.visual_effects import ParticleSystem, ScreenShake, FloatingTextSystem, ScreenFlash
 
 
 @dataclass
@@ -47,6 +48,14 @@ class GameContext:
     lives: int = field(default=3)
     current_level: int = 1
     last_result: str = ""
+    should_resume_game: bool = False
+
+    # Visual effects systems
+    particles: ParticleSystem = field(default_factory=ParticleSystem)
+    screen_shake: ScreenShake = field(default_factory=ScreenShake)
+    floating_text: FloatingTextSystem = field(
+        default_factory=FloatingTextSystem)
+    screen_flash: ScreenFlash = field(default_factory=ScreenFlash)
 
     pacman: Optional[object] = None
     game_map: Optional[object] = None
@@ -55,6 +64,20 @@ class GameContext:
         # Initialize lives from config if not already set
         if self.lives == 3:
             self.lives = self.cfg.initial_lives
+
+    def reset_run_state(self) -> None:
+        """Reset progress for a fresh run without touching persistent data."""
+        self.score = 0
+        self.lives = self.cfg.initial_lives
+        self.current_level = 1
+        self.last_result = ""
+        self.should_resume_game = False
+        self.pacman = None
+        self.game_map = None
+
+    def start_new_game(self) -> None:
+        """Start a new game using the current config."""
+        self.reset_run_state()
 
     def get_map_path(self, level: Optional[int] = None) -> str:
         """Get the map file path for a given level (1-indexed)."""

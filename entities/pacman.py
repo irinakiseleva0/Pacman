@@ -30,6 +30,10 @@ class Pacman(Cell):
         self.rage_timer = 0
         self.death_timer = 0
 
+        # Track last movement direction for ghost AI
+        self.last_dx = 0
+        self.last_dy = -1  # Start facing up
+
         if Pacman._images_cache is None:
             Pacman._images_cache = self._load_images()
 
@@ -124,6 +128,8 @@ class Pacman(Cell):
         result = game_map.try_move(self, dx, dy)
 
         if result.moved:
+            self.last_dx = dx
+            self.last_dy = dy
             self.pacman_sprite.move_forward()
 
     def frame(self, x: int, y: int) -> None:

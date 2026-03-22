@@ -4,6 +4,7 @@ import pyray
 from raylib import colors
 
 from core.scene import Scene
+from utils.visual_effects import with_alpha
 
 
 class PauseScene(Scene):
@@ -14,6 +15,7 @@ class PauseScene(Scene):
     def update(self, dt: float) -> None:
         # ESC or P -> resume back to game
         if pyray.is_key_pressed(pyray.KEY_ESCAPE) or pyray.is_key_pressed(pyray.KEY_P):
+            self.ctx.should_resume_game = True
             self.request_switch(1)
             return
 
@@ -22,11 +24,13 @@ class PauseScene(Scene):
 
         # Resume button
         if self._click_in_rect(mx, my, 154, 220, 140, 45):
+            self.ctx.should_resume_game = True
             self.request_switch(1)
             return
 
         # Back to Menu button
         if self._click_in_rect(mx, my, 154, 280, 140, 45):
+            self.ctx.reset_run_state()
             self.request_switch(0)
             return
 
@@ -39,7 +43,7 @@ class PauseScene(Scene):
         # Dark overlay over game
         pyray.draw_rectangle_rec(
             pyray.Rectangle(0, 0, 448, 496),
-            pyray.Color(0, 0, 0, 160)
+            with_alpha(colors.BLACK, 160)
         )
 
         pyray.draw_text("PAUSED", 150, 150, 40, colors.YELLOW)

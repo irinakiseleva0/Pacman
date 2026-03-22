@@ -36,25 +36,23 @@ class ResultScene(Scene):
             if self.ctx.last_result == "level_complete":
                 # Check if there are more levels
                 if self.ctx.current_level < self.TOTAL_LEVELS:
+                    # Add level transition effects
+                    self.ctx.screen_flash.flash(colors.GREEN, 0.4, 0.5)
+                    self.ctx.screen_shake.shake(3.0, 0.4)
+
                     # Go to next level
                     self.ctx.next_level()
                     self.request_switch(1)  # Back to game
                 else:
                     # All levels complete - game won entirely
                     self.ctx.last_result = "game_won"
-                    # Show victory screen by reloading this scene
-                    self.enter_tree()
             elif self.ctx.last_result == "game_won":
                 # Back to menu after winning all levels
-                self.ctx.score = 0
-                self.ctx.current_level = 1
-                self.ctx.last_result = ""
+                self.ctx.reset_run_state()
                 self.request_switch(0)
             else:  # "lose"
                 # Back to menu after losing
-                self.ctx.score = 0
-                self.ctx.current_level = 1
-                self.ctx.last_result = ""
+                self.ctx.reset_run_state()
                 self.request_switch(0)
 
     def draw(self) -> None:

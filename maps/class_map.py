@@ -11,7 +11,7 @@ from entities.door import Door
 from entities.teleport import Teleport
 from entities.seeds import Seed, LargeSeed
 from entities.pacman import Pacman
-from entities.ghost import Ghost
+from entities.ghost import Ghost, Blinky, Pinky, Inky, Clyde
 
 
 @dataclass(frozen=True)
@@ -26,6 +26,7 @@ class Map:
         self.ctx = ctx
         self.static_layer: List[List[Cell]] = []
         self.dynamic_actors: List[Actor] = []
+        self.ghost_counter = 0  # Track ghost creation order
         self.load(path)
 
     @property
@@ -87,10 +88,18 @@ class Map:
         ghost = a if kind_a == "ghost" else b
 
         if getattr(pacman, "rage", False):
+            # Pacman eats ghost
             if hasattr(ghost, "reset_to_spawn"):
                 ghost.reset_to_spawn()
             self.ctx.score += self.ctx.cfg.ghost_score
+
+            # Add visual effects
+            self.ctx.particles.create_ghost_eat_effect(ghost.x, ghost.y)
+            self.ctx.floating_text.add_score_text(
+                self.ctx.cfg.ghost_score, ghost.x, ghost.y)
+            self.ctx.screen_shake.shake(4.0, 0.3)
         else:
+            # Ghost eats Pacman
             if hasattr(pacman, "kill"):
                 pacman.kill()
 
@@ -166,5 +175,10 @@ class Map:
         if symbol == "p":
             return Pacman(self.ctx)
         if symbol == "g":
-            return Ghost(self.ctx)
+            # Create different ghost personalities in order
+            ghost_classes = [Blinky, Pinky, Inky, Clyde]
+            ghost_class = ghost_classes[self.ghost_counter % len(
+                ghost_classes)]
+            self.ghost_counter += 1
+            return ghost_class(self.ctx)
         return None

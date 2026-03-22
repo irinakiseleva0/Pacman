@@ -18,21 +18,18 @@ class GameScene(Scene):
     def enter_tree(self) -> None:
         self.tick_counter = 0
 
-        # Only reset score/lives at the start of a fresh game
-        if self.ctx.last_result == "lose":
-            # Death: reset current level, reset lives
-            self.ctx.score = 0
-            self.ctx.current_level = 1
-            self.ctx.lives = self.ctx.cfg.initial_lives
-            self.ctx.last_result = ""
-        elif self.ctx.last_result == "level_complete":
-            # Level won: keep score, restore lives, prepare next level
-            self.ctx.lives = self.ctx.cfg.initial_lives
-            self.ctx.last_result = ""
+        if self.ctx.should_resume_game and self.ctx.game_map is not None:
+            self.ctx.should_resume_game = False
+            return
+
+        # Add level start effect
+        self.ctx.screen_flash.flash(colors.BLUE, 0.2, 0.6)
+        self.ctx.last_result = ""
 
         # Load the current level's map
         map_path = self.ctx.get_map_path()
         self.ctx.game_map = Map(self.ctx, path=map_path)
+        self.ctx.should_resume_game = False
 
     def update(self, dt: float) -> None:
         game_map = self.ctx.game_map
@@ -54,6 +51,13 @@ class GameScene(Scene):
             self.tick_counter = 0
             game_map.process()
 
+        # Update visual effects
+        dt = pyray.get_frame_time()
+        self.ctx.particles.update(dt)
+        self.ctx.screen_shake.update(dt)
+        self.ctx.floating_text.update(dt)
+        self.ctx.screen_flash.update(dt)
+
         if self.ctx.score > self.ctx.high_score:
             self.ctx.high_score = self.ctx.score
 
@@ -68,6 +72,10 @@ class GameScene(Scene):
             return
 
     def handle_pacman_death(self) -> None:
+        # Add death effects
+        self.ctx.screen_shake.shake(8.0, 0.5)
+        self.ctx.screen_flash.flash(colors.RED, 0.3, 0.2)
+
         self.ctx.lives -= 1
 
         if self.ctx.lives <= 0:
@@ -84,8 +92,22 @@ class GameScene(Scene):
         if game_map is None:
             return
 
+        # Apply screen shake offset
+        shake_x, shake_y = self.ctx.screen_shake.get_offset()
+
         game_map.draw()
+
+        # Draw particles with shake offset
+        self.ctx.particles.draw(shake_x, shake_y)
+
+        # Draw floating text with shake offset
+        self.ctx.floating_text.draw(shake_x, shake_y)
+
+        # Draw HUD (not affected by shake)
         self.draw_hud()
+
+        # Draw screen flash overlay
+        self.ctx.screen_flash.draw()
 
     def draw_hud(self) -> None:
         rage_text = "ON" if getattr(self.ctx.pacman, "rage", False) else "OFF"
@@ -111,7 +133,7 @@ class GameScene(Scene):
             10,
             58,
             20,
-            colors.CYAN,
+            colors.SKYBLUE,
         )
 
         pyray.draw_text(
