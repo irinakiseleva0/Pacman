@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pyray
 
-from entities.cell import Cell
+from entities.cell import Actor
 from utils.animated_sprite import Sprite
 from assets.assets import Assets
 
@@ -16,7 +16,7 @@ class State:
     NONE = "NONE"
 
 
-class Pacman(Cell):
+class Pacman(Actor):
     _images_cache = None
 
     def __init__(self, ctx) -> None:

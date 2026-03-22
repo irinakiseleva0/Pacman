@@ -1,17 +1,23 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Protocol
 
 from core.context import GameContext
 
 
-class Actor(Protocol):
-    x: int
-    y: int
-    ctx: GameContext
+class Actor(ABC):
+    def __init__(self, ctx: GameContext) -> None:
+        self.ctx = ctx
+        self.x = 0
+        self.y = 0
 
-    def draw(self) -> None: ...
+    def frame(self, x: int, y: int) -> None:
+        self.x = x
+        self.y = y
+
+    @abstractmethod
+    def draw(self) -> None:
+        pass
 
 
 class Cell(ABC):

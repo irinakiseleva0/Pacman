@@ -4,10 +4,10 @@ import pyray
 from raylib import colors
 from typing import Tuple
 
-from entities.cell import Cell
+from entities.cell import Actor
 
 
-class Ghost(Cell):
+class Ghost(Actor):
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
         self.kind = "ghost"
