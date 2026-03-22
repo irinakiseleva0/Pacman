@@ -157,9 +157,17 @@ class GameScene(Scene):
         )
 
         pyray.draw_text(
-            f"High score: {self.ctx.high_score}",
+            f"Ghosts: {self.ctx.ghost_mode.upper()}",
             10,
             130,
+            20,
+            colors.SKYBLUE if self.ctx.ghost_mode == "scatter" else colors.RED,
+        )
+
+        pyray.draw_text(
+            f"High score: {self.ctx.high_score}",
+            10,
+            154,
             20,
             colors.WHITE,
         )

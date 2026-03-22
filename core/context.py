@@ -20,6 +20,8 @@ class Config:
     death_animation_fps: int = 1
     rage_duration_ticks: int = 300
     cherry_respawn_ticks: int = 150
+    ghost_chase_ticks: int = 120
+    ghost_scatter_ticks: int = 40
 
     # Score Values
     seed_score: int = 10
@@ -89,8 +91,8 @@ class GameContext:
     def advance_ghost_mode_cycle(self) -> None:
         self.ghost_mode_timer += 1
 
-        chase_ticks = 120
-        scatter_ticks = 40
+        chase_ticks = self.cfg.ghost_chase_ticks
+        scatter_ticks = self.cfg.ghost_scatter_ticks
         cycle_length = chase_ticks + scatter_ticks
         cycle_tick = self.ghost_mode_timer % cycle_length
 
