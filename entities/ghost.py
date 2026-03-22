@@ -8,6 +8,9 @@ from entities.cell import Actor
 
 
 class Ghost(Actor):
+    FRIGHTENED_BLINK_TICKS = 60
+    FRIGHTENED_BLINK_INTERVAL = 8
+
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
         self.kind = "ghost"
@@ -16,19 +19,28 @@ class Ghost(Actor):
         self.target_y = 0
         self.mode = "chase"  # chase, scatter, frightened
 
+    def _get_draw_color(self):
+        pacman = self.ctx.pacman
+        if not getattr(pacman, "rage", False):
+            return self.color
+
+        rage_timer = getattr(pacman, "rage_timer", 0)
+        if (
+            rage_timer > 0
+            and rage_timer <= self.FRIGHTENED_BLINK_TICKS
+            and (rage_timer // self.FRIGHTENED_BLINK_INTERVAL) % 2 == 0
+        ):
+            return colors.WHITE
+
+        return colors.BLUE
+
     def draw(self) -> None:
         cfg = self.ctx.cfg
         tile = cfg.tile_size
         px = self.x * tile + tile // 2
         py = self.y * tile + tile // 2
 
-        # Use different color when frightened
-        if getattr(self.ctx.pacman, "rage", False):
-            color = colors.BLUE
-        else:
-            color = self.color
-
-        pyray.draw_circle(px, py, tile // 2 - 2, color)
+        pyray.draw_circle(px, py, tile // 2 - 2, self._get_draw_color())
 
     def update_target(self) -> None:
         """Override in subclasses for different AI behaviors"""
