@@ -21,3 +21,9 @@ def draw_button(rect, text: str) -> None:
     tx = int(rect.x + (rect.width - tw) / 2)
     ty = int(rect.y + (rect.height - 20) / 2)
     pyray.draw_text(text, tx, ty, 20, colors.WHITE)
+
+
+def draw_text_centered(text: str, center_x: int, y: int, font_size: int, color) -> None:
+    text_width = pyray.measure_text(text, font_size)
+    x = int(center_x - text_width / 2)
+    pyray.draw_text(text, x, y, font_size, color)

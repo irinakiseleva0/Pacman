@@ -5,7 +5,7 @@ from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import GAME_SCENE, MENU_SCENE
-from ui.ui import button_clicked, draw_button
+from ui.ui import button_clicked, draw_button, draw_text_centered
 from utils.score_storage import save_high_score
 
 
@@ -85,6 +85,8 @@ class ResultScene(Scene):
         ]
 
     def draw(self) -> None:
+        center_x = self.ctx.cfg.window_width // 2
+
         if self.ctx.last_result == "level_complete":
             result_text = f"LEVEL {self.ctx.current_level} COMPLETE!"
             result_color = colors.GREEN
@@ -98,22 +100,18 @@ class ResultScene(Scene):
             result_color = colors.RED
             button_text = "BACK TO MENU"
 
-        pyray.draw_text(result_text, 60, 100, 48, result_color)
+        draw_text_centered(result_text, center_x, 100, 48, result_color)
 
         if self.ctx.last_result == "level_complete":
-            pyray.draw_text(
-                f"Current Score: {self.ctx.score}", 120, 170, 24, colors.WHITE)
+            draw_text_centered(f"Current Score: {self.ctx.score}", center_x, 170, 24, colors.WHITE)
         else:
-            pyray.draw_text(
-                f"Final Score: {self.ctx.score}", 120, 170, 24, colors.WHITE)
+            draw_text_centered(f"Final Score: {self.ctx.score}", center_x, 170, 24, colors.WHITE)
 
-        pyray.draw_text(
-            f"High Score: {self.ctx.high_score}", 120, 202, 24, colors.YELLOW
-        )
+        draw_text_centered(f"High Score: {self.ctx.high_score}", center_x, 202, 24, colors.YELLOW)
 
         summary_y = 242
         for line in self._summary_lines():
-            pyray.draw_text(line, 72, summary_y, 18, colors.LIGHTGRAY)
+            draw_text_centered(line, center_x, summary_y, 18, colors.LIGHTGRAY)
             summary_y += 24
 
         draw_button(self.btn_action, button_text)

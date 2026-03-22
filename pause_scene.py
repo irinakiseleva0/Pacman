@@ -5,7 +5,7 @@ from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE, MENU_SCENE
-from ui.ui import button_clicked, draw_button
+from ui.ui import button_clicked, draw_button, draw_text_centered
 from utils.visual_effects import with_alpha
 
 
@@ -48,14 +48,14 @@ class PauseScene(Scene):
             with_alpha(colors.BLACK, 160)
         )
 
-        pyray.draw_text("PAUSED", 150, 150, 40, colors.YELLOW)
+        draw_text_centered("PAUSED", self.ctx.cfg.window_width // 2, 150, 40, colors.YELLOW)
         self._draw_summary()
 
         draw_button(pyray.Rectangle(154, 220, 140, 45), "RESUME")
         draw_button(pyray.Rectangle(154, 280, 140, 45), "MENU")
         draw_button(pyray.Rectangle(154, 340, 140, 45), "EXIT")
 
-        pyray.draw_text("ESC or P = RESUME", 130, 410, 16, colors.WHITE)
+        draw_text_centered("ESC or P = RESUME", self.ctx.cfg.window_width // 2, 410, 16, colors.WHITE)
 
     def _draw_summary(self) -> None:
         summary_lines = [
@@ -67,7 +67,5 @@ class PauseScene(Scene):
 
         y = 188
         for line in summary_lines:
-            tw = pyray.measure_text(line, 18)
-            x = (self.ctx.cfg.window_width - tw) // 2
-            pyray.draw_text(line, x, y, 18, colors.LIGHTGRAY)
+            draw_text_centered(line, self.ctx.cfg.window_width // 2, y, 18, colors.LIGHTGRAY)
             y += 20
