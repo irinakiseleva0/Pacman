@@ -89,8 +89,7 @@ class Map:
 
         if getattr(pacman, "rage", False):
             # Pacman eats ghost
-            if hasattr(ghost, "reset_to_spawn"):
-                ghost.reset_to_spawn()
+            ghost.reset_to_spawn()
             self.ctx.score += self.ctx.cfg.ghost_score
 
             # Add visual effects
@@ -100,18 +99,15 @@ class Map:
             self.ctx.screen_shake.shake(4.0, 0.3)
         else:
             # Ghost eats Pacman
-            if hasattr(pacman, "kill"):
-                pacman.kill()
+            pacman.kill()
 
     def frame(self) -> None:
         for actor in self.dynamic_actors:
-            if hasattr(actor, "frame"):
-                actor.frame(actor.x, actor.y)
+            actor.frame(actor.x, actor.y)
 
     def process(self) -> None:
         for actor in self.dynamic_actors:
-            if hasattr(actor, "process"):
-                actor.process()
+            actor.process()
 
     def draw(self) -> None:
         for row in self.static_layer:

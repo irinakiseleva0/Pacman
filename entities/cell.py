@@ -27,6 +27,12 @@ class Actor(ABC):
         self.x = self.spawn_x
         self.y = self.spawn_y
 
+    def process(self) -> None:
+        pass
+
+    def kill(self) -> None:
+        pass
+
     @abstractmethod
     def draw(self) -> None:
         pass
