@@ -5,6 +5,7 @@ from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE
+from ui.ui import button_clicked, draw_button
 
 
 class Menu(Scene):
@@ -60,18 +61,18 @@ class Menu(Scene):
         )
 
     def update(self, dt: float) -> None:
-        if self._button_clicked(self.btn_easy):
+        if button_clicked(self.btn_easy):
             self.difficulty = "Easy"
-        if self._button_clicked(self.btn_normal):
+        if button_clicked(self.btn_normal):
             self.difficulty = "Normal"
-        if self._button_clicked(self.btn_hard):
+        if button_clicked(self.btn_hard):
             self.difficulty = "Hard"
-        if self._button_clicked(self.btn_start):
+        if button_clicked(self.btn_start):
             self._apply_difficulty()
             # Add start game effect
             self.ctx.screen_flash.flash(colors.YELLOW, 0.3, 0.4)
             self.request_switch(GAME_SCENE)
-        if self._button_clicked(self.btn_exit):
+        if button_clicked(self.btn_exit):
             self.request_switch(EXIT_SCENE)
 
     def _apply_difficulty(self) -> None:
@@ -140,9 +141,9 @@ class Menu(Scene):
 
         # Difficulty selection
         pyray.draw_text("Select Difficulty:", 120, 140, 24, colors.WHITE)
-        self._draw_button(self.btn_easy, "EASY")
-        self._draw_button(self.btn_normal, "NORMAL")
-        self._draw_button(self.btn_hard, "HARD")
+        draw_button(self.btn_easy, "EASY")
+        draw_button(self.btn_normal, "NORMAL")
+        draw_button(self.btn_hard, "HARD")
 
         # Show selected difficulty
         selected_color = colors.GREEN if self.difficulty == "Easy" else \
@@ -157,23 +158,5 @@ class Menu(Scene):
             summary_y += 22
 
         # Action buttons
-        self._draw_button(self.btn_start, "START GAME")
-        self._draw_button(self.btn_exit, "EXIT")
-
-    def _button_clicked(self, rect) -> bool:
-        mouse = pyray.get_mouse_position()
-        hovered = pyray.check_collision_point_rec(mouse, rect)
-        return hovered and pyray.is_mouse_button_pressed(0)
-
-    def _draw_button(self, rect, text: str) -> None:
-        mouse = pyray.get_mouse_position()
-        hovered = pyray.check_collision_point_rec(mouse, rect)
-
-        pyray.draw_rectangle_rec(
-            rect, colors.DARKGRAY if hovered else colors.GRAY)
-        pyray.draw_rectangle_lines_ex(rect, 2, colors.WHITE)
-
-        tw = pyray.measure_text(text, 20)
-        tx = int(rect.x + (rect.width - tw) / 2)
-        ty = int(rect.y + (rect.height - 20) / 2)
-        pyray.draw_text(text, tx, ty, 20, colors.WHITE)
+        draw_button(self.btn_start, "START GAME")
+        draw_button(self.btn_exit, "EXIT")

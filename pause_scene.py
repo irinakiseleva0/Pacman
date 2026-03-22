@@ -5,6 +5,7 @@ from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE, MENU_SCENE
+from ui.ui import button_clicked, draw_button
 from utils.visual_effects import with_alpha
 
 
@@ -24,19 +25,19 @@ class PauseScene(Scene):
         mx, my = pyray.get_mouse_position().x, pyray.get_mouse_position().y
 
         # Resume button
-        if self._click_in_rect(mx, my, 154, 220, 140, 45):
+        if button_clicked(pyray.Rectangle(154, 220, 140, 45)):
             self.ctx.should_resume_game = True
             self.request_switch(GAME_SCENE)
             return
 
         # Back to Menu button
-        if self._click_in_rect(mx, my, 154, 280, 140, 45):
+        if button_clicked(pyray.Rectangle(154, 280, 140, 45)):
             self.ctx.reset_run_state()
             self.request_switch(MENU_SCENE)
             return
 
         # Exit button
-        if self._click_in_rect(mx, my, 154, 340, 140, 45):
+        if button_clicked(pyray.Rectangle(154, 340, 140, 45)):
             self.request_switch(EXIT_SCENE)
             return
 
@@ -50,9 +51,9 @@ class PauseScene(Scene):
         pyray.draw_text("PAUSED", 150, 150, 40, colors.YELLOW)
         self._draw_summary()
 
-        self._draw_button(154, 220, "RESUME")
-        self._draw_button(154, 280, "MENU")
-        self._draw_button(154, 340, "EXIT")
+        draw_button(pyray.Rectangle(154, 220, 140, 45), "RESUME")
+        draw_button(pyray.Rectangle(154, 280, 140, 45), "MENU")
+        draw_button(pyray.Rectangle(154, 340, 140, 45), "EXIT")
 
         pyray.draw_text("ESC or P = RESUME", 130, 410, 16, colors.WHITE)
 
@@ -70,24 +71,3 @@ class PauseScene(Scene):
             x = (self.ctx.cfg.window_width - tw) // 2
             pyray.draw_text(line, x, y, 18, colors.LIGHTGRAY)
             y += 20
-
-    def _draw_button(self, x: int, y: int, text: str):
-        rect = pyray.Rectangle(x, y, 140, 45)
-        mouse = pyray.get_mouse_position()
-        hovered = pyray.check_collision_point_rec(mouse, rect)
-
-        pyray.draw_rectangle_rec(
-            rect, colors.DARKGRAY if hovered else colors.GRAY
-        )
-        pyray.draw_rectangle_lines_ex(rect, 2, colors.WHITE)
-
-        tw = pyray.measure_text(text, 20)
-        pyray.draw_text(
-            text, x + (140 - tw) // 2, y + 12, 20, colors.WHITE
-        )
-
-    def _click_in_rect(self, mx, my, x, y, w, h) -> bool:
-        rect = pyray.Rectangle(x, y, w, h)
-        mouse = pyray.get_mouse_position()
-        hovered = pyray.check_collision_point_rec(mouse, rect)
-        return hovered and pyray.is_mouse_button_pressed(0)

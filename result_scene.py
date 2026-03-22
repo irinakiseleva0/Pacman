@@ -5,6 +5,7 @@ from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import GAME_SCENE, MENU_SCENE
+from ui.ui import button_clicked, draw_button
 from utils.score_storage import save_high_score
 
 
@@ -33,7 +34,7 @@ class ResultScene(Scene):
         )
 
     def update(self, dt: float) -> None:
-        if self._button_clicked(self.btn_action):
+        if button_clicked(self.btn_action):
             if self.ctx.last_result == "level_complete":
                 # Check if there are more levels
                 if self.ctx.current_level < self.TOTAL_LEVELS:
@@ -115,27 +116,4 @@ class ResultScene(Scene):
             pyray.draw_text(line, 72, summary_y, 18, colors.LIGHTGRAY)
             summary_y += 24
 
-        self._draw_button(self.btn_action, button_text)
-
-    def _button_clicked(self, rect) -> bool:
-        mouse = pyray.get_mouse_position()
-        hovered = pyray.check_collision_point_rec(mouse, rect)
-        return hovered and pyray.is_mouse_button_pressed(0)
-
-    def _draw_button(self, rect, text: str) -> None:
-        mouse = pyray.get_mouse_position()
-        hovered = pyray.check_collision_point_rec(mouse, rect)
-
-        pyray.draw_rectangle_rec(
-            rect, colors.DARKGRAY if hovered else colors.GRAY
-        )
-        pyray.draw_rectangle_lines_ex(rect, 2, colors.WHITE)
-
-        tw = pyray.measure_text(text, 20)
-        pyray.draw_text(
-            text,
-            int(rect.x + rect.width / 2 - tw / 2),
-            int(rect.y + rect.height / 2 - 10),
-            20,
-            colors.WHITE,
-        )
+        draw_button(self.btn_action, button_text)
