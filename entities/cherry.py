@@ -4,6 +4,7 @@ from raylib import colors
 from entities.cell import Cell, Actor
 from assets.assets import Assets
 
+
 class Cherry(Cell):
     TEX = "sprites/consumables/cherry.png"
     SCORE = 500
@@ -36,4 +37,5 @@ class Cherry(Cell):
         if not self.enabled:
             return
         cfg = self.ctx.cfg
-        pyray.draw_texture_ex(self.image, (self.x*cfg.RES, self.y*cfg.RES), 0.0, 1.0, colors.WHITE)
+        pyray.draw_texture_ex(
+            self.image, (self.x*cfg.tile_size, self.y*cfg.tile_size), 0.0, 1.0, colors.WHITE)
