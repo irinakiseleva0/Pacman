@@ -11,13 +11,17 @@ from entities.seeds import Seed
 
 
 class GameScene(Scene):
+    READY_TICKS = 45
+
     def __init__(self, ctx) -> None:
         super().__init__()
         self.ctx = ctx
         self.tick_counter = 0
+        self.ready_ticks = 0
 
     def enter_tree(self) -> None:
         self.tick_counter = 0
+        self.ready_ticks = 0
 
         if self.ctx.should_resume_game and self.ctx.game_map is not None:
             self.ctx.should_resume_game = False
@@ -32,6 +36,7 @@ class GameScene(Scene):
         self.ctx.reset_ghost_mode_cycle()
         self.ctx.game_map = Map(self.ctx, path=map_path)
         self.ctx.should_resume_game = False
+        self.ready_ticks = self.READY_TICKS
 
     def update(self, dt: float) -> None:
         game_map = self.ctx.game_map
@@ -49,7 +54,9 @@ class GameScene(Scene):
         self.tick_counter += 1
         game_map.frame()
 
-        if self.tick_counter >= self.ctx.cfg.logic_tick_rate:
+        if self.ready_ticks > 0:
+            self.ready_ticks -= 1
+        elif self.tick_counter >= self.ctx.cfg.logic_tick_rate:
             self.tick_counter = 0
             self.ctx.advance_ghost_mode_cycle()
             game_map.process()
@@ -90,6 +97,8 @@ class GameScene(Scene):
         map_path = self.ctx.get_map_path()
         self.ctx.reset_ghost_mode_cycle()
         self.ctx.game_map = Map(self.ctx, path=map_path)
+        self.tick_counter = 0
+        self.ready_ticks = self.READY_TICKS
 
     def draw(self) -> None:
         game_map = self.ctx.game_map
@@ -109,6 +118,9 @@ class GameScene(Scene):
 
         # Draw HUD (not affected by shake)
         self.draw_hud()
+
+        if self.ready_ticks > 0:
+            self.draw_ready_overlay()
 
         # Draw screen flash overlay
         self.ctx.screen_flash.draw()
@@ -183,3 +195,13 @@ class GameScene(Scene):
                 if isinstance(cell, Seed) and getattr(cell, "enabled", False):
                     total += 1
         return total
+
+    def draw_ready_overlay(self) -> None:
+        message = "READY!"
+        text_size = 36
+        text_width = pyray.measure_text(message, text_size)
+        x = (self.ctx.cfg.window_width - text_width) // 2
+        y = self.ctx.cfg.window_height // 2 - 18
+
+        pyray.draw_text(message, x + 2, y + 2, text_size, colors.BLACK)
+        pyray.draw_text(message, x, y, text_size, colors.YELLOW)
