@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
+from raylib import colors
+
 from utils.score_storage import load_high_score
 from utils.visual_effects import ParticleSystem, ScreenShake, FloatingTextSystem, ScreenFlash
 
@@ -161,6 +163,19 @@ class GameContext:
         self.reset_ghost_combo()
         self.pacman = None
         self.game_map = None
+
+    def play_transition_effect(
+        self,
+        flash_color=colors.WHITE,
+        flash_intensity: float = 0.0,
+        flash_duration: float = 0.0,
+        shake_intensity: float = 0.0,
+        shake_duration: float = 0.0,
+    ) -> None:
+        if flash_intensity > 0 and flash_duration > 0:
+            self.screen_flash.flash(flash_color, flash_intensity, flash_duration)
+        if shake_intensity > 0 and shake_duration > 0:
+            self.screen_shake.shake(shake_intensity, shake_duration)
 
     def start_new_game(self) -> None:
         """Start a new game using the current config."""

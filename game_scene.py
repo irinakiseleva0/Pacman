@@ -32,8 +32,7 @@ class GameScene(Scene):
             self.ctx.should_resume_game = False
             return
 
-        # Add level start effect
-        self.ctx.screen_flash.flash(colors.BLUE, 0.2, 0.6)
+        self.ctx.play_transition_effect(colors.BLUE, 0.2, 0.6)
         self.ctx.last_result = ""
 
         # Load the current level's map
@@ -69,7 +68,7 @@ class GameScene(Scene):
         if self.ready_ticks > 0:
             self.ready_ticks -= 1
             if self.ready_ticks == 0:
-                self.ctx.screen_flash.flash(colors.WHITE, 0.15, 0.12)
+                self.ctx.play_transition_effect(colors.WHITE, 0.15, 0.12)
         elif self.tick_counter >= self.ctx.cfg.logic_tick_rate:
             self.tick_counter = 0
             self.ctx.advance_ghost_mode_cycle()
@@ -95,9 +94,7 @@ class GameScene(Scene):
             return
 
     def handle_pacman_death(self) -> None:
-        # Add death effects
-        self.ctx.screen_shake.shake(8.0, 0.5)
-        self.ctx.screen_flash.flash(colors.RED, 0.3, 0.2)
+        self.ctx.play_transition_effect(colors.RED, 0.3, 0.2, 8.0, 0.5)
 
         self.ctx.lives -= 1
 
@@ -122,8 +119,7 @@ class GameScene(Scene):
         else:
             self.transition_result = "level_complete"
         self.ctx.reset_ghost_combo()
-        self.ctx.screen_flash.flash(colors.GREEN, 0.25, 0.2)
-        self.ctx.screen_shake.shake(3.0, 0.2)
+        self.ctx.play_transition_effect(colors.GREEN, 0.25, 0.2, 3.0, 0.2)
 
     def draw(self) -> None:
         game_map = self.ctx.game_map

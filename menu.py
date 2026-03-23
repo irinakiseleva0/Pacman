@@ -54,8 +54,7 @@ class Menu(Scene):
         if button_clicked(self.btn_start):
             self.navigator.focus_index = 3
             self._apply_difficulty()
-            # Add start game effect
-            self.ctx.screen_flash.flash(colors.YELLOW, 0.3, 0.4)
+            self.ctx.play_transition_effect(colors.YELLOW, 0.3, 0.4)
             self.request_switch(GAME_SCENE)
         if button_clicked(self.btn_exit):
             self.navigator.focus_index = 4
@@ -73,7 +72,7 @@ class Menu(Scene):
                 self.difficulty = self.FOCUS_ORDER[self.navigator.focus_index]
             elif self.navigator.focus_index == 3:
                 self._apply_difficulty()
-                self.ctx.screen_flash.flash(colors.YELLOW, 0.3, 0.4)
+                self.ctx.play_transition_effect(colors.YELLOW, 0.3, 0.4)
                 self.request_switch(GAME_SCENE)
             else:
                 self.request_switch(EXIT_SCENE)

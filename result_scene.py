@@ -38,8 +38,7 @@ class ResultScene(Scene):
 
     def _activate_primary_action(self) -> None:
         if self.ctx.last_result == "level_complete":
-            self.ctx.screen_flash.flash(colors.GREEN, 0.4, 0.5)
-            self.ctx.screen_shake.shake(3.0, 0.4)
+            self.ctx.play_transition_effect(colors.GREEN, 0.4, 0.5, 3.0, 0.4)
             self.ctx.next_level()
             self.request_switch(GAME_SCENE)
             return
