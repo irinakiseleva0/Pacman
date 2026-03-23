@@ -10,6 +10,15 @@ def button_clicked(rect) -> bool:
     return hovered and pyray.is_mouse_button_pressed(0)
 
 
+def centered_rect(center_x: int, y: int, width: int, height: int):
+    return pyray.Rectangle(
+        center_x - width // 2,
+        y,
+        width,
+        height,
+    )
+
+
 def draw_button(rect, text: str, focused: bool = False) -> None:
     mouse = pyray.get_mouse_position()
     hovered = pyray.check_collision_point_rec(mouse, rect)

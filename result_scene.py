@@ -6,7 +6,7 @@ from raylib import colors
 from core.scene import Scene
 from core.scene_ids import GAME_SCENE, MENU_SCENE
 from ui.navigation import ButtonNavigator
-from ui.ui import button_clicked, draw_button, draw_text_centered
+from ui.ui import button_clicked, centered_rect, draw_button, draw_text_centered
 from utils.score_storage import save_high_score
 
 
@@ -28,12 +28,7 @@ class ResultScene(Scene):
         cx = self.ctx.cfg.window_width // 2
         cy = self.ctx.cfg.window_height // 2
 
-        self.btn_action = pyray.Rectangle(
-            cx - self.BTN_W // 2,
-            cy + 100,
-            self.BTN_W,
-            self.BTN_H,
-        )
+        self.btn_action = centered_rect(cx, cy + 100, self.BTN_W, self.BTN_H)
 
     def update(self, dt: float) -> None:
         self.navigator.move_vertical()

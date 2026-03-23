@@ -6,18 +6,28 @@ from raylib import colors
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE, MENU_SCENE
 from ui.navigation import ButtonNavigator
-from ui.ui import button_clicked, draw_button, draw_text_centered
+from ui.ui import button_clicked, centered_rect, draw_button, draw_text_centered
 from utils.visual_effects import with_alpha
 
 
 class PauseScene(Scene):
+    BTN_W = 140
+    BTN_H = 45
+
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
         self.navigator = ButtonNavigator(3)
+        self.btn_resume = None
+        self.btn_menu = None
+        self.btn_exit = None
 
     def enter_tree(self) -> None:
         self.navigator.reset(0)
+        center_x = self.ctx.cfg.window_width // 2
+        self.btn_resume = centered_rect(center_x, 220, self.BTN_W, self.BTN_H)
+        self.btn_menu = centered_rect(center_x, 280, self.BTN_W, self.BTN_H)
+        self.btn_exit = centered_rect(center_x, 340, self.BTN_W, self.BTN_H)
 
     def update(self, dt: float) -> None:
         # ESC or P -> resume back to game
@@ -29,19 +39,19 @@ class PauseScene(Scene):
         self._handle_keyboard_navigation()
 
         # Resume button
-        if button_clicked(pyray.Rectangle(154, 220, 140, 45)):
+        if button_clicked(self.btn_resume):
             self.navigator.focus_index = 0
             self._activate_focused_action()
             return
 
         # Back to Menu button
-        if button_clicked(pyray.Rectangle(154, 280, 140, 45)):
+        if button_clicked(self.btn_menu):
             self.navigator.focus_index = 1
             self._activate_focused_action()
             return
 
         # Exit button
-        if button_clicked(pyray.Rectangle(154, 340, 140, 45)):
+        if button_clicked(self.btn_exit):
             self.navigator.focus_index = 2
             self._activate_focused_action()
             return
@@ -75,9 +85,9 @@ class PauseScene(Scene):
         draw_text_centered("PAUSED", self.ctx.cfg.window_width // 2, 150, 40, colors.YELLOW)
         self._draw_summary()
 
-        draw_button(pyray.Rectangle(154, 220, 140, 45), "RESUME", focused=self.navigator.focus_index == 0)
-        draw_button(pyray.Rectangle(154, 280, 140, 45), "MENU", focused=self.navigator.focus_index == 1)
-        draw_button(pyray.Rectangle(154, 340, 140, 45), "EXIT", focused=self.navigator.focus_index == 2)
+        draw_button(self.btn_resume, "RESUME", focused=self.navigator.focus_index == 0)
+        draw_button(self.btn_menu, "MENU", focused=self.navigator.focus_index == 1)
+        draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 2)
 
         draw_text_centered("ESC or P = RESUME", self.ctx.cfg.window_width // 2, 410, 16, colors.WHITE)
         draw_text_centered("W/S or Arrows to move, Enter to confirm", self.ctx.cfg.window_width // 2, 430, 16, colors.LIGHTGRAY)

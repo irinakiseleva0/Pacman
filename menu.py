@@ -6,7 +6,7 @@ from raylib import colors
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE
 from ui.navigation import ButtonNavigator
-from ui.ui import button_clicked, draw_button
+from ui.ui import button_clicked, centered_rect, draw_button
 
 
 class Menu(Scene):
@@ -30,38 +30,13 @@ class Menu(Scene):
         cy = self.ctx.cfg.window_height // 2
 
         # Difficulty buttons
-        self.btn_easy = pyray.Rectangle(
-            cx - self.BTN_W // 2,
-            cy - 80 - self.BTN_H,
-            self.BTN_W,
-            self.BTN_H,
-        )
-        self.btn_normal = pyray.Rectangle(
-            cx - self.BTN_W // 2,
-            cy - 20 - self.BTN_H,
-            self.BTN_W,
-            self.BTN_H,
-        )
-        self.btn_hard = pyray.Rectangle(
-            cx - self.BTN_W // 2,
-            cy + 40 - self.BTN_H,
-            self.BTN_W,
-            self.BTN_H,
-        )
+        self.btn_easy = centered_rect(cx, cy - 80 - self.BTN_H, self.BTN_W, self.BTN_H)
+        self.btn_normal = centered_rect(cx, cy - 20 - self.BTN_H, self.BTN_W, self.BTN_H)
+        self.btn_hard = centered_rect(cx, cy + 40 - self.BTN_H, self.BTN_W, self.BTN_H)
 
         # Action buttons
-        self.btn_start = pyray.Rectangle(
-            cx - self.BTN_W // 2,
-            cy + 120 - self.BTN_H,
-            self.BTN_W,
-            self.BTN_H,
-        )
-        self.btn_exit = pyray.Rectangle(
-            cx - self.BTN_W // 2,
-            cy + 180 - self.BTN_H,
-            self.BTN_W,
-            self.BTN_H,
-        )
+        self.btn_start = centered_rect(cx, cy + 120 - self.BTN_H, self.BTN_W, self.BTN_H)
+        self.btn_exit = centered_rect(cx, cy + 180 - self.BTN_H, self.BTN_W, self.BTN_H)
         self.navigator.reset(1)
 
     def update(self, dt: float) -> None:
