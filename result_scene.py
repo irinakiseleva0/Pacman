@@ -34,28 +34,27 @@ class ResultScene(Scene):
         )
 
     def update(self, dt: float) -> None:
-        if button_clicked(self.btn_action):
-            if self.ctx.last_result == "level_complete":
-                # Check if there are more levels
-                if self.ctx.current_level < self.TOTAL_LEVELS:
-                    # Add level transition effects
-                    self.ctx.screen_flash.flash(colors.GREEN, 0.4, 0.5)
-                    self.ctx.screen_shake.shake(3.0, 0.4)
+        if (
+            button_clicked(self.btn_action)
+            or pyray.is_key_pressed(pyray.KEY_ENTER)
+            or pyray.is_key_pressed(pyray.KEY_KP_ENTER)
+            or pyray.is_key_pressed(pyray.KEY_SPACE)
+        ):
+            self._activate_primary_action()
 
-                    # Go to next level
-                    self.ctx.next_level()
-                    self.request_switch(GAME_SCENE)
-                else:
-                    # All levels complete - game won entirely
-                    self.ctx.last_result = "game_won"
-            elif self.ctx.last_result == "game_won":
-                # Back to menu after winning all levels
-                self.ctx.reset_run_state()
-                self.request_switch(MENU_SCENE)
-            else:  # "lose"
-                # Back to menu after losing
-                self.ctx.reset_run_state()
-                self.request_switch(MENU_SCENE)
+    def _activate_primary_action(self) -> None:
+        if self.ctx.last_result == "level_complete":
+            if self.ctx.current_level < self.TOTAL_LEVELS:
+                self.ctx.screen_flash.flash(colors.GREEN, 0.4, 0.5)
+                self.ctx.screen_shake.shake(3.0, 0.4)
+                self.ctx.next_level()
+                self.request_switch(GAME_SCENE)
+            else:
+                self.ctx.last_result = "game_won"
+            return
+
+        self.ctx.reset_run_state()
+        self.request_switch(MENU_SCENE)
 
     def _summary_lines(self) -> list[str]:
         if self.ctx.last_result == "level_complete":
@@ -115,3 +114,4 @@ class ResultScene(Scene):
             summary_y += 24
 
         draw_button(self.btn_action, button_text)
+        draw_text_centered("ENTER or SPACE to continue", center_x, 430, 16, colors.WHITE)
