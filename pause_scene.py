@@ -118,6 +118,11 @@ class PauseScene(Scene):
 
         game_map = self.ctx.game_map
         if game_map is not None:
+            release_status = game_map.ghost_release_status()
+            if release_status is not None:
+                pending_ghosts, total_ghosts = release_status
+                summary_lines.append(f"Deploying: {pending_ghosts}/{total_ghosts}")
+
             return_status = game_map.ghost_return_status()
             if return_status is not None:
                 returning_ghosts, total_ghosts = return_status
