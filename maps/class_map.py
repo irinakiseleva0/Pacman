@@ -92,6 +92,9 @@ class Map:
         pacman = a if kind_a == "pacman" else b
         ghost = a if kind_a == "ghost" else b
 
+        if isinstance(ghost, Ghost) and ghost.is_harmless():
+            return
+
         if getattr(pacman, "rage", False):
             # Pacman eats ghost
             score_value = self.ctx.next_ghost_combo_score()

@@ -22,8 +22,12 @@ class Ghost(Actor):
         self.scatter_target = (0, 0)
         self.respawn_lock_ticks = 0
         self.release_delay_ticks = 0
+        self.returning_home = False
 
     def _get_draw_color(self):
+        if self.returning_home:
+            return colors.WHITE
+
         if self.respawn_lock_ticks > 0:
             if (self.respawn_lock_ticks // 2) % 2 == 0:
                 return colors.WHITE
@@ -62,13 +66,17 @@ class Ghost(Actor):
             self.target_y = pacman.y
 
     def on_eaten(self) -> None:
-        self.reset_to_spawn()
-        self.respawn_lock_ticks = self.EATEN_RESPAWN_TICKS
+        self.returning_home = True
+        self.respawn_lock_ticks = 0
+        self.release_delay_ticks = 0
         self.last_dx = 0
         self.last_dy = 0
 
     def set_release_delay(self, ticks: int) -> None:
         self.release_delay_ticks = max(0, ticks)
+
+    def is_harmless(self) -> bool:
+        return self.returning_home or self.respawn_lock_ticks > 0 or self.release_delay_ticks > 0
 
     def _update_mode(self) -> None:
         pacman = self.ctx.pacman
@@ -79,6 +87,8 @@ class Ghost(Actor):
         self.mode = self.ctx.ghost_mode
 
     def _is_reverse_direction(self, dx: int, dy: int) -> bool:
+        if self.returning_home:
+            return False
         return (dx, dy) == (-self.last_dx, -self.last_dy) and (self.last_dx, self.last_dy) != (0, 0)
 
     def _valid_moves(self, game_map) -> list[tuple[int, int]]:
@@ -163,13 +173,18 @@ class Ghost(Actor):
         if getattr(pacman, "state", None) in ("DEATH", "NONE"):
             return
 
-        self._update_mode()
-
-        if self.mode == "scatter":
-            self.target_x, self.target_y = self.scatter_target
+        if self.returning_home:
+            self.mode = "home"
+            self.target_x = self.spawn_x
+            self.target_y = self.spawn_y
         else:
-            # Update target based on personality
-            self.update_target()
+            self._update_mode()
+
+            if self.mode == "scatter":
+                self.target_x, self.target_y = self.scatter_target
+            else:
+                # Update target based on personality
+                self.update_target()
 
         # Get best move towards target
         dx, dy = self.get_best_move(game_map)
@@ -179,6 +194,11 @@ class Ghost(Actor):
         if result.moved:
             self.last_dx = dx
             self.last_dy = dy
+            if self.returning_home and self.x == self.spawn_x and self.y == self.spawn_y:
+                self.returning_home = False
+                self.respawn_lock_ticks = self.EATEN_RESPAWN_TICKS
+                self.last_dx = 0
+                self.last_dy = 0
 
 
 class Blinky(Ghost):
