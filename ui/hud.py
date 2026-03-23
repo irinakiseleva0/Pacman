@@ -4,7 +4,7 @@ import pyray
 from raylib import colors
 
 
-def draw_game_hud(ctx, seeds_left: int) -> None:
+def draw_game_hud(ctx, seeds_left: int, cherry_status: tuple[bool, int] | None = None) -> None:
     rage_text = "ON" if getattr(ctx.pacman, "rage", False) else "OFF"
     difficulty_color = (
         colors.GREEN if ctx.difficulty == "Easy"
@@ -12,6 +12,17 @@ def draw_game_hud(ctx, seeds_left: int) -> None:
         else colors.YELLOW
     )
     ghost_color = colors.SKYBLUE if ctx.ghost_mode == "scatter" else colors.RED
+
+    cherry_text = None
+    cherry_color = colors.WHITE
+    if cherry_status is not None:
+        cherry_ready, cherry_timer = cherry_status
+        if cherry_ready:
+            cherry_text = "Cherry: READY"
+            cherry_color = colors.GOLD
+        else:
+            cherry_text = f"Cherry: {cherry_timer}"
+            cherry_color = colors.GRAY
 
     lines = [
         (f"Score: {ctx.score}", colors.WHITE),
@@ -23,6 +34,9 @@ def draw_game_hud(ctx, seeds_left: int) -> None:
         (f"Mode: {ctx.difficulty.upper()}", difficulty_color),
         (f"High score: {ctx.high_score}", colors.WHITE),
     ]
+
+    if cherry_text is not None:
+        lines.insert(5, (cherry_text, cherry_color))
 
     x = 10
     y = 10

@@ -130,6 +130,13 @@ class Map:
                     total += 1
         return total
 
+    def cherry_status(self) -> tuple[bool, int] | None:
+        for row in self.static_layer:
+            for cell in row:
+                if isinstance(cell, Cherry):
+                    return cell.enabled, cell.timer
+        return None
+
     def load(self, path: str) -> None:
         with open(path, "r", encoding="utf-8") as file:
             lines = [line.rstrip("\n") for line in file]
