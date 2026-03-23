@@ -260,6 +260,29 @@ class FloatingTextSystem:
 
         self.add_text(f"+{points}", x * 16, y * 16 - 10, color, 1.2, 14)
 
+    def add_ghost_combo_text(self, combo_step: int, points: int, x: int, y: int) -> None:
+        """Add a stronger callout for chained ghost scores."""
+        if combo_step <= 1:
+            return
+
+        combo_color = colors.GOLD if combo_step >= 3 else colors.WHITE
+        self.add_text(
+            f"x{combo_step} GHOST!",
+            x * 16 - 10,
+            y * 16 - 24,
+            combo_color,
+            1.0,
+            12,
+        )
+        self.add_text(
+            f"{points}!",
+            x * 16 + 4,
+            y * 16 - 40,
+            combo_color,
+            0.9,
+            16,
+        )
+
     def update(self, dt: float) -> None:
         """Update all floating texts."""
         self.texts = [t for t in self.texts if t.update(dt)]

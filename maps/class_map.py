@@ -96,6 +96,7 @@ class Map:
             # Pacman eats ghost
             score_value = self.ctx.next_ghost_combo_score()
             self.ctx.ghost_combo += 1
+            combo_step = self.ctx.ghost_combo
             ghost.reset_to_spawn()
             self.ctx.score += score_value
 
@@ -103,6 +104,8 @@ class Map:
             self.ctx.particles.create_ghost_eat_effect(ghost.x, ghost.y)
             self.ctx.floating_text.add_score_text(
                 score_value, ghost.x, ghost.y)
+            self.ctx.floating_text.add_ghost_combo_text(
+                combo_step, score_value, ghost.x, ghost.y)
             self.ctx.screen_shake.shake(4.0, 0.3)
         else:
             # Ghost eats Pacman
