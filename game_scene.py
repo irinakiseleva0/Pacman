@@ -107,13 +107,14 @@ class GameScene(Scene):
         self.ctx.play_transition_effect(colors.RED, 0.3, 0.2, 8.0, 0.5)
 
         self.ctx.lives -= 1
-        self.death_pause_ticks = self.ctx.cfg.death_pause_ticks
 
         if self.ctx.lives <= 0:
             self.death_result = "lose"
+            self.death_pause_ticks = self.ctx.cfg.game_over_pause_ticks
             return
 
         self.death_result = "reload"
+        self.death_pause_ticks = self.ctx.cfg.death_pause_ticks
 
     def finish_death_transition(self) -> None:
         if self.death_result == "lose":
@@ -195,8 +196,15 @@ class GameScene(Scene):
         center_x = self.ctx.cfg.window_width // 2
         y = self.ctx.cfg.window_height // 2 - 18
 
-        draw_text_centered("LIFE LOST", center_x + 2, y + 2, 34, colors.BLACK)
-        draw_text_centered("LIFE LOST", center_x, y, 34, colors.RED)
+        if self.death_result == "lose":
+            message = "GAME OVER"
+            message_color = colors.RED
+        else:
+            message = "LIFE LOST"
+            message_color = colors.RED
+
+        draw_text_centered(message, center_x + 2, y + 2, 34, colors.BLACK)
+        draw_text_centered(message, center_x, y, 34, message_color)
 
     def draw_level_complete_overlay(self) -> None:
         center_x = self.ctx.cfg.window_width // 2

@@ -108,6 +108,7 @@ class Config:
     cherry_score_step: int = 100
     ready_duration_ticks: int = 45
     death_pause_ticks: int = 24
+    game_over_pause_ticks: int = 36
     level_complete_duration_ticks: int = 30
     ghost_release_tick_interval: int = 18
     ghost_release_tick_step: int = 2
