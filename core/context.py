@@ -104,6 +104,8 @@ class Config:
     ready_duration_ticks: int = 45
     level_complete_duration_ticks: int = 30
     ghost_release_tick_interval: int = 18
+    ghost_release_tick_step: int = 2
+    ghost_release_tick_min: int = 6
 
     # Score Values
     seed_score: int = 10
@@ -233,6 +235,13 @@ class GameContext:
         return max(
             self.cfg.cherry_respawn_tick_min,
             self.cfg.cherry_respawn_ticks - level_offset * self.cfg.cherry_respawn_tick_step,
+        )
+
+    def effective_ghost_release_interval(self) -> int:
+        level_offset = max(0, self.current_level - 1)
+        return max(
+            self.cfg.ghost_release_tick_min,
+            self.cfg.ghost_release_tick_interval - level_offset * self.cfg.ghost_release_tick_step,
         )
 
     def effective_item_counts(self) -> tuple[int, int, int] | None:

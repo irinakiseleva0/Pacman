@@ -289,6 +289,6 @@ class Map:
             ghost_class = ghost_classes[ghost_index % len(ghost_classes)]
             self.ghost_counter += 1
             ghost = ghost_class(self.ctx)
-            ghost.set_release_delay(ghost_index * self.ctx.cfg.ghost_release_tick_interval)
+            ghost.set_release_delay(ghost_index * self.ctx.effective_ghost_release_interval())
             return ghost
         return None
