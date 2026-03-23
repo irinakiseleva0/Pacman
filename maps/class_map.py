@@ -22,6 +22,10 @@ class MoveResult:
     reason: str = ""
 
 
+class MapValidationError(ValueError):
+    pass
+
+
 class Map:
     def __init__(self, ctx: GameContext, path: str = "maps/pacman_map.txt") -> None:
         self.ctx = ctx
@@ -152,6 +156,7 @@ class Map:
         with open(path, "r", encoding="utf-8") as file:
             raw_lines = [line.rstrip("\n") for line in file]
 
+        self._validate_source_lines(path, raw_lines)
         lines = self._normalize_lines(raw_lines)
 
         self.static_layer.clear()
@@ -201,6 +206,37 @@ class Map:
             )
 
         return normalized
+
+    def _validate_source_lines(self, path: str, lines: List[str]) -> None:
+        expected_height = self.ctx.cfg.map_height
+        if len(lines) != expected_height:
+            raise MapValidationError(
+                f"{path}: expected {expected_height} rows, got {len(lines)}"
+            )
+
+        allowed_symbols = {"#", "d", "t", ".", "s", "c", "p", "g", "_"}
+        pacman_count = 0
+        ghost_count = 0
+
+        for y, line in enumerate(lines, start=1):
+            for x, symbol in enumerate(line, start=1):
+                if symbol not in allowed_symbols:
+                    raise MapValidationError(
+                        f"{path}: unsupported symbol {symbol!r} at row {y}, column {x}"
+                    )
+                if symbol == "p":
+                    pacman_count += 1
+                elif symbol == "g":
+                    ghost_count += 1
+
+        if pacman_count != 1:
+            raise MapValidationError(
+                f"{path}: expected exactly 1 pacman spawn, got {pacman_count}"
+            )
+        if ghost_count < 1:
+            raise MapValidationError(
+                f"{path}: expected at least 1 ghost spawn, got {ghost_count}"
+            )
 
     def _create_cell(self, symbol: str) -> Cell:
         if symbol == "#":
