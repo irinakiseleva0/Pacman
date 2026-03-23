@@ -8,6 +8,8 @@ from core.scene_ids import MENU_SCENE, PAUSE_SCENE, RESULT_SCENE
 from maps.class_map import Map
 from entities.pacman import State
 from entities.seeds import Seed
+from ui.hud import draw_game_hud
+from ui.ui import draw_text_centered
 
 
 class GameScene(Scene):
@@ -126,73 +128,7 @@ class GameScene(Scene):
         self.ctx.screen_flash.draw()
 
     def draw_hud(self) -> None:
-        rage_text = "ON" if getattr(self.ctx.pacman, "rage", False) else "OFF"
-
-        pyray.draw_text(
-            f"Score: {self.ctx.score}",
-            10,
-            10,
-            20,
-            colors.WHITE,
-        )
-
-        pyray.draw_text(
-            f"Lives: {self.ctx.lives}",
-            10,
-            34,
-            20,
-            colors.WHITE,
-        )
-
-        pyray.draw_text(
-            f"Level: {self.ctx.current_level}",
-            10,
-            58,
-            20,
-            colors.SKYBLUE,
-        )
-
-        pyray.draw_text(
-            f"Rage: {rage_text}",
-            10,
-            82,
-            20,
-            colors.YELLOW if rage_text == "ON" else colors.GRAY,
-        )
-
-        pyray.draw_text(
-            f"Seeds left: {self.remaining_seeds()}",
-            10,
-            106,
-            20,
-            colors.WHITE,
-        )
-
-        pyray.draw_text(
-            f"Ghosts: {self.ctx.ghost_mode.upper()}",
-            10,
-            130,
-            20,
-            colors.SKYBLUE if self.ctx.ghost_mode == "scatter" else colors.RED,
-        )
-
-        pyray.draw_text(
-            f"Mode: {self.ctx.difficulty.upper()}",
-            10,
-            154,
-            20,
-            colors.GREEN if self.ctx.difficulty == "Easy"
-            else colors.RED if self.ctx.difficulty == "Hard"
-            else colors.YELLOW,
-        )
-
-        pyray.draw_text(
-            f"High score: {self.ctx.high_score}",
-            10,
-            178,
-            20,
-            colors.WHITE,
-        )
+        draw_game_hud(self.ctx, self.remaining_seeds())
 
     def remaining_seeds(self) -> int:
         game_map = self.ctx.game_map
@@ -209,9 +145,7 @@ class GameScene(Scene):
     def draw_ready_overlay(self) -> None:
         message = "READY!"
         text_size = 36
-        text_width = pyray.measure_text(message, text_size)
-        x = (self.ctx.cfg.window_width - text_width) // 2
         y = self.ctx.cfg.window_height // 2 - 18
 
-        pyray.draw_text(message, x + 2, y + 2, text_size, colors.BLACK)
-        pyray.draw_text(message, x, y, text_size, colors.YELLOW)
+        draw_text_centered(message, self.ctx.cfg.window_width // 2 + 2, y + 2, text_size, colors.BLACK)
+        draw_text_centered(message, self.ctx.cfg.window_width // 2, y, text_size, colors.YELLOW)
