@@ -70,6 +70,11 @@ class PauseScene(Scene):
             f"Cherry: {self.ctx.effective_cherry_respawn()}",
         ]
 
+        if getattr(self.ctx.pacman, "rage", False):
+            summary_lines.append(
+                f"Combo: x{self.ctx.ghost_combo + 1} -> {self.ctx.next_ghost_combo_score()}"
+            )
+
         item_counts = self.ctx.effective_item_counts()
         if item_counts is not None:
             dots, large_seeds, cherries = item_counts

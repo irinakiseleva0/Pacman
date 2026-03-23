@@ -40,6 +40,11 @@ def draw_game_hud(ctx, seeds_left: int, cherry_status: tuple[bool, int] | None =
     if cherry_text is not None:
         lines.insert(5, (cherry_text, cherry_color))
 
+    if rage_text == "ON":
+        next_combo_score = ctx.next_ghost_combo_score()
+        combo_label = f"Ghost combo: x{ctx.ghost_combo + 1} ({next_combo_score})"
+        lines.insert(5, (combo_label, colors.GOLD))
+
     x = 10
     y = 10
     line_height = 24
