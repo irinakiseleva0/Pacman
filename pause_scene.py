@@ -103,7 +103,7 @@ class PauseScene(Scene):
             f"Cycle: {ghost_chase_ticks}/{ghost_scatter_ticks}",
             f"Release: {self.ctx.effective_ghost_release_interval()}",
             f"Rage: {self.ctx.effective_rage_duration()}",
-            f"Cherry: {self.ctx.effective_cherry_respawn()}",
+            f"Cherry: {self.ctx.effective_cherry_respawn()} / {self.ctx.effective_cherry_score()}",
         ]
 
         if getattr(self.ctx.pacman, "rage", False):

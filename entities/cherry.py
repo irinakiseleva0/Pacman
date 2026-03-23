@@ -22,13 +22,14 @@ class Cherry(Cell):
         if getattr(actor, "kind", None) != "pacman":
             return
 
+        score_value = self.ctx.effective_cherry_score()
         self.enabled = False
-        self.ctx.score += self.ctx.cfg.cherry_score
+        self.ctx.score += score_value
         self.timer = self.ctx.effective_cherry_respawn()
 
         self.ctx.particles.create_cherry_eat_effect(self.x, self.y)
         self.ctx.floating_text.add_score_text(
-            self.ctx.cfg.cherry_score, self.x, self.y
+            score_value, self.x, self.y
         )
         self.ctx.screen_shake.shake(5.0, 0.35)
 

@@ -105,6 +105,7 @@ class Config:
     rage_duration_tick_min: int = 120
     cherry_respawn_tick_step: int = 10
     cherry_respawn_tick_min: int = 45
+    cherry_score_step: int = 100
     ready_duration_ticks: int = 45
     level_complete_duration_ticks: int = 30
     ghost_release_tick_interval: int = 18
@@ -241,6 +242,10 @@ class GameContext:
             self.cfg.cherry_respawn_tick_min,
             self.cfg.cherry_respawn_ticks - level_offset * self.cfg.cherry_respawn_tick_step,
         )
+
+    def effective_cherry_score(self) -> int:
+        level_offset = max(0, self.current_level - 1)
+        return self.cfg.cherry_score + level_offset * self.cfg.cherry_score_step
 
     def effective_ghost_release_interval(self) -> int:
         level_offset = max(0, self.current_level - 1)
