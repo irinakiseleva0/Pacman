@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pyray
 from raylib import colors
 
@@ -11,6 +13,13 @@ from ui.hud import draw_game_hud
 from ui.ui import draw_text_centered
 
 
+@dataclass
+class SceneTransition:
+    kind: str
+    ticks: int
+    result: str = ""
+
+
 class GameScene(Scene):
     TOTAL_LEVELS = 3
 
@@ -18,19 +27,11 @@ class GameScene(Scene):
         super().__init__()
         self.ctx = ctx
         self.tick_counter = 0
-        self.ready_ticks = 0
-        self.death_pause_ticks = 0
-        self.death_result = ""
-        self.level_complete_ticks = 0
-        self.transition_result = ""
+        self.transition: SceneTransition | None = None
 
     def enter_tree(self) -> None:
         self.tick_counter = 0
-        self.ready_ticks = 0
-        self.death_pause_ticks = 0
-        self.death_result = ""
-        self.level_complete_ticks = 0
-        self.transition_result = ""
+        self.transition = None
 
         if self.ctx.should_resume_game and self.ctx.game_map is not None:
             self.ctx.should_resume_game = False
@@ -44,7 +45,7 @@ class GameScene(Scene):
         self.ctx.reset_ghost_mode_cycle()
         self.ctx.game_map = Map(self.ctx, path=map_path)
         self.ctx.should_resume_game = False
-        self.ready_ticks = self.ctx.cfg.ready_duration_ticks
+        self.transition = SceneTransition("ready", self.ctx.cfg.ready_duration_ticks)
 
     def update(self, dt: float) -> None:
         game_map = self.ctx.game_map
@@ -62,24 +63,13 @@ class GameScene(Scene):
         self.tick_counter += 1
         game_map.frame()
 
-        if self.death_pause_ticks > 0:
-            self.death_pause_ticks -= 1
-            if self.death_pause_ticks == 0:
-                self.finish_death_transition()
+        if self.transition is not None:
+            self.transition.ticks -= 1
+            if self.transition.ticks == 0:
+                self.finish_transition()
             return
 
-        if self.level_complete_ticks > 0:
-            self.level_complete_ticks -= 1
-            if self.level_complete_ticks == 0:
-                self.ctx.last_result = self.transition_result or "level_complete"
-                self.request_switch(RESULT_SCENE)
-            return
-
-        if self.ready_ticks > 0:
-            self.ready_ticks -= 1
-            if self.ready_ticks == 0:
-                self.ctx.play_transition_effect(colors.WHITE, 0.15, 0.12)
-        elif self.tick_counter >= self.ctx.cfg.logic_tick_rate:
+        if self.tick_counter >= self.ctx.cfg.logic_tick_rate:
             self.tick_counter = 0
             self.ctx.advance_ghost_mode_cycle()
             game_map.process()
@@ -95,11 +85,11 @@ class GameScene(Scene):
             self.ctx.high_score = self.ctx.score
 
         pacman = self.ctx.pacman
-        if pacman is not None and pacman.state == State.NONE and self.death_pause_ticks == 0:
+        if pacman is not None and pacman.state == State.NONE and self.transition is None:
             self.start_death_transition()
             return
 
-        if game_map.remaining_seeds() == 0 and self.level_complete_ticks == 0:
+        if game_map.remaining_seeds() == 0 and self.transition is None:
             self.start_level_complete_transition()
             return
 
@@ -109,39 +99,50 @@ class GameScene(Scene):
         self.ctx.lives -= 1
 
         if self.ctx.lives <= 0:
-            self.death_result = "lose"
-            self.death_pause_ticks = self.ctx.cfg.game_over_pause_ticks
+            self.transition = SceneTransition("death", self.ctx.cfg.game_over_pause_ticks, "lose")
             return
 
-        self.death_result = "reload"
-        self.death_pause_ticks = self.ctx.cfg.death_pause_ticks
+        self.transition = SceneTransition("death", self.ctx.cfg.death_pause_ticks, "reload")
 
-    def finish_death_transition(self) -> None:
-        if self.death_result == "lose":
+    def finish_transition(self) -> None:
+        if self.transition is None:
+            return
+
+        if self.transition.kind == "ready":
+            self.ctx.play_transition_effect(colors.WHITE, 0.15, 0.12)
+            self.transition = None
+            return
+
+        if self.transition.kind == "death" and self.transition.result == "lose":
             self.ctx.last_result = "lose"
             self.request_switch(RESULT_SCENE)
-            self.death_result = ""
+            self.transition = None
             return
 
-        # Reload current level's map
-        map_path = self.ctx.get_map_path()
-        self.ctx.reset_ghost_mode_cycle()
-        self.ctx.game_map = Map(self.ctx, path=map_path)
-        self.tick_counter = 0
-        self.ready_ticks = self.ctx.cfg.ready_duration_ticks
-        self.death_pause_ticks = 0
-        self.death_result = ""
-        self.level_complete_ticks = 0
-        self.transition_result = ""
+        if self.transition.kind == "death":
+            map_path = self.ctx.get_map_path()
+            self.ctx.reset_ghost_mode_cycle()
+            self.ctx.game_map = Map(self.ctx, path=map_path)
+            self.tick_counter = 0
+            self.transition = SceneTransition("ready", self.ctx.cfg.ready_duration_ticks)
+            return
+
+        if self.transition.kind == "level_complete":
+            self.ctx.last_result = self.transition.result or "level_complete"
+            self.request_switch(RESULT_SCENE)
+            self.transition = None
 
     def start_level_complete_transition(self) -> None:
-        self.level_complete_ticks = self.ctx.cfg.level_complete_duration_ticks
+        transition_result = "level_complete"
         if self.ctx.current_level >= self.TOTAL_LEVELS:
-            self.transition_result = "game_won"
-        else:
-            self.transition_result = "level_complete"
+            transition_result = "game_won"
         self.ctx.reset_ghost_combo()
         self.ctx.play_transition_effect(colors.GREEN, 0.25, 0.2, 3.0, 0.2)
+        self.transition = SceneTransition(
+            "level_complete",
+            self.ctx.cfg.level_complete_duration_ticks,
+            transition_result,
+        )
 
     def draw(self) -> None:
         game_map = self.ctx.game_map
@@ -162,11 +163,11 @@ class GameScene(Scene):
         # Draw HUD (not affected by shake)
         self.draw_hud()
 
-        if self.ready_ticks > 0:
+        if self.transition is not None and self.transition.kind == "ready":
             self.draw_ready_overlay()
-        elif self.death_pause_ticks > 0:
+        elif self.transition is not None and self.transition.kind == "death":
             self.draw_death_overlay()
-        elif self.level_complete_ticks > 0:
+        elif self.transition is not None and self.transition.kind == "level_complete":
             self.draw_level_complete_overlay()
 
         # Draw screen flash overlay
@@ -196,7 +197,7 @@ class GameScene(Scene):
         center_x = self.ctx.cfg.window_width // 2
         y = self.ctx.cfg.window_height // 2 - 18
 
-        if self.death_result == "lose":
+        if self.transition is not None and self.transition.result == "lose":
             message = "GAME OVER"
             message_color = colors.RED
         else:
@@ -210,7 +211,8 @@ class GameScene(Scene):
         center_x = self.ctx.cfg.window_width // 2
         y = self.ctx.cfg.window_height // 2 - 24
 
-        if self.transition_result == "game_won":
+        transition_result = self.transition.result if self.transition is not None else ""
+        if transition_result == "game_won":
             headline = "ALL CLEAR!"
             headline_color = colors.GOLD
             detail = "Final result incoming..."
