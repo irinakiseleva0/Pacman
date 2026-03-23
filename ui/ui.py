@@ -41,3 +41,16 @@ def draw_text_centered(text: str, center_x: int, y: int, font_size: int, color) 
     text_width = pyray.measure_text(text, font_size)
     x = int(center_x - text_width / 2)
     pyray.draw_text(text, x, y, font_size, color)
+
+
+def draw_shadowed_text_centered(
+    text: str,
+    center_x: int,
+    y: int,
+    font_size: int,
+    color,
+    shadow_color=colors.BLACK,
+    shadow_offset: int = 2,
+) -> None:
+    draw_text_centered(text, center_x + shadow_offset, y + shadow_offset, font_size, shadow_color)
+    draw_text_centered(text, center_x, y, font_size, color)

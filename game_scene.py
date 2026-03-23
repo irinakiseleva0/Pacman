@@ -10,7 +10,7 @@ from core.scene_ids import MENU_SCENE, PAUSE_SCENE, RESULT_SCENE
 from maps.class_map import Map
 from entities.pacman import State
 from ui.hud import draw_game_hud
-from ui.ui import draw_text_centered
+from ui.ui import draw_shadowed_text_centered, draw_text_centered
 
 
 @dataclass
@@ -190,8 +190,13 @@ class GameScene(Scene):
         text_size = 36
         y = self.ctx.cfg.window_height // 2 - 18
 
-        draw_text_centered(message, self.ctx.cfg.window_width // 2 + 2, y + 2, text_size, colors.BLACK)
-        draw_text_centered(message, self.ctx.cfg.window_width // 2, y, text_size, colors.YELLOW)
+        draw_shadowed_text_centered(
+            message,
+            self.ctx.cfg.window_width // 2,
+            y,
+            text_size,
+            colors.YELLOW,
+        )
 
     def draw_death_overlay(self) -> None:
         center_x = self.ctx.cfg.window_width // 2
@@ -204,8 +209,7 @@ class GameScene(Scene):
             message = "LIFE LOST"
             message_color = colors.RED
 
-        draw_text_centered(message, center_x + 2, y + 2, 34, colors.BLACK)
-        draw_text_centered(message, center_x, y, 34, message_color)
+        draw_shadowed_text_centered(message, center_x, y, 34, message_color)
 
     def draw_level_complete_overlay(self) -> None:
         center_x = self.ctx.cfg.window_width // 2
@@ -221,6 +225,5 @@ class GameScene(Scene):
             headline_color = colors.GREEN
             detail = "Preparing result..."
 
-        draw_text_centered(headline, center_x + 2, y + 2, 38, colors.BLACK)
-        draw_text_centered(headline, center_x, y, 38, headline_color)
+        draw_shadowed_text_centered(headline, center_x, y, 38, headline_color)
         draw_text_centered(detail, center_x, y + 42, 18, colors.WHITE)
