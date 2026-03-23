@@ -150,7 +150,9 @@ class Map:
 
     def load(self, path: str) -> None:
         with open(path, "r", encoding="utf-8") as file:
-            lines = [line.rstrip("\n") for line in file]
+            raw_lines = [line.rstrip("\n") for line in file]
+
+        lines = self._normalize_lines(raw_lines)
 
         self.static_layer.clear()
         self.dynamic_actors.clear()
@@ -178,6 +180,27 @@ class Map:
             for cell in row:
                 if isinstance(cell, Wall):
                     cell.set_key_from_map(self.static_layer)
+
+    def _normalize_lines(self, lines: List[str]) -> List[str]:
+        target_width = self.ctx.cfg.map_width
+        normalized: List[str] = []
+        adjusted = False
+
+        for line in lines:
+            if len(line) < target_width:
+                adjusted = True
+                normalized.append(line.ljust(target_width, "_"))
+            else:
+                adjusted = adjusted or len(line) > target_width
+                normalized.append(line[:target_width])
+
+        if adjusted:
+            print(
+                f"[Map] Normalized map rows to width {target_width}. "
+                "Consider cleaning the source map file."
+            )
+
+        return normalized
 
     def _create_cell(self, symbol: str) -> Cell:
         if symbol == "#":
