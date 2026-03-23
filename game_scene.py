@@ -153,7 +153,12 @@ class GameScene(Scene):
         if game_map is None:
             return
 
-        draw_game_hud(self.ctx, game_map.remaining_seeds(), game_map.cherry_status())
+        draw_game_hud(
+            self.ctx,
+            game_map.remaining_seeds(),
+            game_map.cherry_status(),
+            game_map.ghost_release_status(),
+        )
 
     def draw_ready_overlay(self) -> None:
         message = "READY!"

@@ -4,7 +4,12 @@ import pyray
 from raylib import colors
 
 
-def draw_game_hud(ctx, seeds_left: int, cherry_status: tuple[bool, int] | None = None) -> None:
+def draw_game_hud(
+    ctx,
+    seeds_left: int,
+    cherry_status: tuple[bool, int] | None = None,
+    ghost_release_status: tuple[int, int] | None = None,
+) -> None:
     rage_text = "ON" if getattr(ctx.pacman, "rage", False) else "OFF"
     difficulty_color = (
         colors.GREEN if ctx.difficulty == "Easy"
@@ -39,6 +44,11 @@ def draw_game_hud(ctx, seeds_left: int, cherry_status: tuple[bool, int] | None =
 
     if cherry_text is not None:
         lines.insert(5, (cherry_text, cherry_color))
+
+    if ghost_release_status is not None:
+        pending_ghosts, total_ghosts = ghost_release_status
+        release_text = f"Ghosts deploying: {pending_ghosts}/{total_ghosts}"
+        lines.insert(5, (release_text, colors.LIGHTGRAY))
 
     if rage_text == "ON":
         next_combo_score = ctx.next_ghost_combo_score()
