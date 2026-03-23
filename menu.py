@@ -11,11 +11,13 @@ from ui.ui import button_clicked, draw_button
 class Menu(Scene):
     BTN_W = 140
     BTN_H = 50
+    FOCUS_ORDER = ("Easy", "Normal", "Hard", "Start", "Exit")
 
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
         self.difficulty = "Normal"  # Default
+        self.focus_index = 1
         self.btn_easy = None
         self.btn_normal = None
         self.btn_hard = None
@@ -59,21 +61,58 @@ class Menu(Scene):
             self.BTN_W,
             self.BTN_H,
         )
+        self.focus_index = 1
 
     def update(self, dt: float) -> None:
+        self._handle_keyboard_navigation()
+
         if button_clicked(self.btn_easy):
             self.difficulty = "Easy"
+            self.focus_index = 0
         if button_clicked(self.btn_normal):
             self.difficulty = "Normal"
+            self.focus_index = 1
         if button_clicked(self.btn_hard):
             self.difficulty = "Hard"
+            self.focus_index = 2
         if button_clicked(self.btn_start):
+            self.focus_index = 3
             self._apply_difficulty()
             # Add start game effect
             self.ctx.screen_flash.flash(colors.YELLOW, 0.3, 0.4)
             self.request_switch(GAME_SCENE)
         if button_clicked(self.btn_exit):
+            self.focus_index = 4
             self.request_switch(EXIT_SCENE)
+
+    def _handle_keyboard_navigation(self) -> None:
+        if pyray.is_key_pressed(pyray.KEY_UP) or pyray.is_key_pressed(pyray.KEY_W):
+            self.focus_index = (self.focus_index - 1) % len(self.FOCUS_ORDER)
+        elif pyray.is_key_pressed(pyray.KEY_DOWN) or pyray.is_key_pressed(pyray.KEY_S):
+            self.focus_index = (self.focus_index + 1) % len(self.FOCUS_ORDER)
+        elif pyray.is_key_pressed(pyray.KEY_LEFT) or pyray.is_key_pressed(pyray.KEY_A):
+            if self.focus_index <= 2:
+                self.focus_index = (self.focus_index - 1) % 3
+        elif pyray.is_key_pressed(pyray.KEY_RIGHT) or pyray.is_key_pressed(pyray.KEY_D):
+            if self.focus_index <= 2:
+                self.focus_index = (self.focus_index + 1) % 3
+
+        if self.focus_index <= 2:
+            self.difficulty = self.FOCUS_ORDER[self.focus_index]
+
+        if (
+            pyray.is_key_pressed(pyray.KEY_ENTER)
+            or pyray.is_key_pressed(pyray.KEY_KP_ENTER)
+            or pyray.is_key_pressed(pyray.KEY_SPACE)
+        ):
+            if self.focus_index <= 2:
+                self.difficulty = self.FOCUS_ORDER[self.focus_index]
+            elif self.focus_index == 3:
+                self._apply_difficulty()
+                self.ctx.screen_flash.flash(colors.YELLOW, 0.3, 0.4)
+                self.request_switch(GAME_SCENE)
+            else:
+                self.request_switch(EXIT_SCENE)
 
     def _apply_difficulty(self) -> None:
         """Apply difficulty settings to the game config."""
@@ -88,9 +127,9 @@ class Menu(Scene):
 
         # Difficulty selection
         pyray.draw_text("Select Difficulty:", 120, 140, 24, colors.WHITE)
-        draw_button(self.btn_easy, "EASY")
-        draw_button(self.btn_normal, "NORMAL")
-        draw_button(self.btn_hard, "HARD")
+        draw_button(self.btn_easy, "EASY", focused=self.focus_index == 0)
+        draw_button(self.btn_normal, "NORMAL", focused=self.focus_index == 1)
+        draw_button(self.btn_hard, "HARD", focused=self.focus_index == 2)
 
         # Show selected difficulty
         selected_color = colors.GREEN if self.difficulty == "Easy" else \
@@ -105,5 +144,6 @@ class Menu(Scene):
             summary_y += 22
 
         # Action buttons
-        draw_button(self.btn_start, "START GAME")
-        draw_button(self.btn_exit, "EXIT")
+        draw_button(self.btn_start, "START GAME", focused=self.focus_index == 3)
+        draw_button(self.btn_exit, "EXIT", focused=self.focus_index == 4)
+        pyray.draw_text("W/S or Arrows to move, Enter to confirm", 70, 445, 18, colors.LIGHTGRAY)
