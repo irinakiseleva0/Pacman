@@ -37,6 +37,15 @@ class Cherry(Cell):
             self.timer -= 1
             if self.timer == 0:
                 self.enabled = True
+                self.ctx.particles.create_cherry_respawn_effect(self.x, self.y)
+                self.ctx.floating_text.add_text(
+                    "CHERRY",
+                    self.x * self.ctx.cfg.tile_size - 4,
+                    self.y * self.ctx.cfg.tile_size - 12,
+                    colors.GOLD,
+                    0.9,
+                    12,
+                )
 
     def draw(self) -> None:
         if not self.enabled:

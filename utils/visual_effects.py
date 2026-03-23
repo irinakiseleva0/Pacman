@@ -124,6 +124,26 @@ class ParticleSystem:
                 particle_color, random.uniform(2, 4)
             ))
 
+    def create_cherry_respawn_effect(self, x: int, y: int) -> None:
+        """Create a softer sparkle when a cherry returns."""
+        center_x = x * 16 + 8
+        center_y = y * 16 + 8
+
+        num_particles = random.randint(6, 9)
+        palette = (colors.GOLD, colors.PINK, colors.WHITE)
+        for _ in range(num_particles):
+            angle = random.uniform(0, 2 * math.pi)
+            speed = random.uniform(18, 35)
+            vx = math.cos(angle) * speed
+            vy = math.sin(angle) * speed
+            lifetime = random.uniform(0.35, 0.65)
+            particle_color = random.choice(palette)
+
+            self.add_particle(Particle(
+                center_x, center_y, vx, vy, lifetime,
+                particle_color, random.uniform(1, 3)
+            ))
+
     def create_ghost_eat_effect(self, x: int, y: int) -> None:
         """Create particles when eating a ghost."""
         center_x = x * 16 + 8
