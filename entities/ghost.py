@@ -21,12 +21,16 @@ class Ghost(Actor):
         self.mode = "chase"  # chase, scatter, frightened
         self.scatter_target = (0, 0)
         self.respawn_lock_ticks = 0
+        self.release_delay_ticks = 0
 
     def _get_draw_color(self):
         if self.respawn_lock_ticks > 0:
             if (self.respawn_lock_ticks // 2) % 2 == 0:
                 return colors.WHITE
             return colors.SKYBLUE
+
+        if self.release_delay_ticks > 0:
+            return colors.GRAY
 
         pacman = self.ctx.pacman
         if not getattr(pacman, "rage", False):
@@ -62,6 +66,9 @@ class Ghost(Actor):
         self.respawn_lock_ticks = self.EATEN_RESPAWN_TICKS
         self.last_dx = 0
         self.last_dy = 0
+
+    def set_release_delay(self, ticks: int) -> None:
+        self.release_delay_ticks = max(0, ticks)
 
     def _update_mode(self) -> None:
         pacman = self.ctx.pacman
@@ -122,6 +129,10 @@ class Ghost(Actor):
         pacman = self.ctx.pacman
 
         if game_map is None or pacman is None:
+            return
+
+        if self.release_delay_ticks > 0:
+            self.release_delay_ticks -= 1
             return
 
         if self.respawn_lock_ticks > 0:

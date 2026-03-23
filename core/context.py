@@ -103,6 +103,7 @@ class Config:
     cherry_respawn_tick_min: int = 45
     ready_duration_ticks: int = 45
     level_complete_duration_ticks: int = 30
+    ghost_release_tick_interval: int = 18
 
     # Score Values
     seed_score: int = 10

@@ -285,8 +285,10 @@ class Map:
         if symbol == "g":
             # Create different ghost personalities in order
             ghost_classes = [Blinky, Pinky, Inky, Clyde]
-            ghost_class = ghost_classes[self.ghost_counter % len(
-                ghost_classes)]
+            ghost_index = self.ghost_counter
+            ghost_class = ghost_classes[ghost_index % len(ghost_classes)]
             self.ghost_counter += 1
-            return ghost_class(self.ctx)
+            ghost = ghost_class(self.ctx)
+            ghost.set_release_delay(ghost_index * self.ctx.cfg.ghost_release_tick_interval)
+            return ghost
         return None
