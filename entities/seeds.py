@@ -54,6 +54,12 @@ class LargeSeed(Cell):
             self.ctx.score += score_value
             actor.enable_rage(self.ctx.effective_rage_duration())
 
+            game_map = self.ctx.game_map
+            if game_map is not None:
+                game_map.stall_unreleased_ghosts(
+                    self.ctx.cfg.ghost_fright_release_stall_ticks
+                )
+
             # Add visual effects
             self.ctx.particles.create_large_seed_eat_effect(self.x, self.y)
             self.ctx.floating_text.add_score_text(

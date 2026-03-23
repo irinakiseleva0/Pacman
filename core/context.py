@@ -114,6 +114,7 @@ class Config:
     ghost_release_tick_interval: int = 18
     ghost_release_tick_step: int = 2
     ghost_release_tick_min: int = 6
+    ghost_fright_release_stall_ticks: int = 10
 
     # Score Values
     seed_score: int = 10

@@ -123,6 +123,10 @@ class Ghost(Actor):
     def set_release_delay(self, ticks: int) -> None:
         self.release_delay_ticks = max(0, ticks)
 
+    def stall_release(self, ticks: int) -> None:
+        if self.release_delay_ticks > 0:
+            self.release_delay_ticks += max(0, ticks)
+
     def is_harmless(self) -> bool:
         return self.returning_home or self.respawn_lock_ticks > 0 or self.release_delay_ticks > 0
 

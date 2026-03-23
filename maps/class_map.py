@@ -194,6 +194,11 @@ class Map:
 
         return returning_ghosts, total_ghosts
 
+    def stall_unreleased_ghosts(self, ticks: int) -> None:
+        for actor in self.dynamic_actors:
+            if isinstance(actor, Ghost):
+                actor.stall_release(ticks)
+
     def item_counts(self) -> tuple[int, int, int]:
         dots = 0
         large_seeds = 0
