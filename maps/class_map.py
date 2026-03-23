@@ -117,6 +117,14 @@ class Map:
         for actor in self.dynamic_actors:
             actor.draw()
 
+    def remaining_seeds(self) -> int:
+        total = 0
+        for row in self.static_layer:
+            for cell in row:
+                if isinstance(cell, Seed) and getattr(cell, "enabled", False):
+                    total += 1
+        return total
+
     def load(self, path: str) -> None:
         with open(path, "r", encoding="utf-8") as file:
             lines = [line.rstrip("\n") for line in file]

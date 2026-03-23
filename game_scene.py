@@ -7,7 +7,6 @@ from core.scene import Scene
 from core.scene_ids import MENU_SCENE, PAUSE_SCENE, RESULT_SCENE
 from maps.class_map import Map
 from entities.pacman import State
-from entities.seeds import Seed
 from ui.hud import draw_game_hud
 from ui.ui import draw_text_centered
 
@@ -78,7 +77,7 @@ class GameScene(Scene):
             self.handle_pacman_death()
             return
 
-        if self.remaining_seeds() == 0:
+        if game_map.remaining_seeds() == 0:
             self.ctx.last_result = "level_complete"
             self.request_switch(RESULT_SCENE)
             return
@@ -128,19 +127,11 @@ class GameScene(Scene):
         self.ctx.screen_flash.draw()
 
     def draw_hud(self) -> None:
-        draw_game_hud(self.ctx, self.remaining_seeds())
-
-    def remaining_seeds(self) -> int:
         game_map = self.ctx.game_map
         if game_map is None:
-            return 0
+            return
 
-        total = 0
-        for row in game_map.static_layer:
-            for cell in row:
-                if isinstance(cell, Seed) and getattr(cell, "enabled", False):
-                    total += 1
-        return total
+        draw_game_hud(self.ctx, game_map.remaining_seeds())
 
     def draw_ready_overlay(self) -> None:
         message = "READY!"
