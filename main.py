@@ -9,11 +9,13 @@ from menu import Menu
 from game_scene import GameScene
 from result_scene import ResultScene
 from pause_scene import PauseScene
+from ui.layout import DEFAULT_LAYOUT
 
 
 class Game:
     def __init__(self) -> None:
         self.ctx = GameContext()
+        self.ctx.apply_layout(DEFAULT_LAYOUT)
 
         self.current_scene_index = MENU_SCENE
         self.scenes = [

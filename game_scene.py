@@ -178,12 +178,28 @@ class GameScene(Scene):
         if game_map is None:
             return
 
+        cfg = self.ctx.cfg
+        hud_rect = pyray.Rectangle(cfg.hud_x, cfg.hud_y, cfg.hud_width, cfg.hud_height)
+        pyray.draw_rectangle_rec(hud_rect, colors.DARKGRAY)
+
+        if cfg.hud_mode == "side":
+            pyray.draw_line(cfg.hud_x, 0, cfg.hud_x, cfg.window_height, colors.YELLOW)
+        else:
+            pyray.draw_line(0, cfg.hud_y, cfg.window_width, cfg.hud_y, colors.YELLOW)
+
         draw_game_hud(
             self.ctx,
             game_map.remaining_seeds(),
             game_map.cherry_status(),
             game_map.ghost_release_status(),
             game_map.ghost_return_status(),
+            x=cfg.hud_x + 12,
+            y=12 if cfg.hud_mode == "side" else cfg.hud_y + 10,
+            width=cfg.hud_width - 24,
+            height=cfg.hud_height - 20,
+            font_size=cfg.hud_font_size,
+            line_height=cfg.hud_line_height,
+            columns=cfg.hud_columns,
         )
 
     def draw_ready_overlay(self) -> None:

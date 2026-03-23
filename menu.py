@@ -10,8 +10,6 @@ from ui.ui import button_clicked, centered_rect, draw_button, draw_text_centered
 
 
 class Menu(Scene):
-    BTN_W = 190
-    BTN_H = 52
     FOCUS_ORDER = ("Easy", "Normal", "Hard", "Start", "Exit")
 
     def __init__(self, ctx):
@@ -26,17 +24,20 @@ class Menu(Scene):
         self.btn_exit = None
 
     def enter_tree(self) -> None:
+        cfg = self.ctx.cfg
         cx = self.ctx.cfg.window_width // 2
         top_y = 150
         button_gap = 16
+        btn_w = cfg.menu_button_width
+        btn_h = cfg.menu_button_height
 
-        self.btn_easy = centered_rect(cx, top_y, self.BTN_W, self.BTN_H)
-        self.btn_normal = centered_rect(cx, top_y + self.BTN_H + button_gap, self.BTN_W, self.BTN_H)
-        self.btn_hard = centered_rect(cx, top_y + (self.BTN_H + button_gap) * 2, self.BTN_W, self.BTN_H)
+        self.btn_easy = centered_rect(cx, top_y, btn_w, btn_h)
+        self.btn_normal = centered_rect(cx, top_y + btn_h + button_gap, btn_w, btn_h)
+        self.btn_hard = centered_rect(cx, top_y + (btn_h + button_gap) * 2, btn_w, btn_h)
 
-        action_start_y = top_y + (self.BTN_H + button_gap) * 3 + 92
-        self.btn_start = centered_rect(cx, action_start_y, self.BTN_W, self.BTN_H)
-        self.btn_exit = centered_rect(cx, action_start_y + self.BTN_H + button_gap, self.BTN_W, self.BTN_H)
+        action_start_y = top_y + (btn_h + button_gap) * 3 + 92
+        self.btn_start = centered_rect(cx, action_start_y, btn_w, btn_h)
+        self.btn_exit = centered_rect(cx, action_start_y + btn_h + button_gap, btn_w, btn_h)
         self.navigator.reset(1)
 
     def update(self, dt: float) -> None:
@@ -86,11 +87,12 @@ class Menu(Scene):
         return list(self.ctx.difficulty_summary_lines(self.difficulty))
 
     def draw(self) -> None:
+        cfg = self.ctx.cfg
         center_x = self.ctx.cfg.window_width // 2
-        draw_text_centered("PACMAN", center_x, 56, 56, colors.YELLOW)
+        draw_text_centered("PACMAN", center_x, 56, cfg.menu_title_size, colors.YELLOW)
 
         # Difficulty selection
-        draw_text_centered("Select Difficulty", center_x, 112, 24, colors.WHITE)
+        draw_text_centered("Select Difficulty", center_x, 112, cfg.menu_heading_size, colors.WHITE)
         draw_button(self.btn_easy, "EASY", focused=self.navigator.focus_index == 0)
         draw_button(self.btn_normal, "NORMAL", focused=self.navigator.focus_index == 1)
         draw_button(self.btn_hard, "HARD", focused=self.navigator.focus_index == 2)
@@ -103,22 +105,22 @@ class Menu(Scene):
             f"Selected: {self.difficulty}",
             center_x,
             330,
-            22,
+            cfg.menu_body_size + 2,
             selected_color,
         )
 
         summary_y = 362
         for line in self._difficulty_summary_lines():
-            draw_text_centered(line, center_x, summary_y, 18, colors.LIGHTGRAY)
+            draw_text_centered(line, center_x, summary_y, cfg.menu_body_size, colors.LIGHTGRAY)
             summary_y += 24
 
         # Action buttons
         draw_button(self.btn_start, "START GAME", focused=self.navigator.focus_index == 3)
         draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 4)
         draw_text_centered(
-            "W/S or Arrows to move, Enter to confirm",
+            f"Layout: {cfg.layout_name.upper()}  |  W/S or Arrows to move, Enter to confirm",
             center_x,
             self.ctx.cfg.window_height - 36,
-            18,
+            cfg.menu_footer_size,
             colors.LIGHTGRAY,
         )

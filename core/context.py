@@ -5,6 +5,7 @@ from typing import Optional
 
 from raylib import colors
 
+from ui.layout import DEFAULT_LAYOUT, LAYOUT_PROFILES
 from utils.score_storage import load_high_score
 from utils.visual_effects import ParticleSystem, ScreenShake, FloatingTextSystem, ScreenFlash
 
@@ -87,9 +88,21 @@ DIFFICULTY_PRESETS: dict[str, DifficultyPreset] = {
 class Config:
     # Display & Map
     fps: int = 16
+    layout_name: str = DEFAULT_LAYOUT
     tile_size: int = 20
     map_width: int = 28
     map_height: int = 30
+    hud_mode: str = "side"
+    hud_extent: int = 250
+    menu_button_width: int = 220
+    menu_button_height: int = 56
+    menu_title_size: int = 64
+    menu_heading_size: int = 26
+    menu_body_size: int = 20
+    menu_footer_size: int = 18
+    hud_font_size: int = 22
+    hud_line_height: int = 28
+    hud_columns: int = 1
 
     # Game Speed & Timing
     logic_tick_rate: int = 3
@@ -126,12 +139,48 @@ class Config:
     initial_lives: int = 3
 
     @property
-    def window_width(self) -> int:
+    def board_width(self) -> int:
         return self.map_width * self.tile_size
 
     @property
-    def window_height(self) -> int:
+    def board_height(self) -> int:
         return self.map_height * self.tile_size
+
+    @property
+    def window_width(self) -> int:
+        if self.hud_mode == "side":
+            return self.board_width + self.hud_extent
+        return self.board_width
+
+    @property
+    def window_height(self) -> int:
+        if self.hud_mode == "bottom":
+            return self.board_height + self.hud_extent
+        return self.board_height
+
+    @property
+    def hud_x(self) -> int:
+        if self.hud_mode == "side":
+            return self.board_width
+        return 0
+
+    @property
+    def hud_y(self) -> int:
+        if self.hud_mode == "bottom":
+            return self.board_height
+        return 0
+
+    @property
+    def hud_width(self) -> int:
+        if self.hud_mode == "side":
+            return self.hud_extent
+        return self.board_width
+
+    @property
+    def hud_height(self) -> int:
+        if self.hud_mode == "bottom":
+            return self.hud_extent
+        return self.board_height
 
 
 @dataclass
@@ -160,9 +209,27 @@ class GameContext:
     game_map: Optional[object] = None
 
     def __post_init__(self):
+        self.apply_layout(self.cfg.layout_name)
         # Initialize lives from config if not already set
         if self.lives == 3:
             self.lives = self.cfg.initial_lives
+
+    def apply_layout(self, layout_name: str) -> None:
+        profile = LAYOUT_PROFILES[layout_name]
+        self.cfg.layout_name = profile.name
+        self.cfg.tile_size = profile.tile_size
+        self.cfg.hud_mode = profile.hud_mode
+        self.cfg.hud_extent = profile.hud_extent
+        self.cfg.menu_button_width = profile.menu_button_width
+        self.cfg.menu_button_height = profile.menu_button_height
+        self.cfg.menu_title_size = profile.menu_title_size
+        self.cfg.menu_heading_size = profile.menu_heading_size
+        self.cfg.menu_body_size = profile.menu_body_size
+        self.cfg.menu_footer_size = profile.menu_footer_size
+        self.cfg.hud_font_size = profile.hud_font_size
+        self.cfg.hud_line_height = profile.hud_line_height
+        self.cfg.hud_columns = profile.hud_columns
+        self.screen_flash.set_size(self.cfg.window_width, self.cfg.window_height)
 
     def reset_run_state(self) -> None:
         """Reset progress for a fresh run without touching persistent data."""

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pyray
 from raylib import colors
 
@@ -12,6 +14,14 @@ def draw_game_hud(
     cherry_status: tuple[bool, int] | None = None,
     ghost_release_status: tuple[int, int] | None = None,
     ghost_return_status: tuple[int, int] | None = None,
+    *,
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    font_size: int,
+    line_height: int,
+    columns: int,
 ) -> None:
     rage_text = "ON" if getattr(ctx.pacman, "rage", False) else "OFF"
     difficulty_color = (
@@ -69,9 +79,22 @@ def draw_game_hud(
         if 0 < rage_timer <= Ghost.FRIGHTENED_BLINK_TICKS:
             lines.insert(7, ("Rage ending soon!", colors.ORANGE))
 
-    x = 10
-    y = 10
-    line_height = 24
-    for text, color in lines:
-        pyray.draw_text(text, x, y, 20, color)
-        y += line_height
+    title = "RUN STATUS"
+    title_size = font_size + 6
+    title_width = pyray.measure_text(title, title_size)
+    title_x = int(x + (width - title_width) / 2)
+    pyray.draw_text(title, title_x, y, title_size, colors.YELLOW)
+
+    content_y = y + title_size + 14
+    column_count = max(1, columns)
+    column_width = max(1, width // column_count)
+    rows_per_column = max(1, math.ceil(len(lines) / column_count))
+
+    for index, (text, color) in enumerate(lines):
+        column = min(column_count - 1, index // rows_per_column)
+        row = index % rows_per_column
+        draw_x = x + column * column_width
+        draw_y = content_y + row * line_height
+        if draw_y + font_size > y + height:
+            break
+        pyray.draw_text(text, draw_x, draw_y, font_size, color)
