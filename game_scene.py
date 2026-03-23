@@ -10,6 +10,7 @@ from core.scene_ids import MENU_SCENE, PAUSE_SCENE, RESULT_SCENE
 from maps.class_map import Map
 from entities.pacman import State
 from ui.hud import draw_game_hud
+from ui.mobile_controls import draw_mobile_controls, handle_mobile_controls
 from ui.ui import draw_shadowed_text_centered, draw_text_centered
 
 
@@ -57,6 +58,11 @@ class GameScene(Scene):
             return
 
         if pyray.is_key_pressed(pyray.KEY_P):
+            self.request_switch(PAUSE_SCENE)
+            return
+
+        mobile_action = handle_mobile_controls(self.ctx)
+        if mobile_action == "pause":
             self.request_switch(PAUSE_SCENE)
             return
 
@@ -187,20 +193,32 @@ class GameScene(Scene):
         else:
             pyray.draw_line(0, cfg.hud_y, cfg.window_width, cfg.hud_y, colors.YELLOW)
 
+        hud_x = cfg.hud_x + 12
+        hud_y = 12 if cfg.hud_mode == "side" else cfg.hud_y + 10
+        hud_width = cfg.hud_width - 24
+        hud_columns = cfg.hud_columns
+
+        if cfg.layout_name == "mobile":
+            controls_width = min(220, max(180, cfg.hud_width // 2))
+            hud_width = max(150, cfg.hud_width - controls_width - 28)
+            hud_columns = 1
+
         draw_game_hud(
             self.ctx,
             game_map.remaining_seeds(),
             game_map.cherry_status(),
             game_map.ghost_release_status(),
             game_map.ghost_return_status(),
-            x=cfg.hud_x + 12,
-            y=12 if cfg.hud_mode == "side" else cfg.hud_y + 10,
-            width=cfg.hud_width - 24,
+            x=hud_x,
+            y=hud_y,
+            width=hud_width,
             height=cfg.hud_height - 20,
             font_size=cfg.hud_font_size,
             line_height=cfg.hud_line_height,
-            columns=cfg.hud_columns,
+            columns=hud_columns,
         )
+
+        draw_mobile_controls(self.ctx)
 
     def draw_ready_overlay(self) -> None:
         message = "READY!"

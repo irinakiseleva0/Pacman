@@ -119,6 +119,13 @@ class Pacman(Actor):
                 self.state = self.next_state
                 self.pacman_sprite.set_key(self.state, False)
 
+    def queue_direction(self, state: str) -> None:
+        if state not in (State.UP, State.DOWN, State.LEFT, State.RIGHT):
+            return
+        if self.state in (State.NONE, State.DEAD):
+            return
+        self.next_state = state
+
     def process(self) -> None:
         if self.state in (State.NONE, State.DEAD):
             return
@@ -173,4 +180,4 @@ class Pacman(Actor):
 
         for key, state in keys.items():
             if pyray.is_key_pressed(key):
-                self.next_state = state
+                self.queue_direction(state)
