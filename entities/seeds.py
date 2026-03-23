@@ -49,14 +49,15 @@ class LargeSeed(Cell):
 
     def on_enter(self, actor) -> None:
         if getattr(actor, "kind", None) == "pacman" and self.enabled:
+            score_value = self.ctx.effective_large_seed_score()
             self.enabled = False
-            self.ctx.score += self.ctx.cfg.large_seed_score
+            self.ctx.score += score_value
             actor.enable_rage(self.ctx.effective_rage_duration())
 
             # Add visual effects
             self.ctx.particles.create_large_seed_eat_effect(self.x, self.y)
             self.ctx.floating_text.add_score_text(
-                self.ctx.cfg.large_seed_score, self.x, self.y)
+                score_value, self.x, self.y)
             self.ctx.screen_shake.shake(6.0, 0.4)
             self.ctx.screen_flash.flash(colors.WHITE, 0.2, 0.15)
 

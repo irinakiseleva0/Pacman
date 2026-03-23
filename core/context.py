@@ -106,6 +106,7 @@ class Config:
     cherry_respawn_tick_step: int = 10
     cherry_respawn_tick_min: int = 45
     cherry_score_step: int = 100
+    large_seed_score_step: int = 25
     ready_duration_ticks: int = 45
     death_pause_ticks: int = 24
     game_over_pause_ticks: int = 36
@@ -248,6 +249,10 @@ class GameContext:
     def effective_cherry_score(self) -> int:
         level_offset = max(0, self.current_level - 1)
         return self.cfg.cherry_score + level_offset * self.cfg.cherry_score_step
+
+    def effective_large_seed_score(self) -> int:
+        level_offset = max(0, self.current_level - 1)
+        return self.cfg.large_seed_score + level_offset * self.cfg.large_seed_score_step
 
     def effective_ghost_release_interval(self) -> int:
         level_offset = max(0, self.current_level - 1)
