@@ -57,6 +57,9 @@ class Cell(ABC):
     def on_enter(self, actor: Actor) -> None:
         pass
 
+    def tick(self) -> None:
+        pass
+
     @abstractmethod
     def draw(self) -> None:
         pass

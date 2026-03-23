@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import pyray
 from raylib import colors
-from entities.cell import Cell, Actor
+
 from assets.assets import Assets
+from entities.cell import Actor, Cell
 
 
 class Cherry(Cell):
@@ -17,21 +19,20 @@ class Cherry(Cell):
     def on_enter(self, actor: Actor) -> None:
         if not self.enabled:
             return
-        if getattr(actor, "kind", "pacman") != "pacman":
+        if getattr(actor, "kind", None) != "pacman":
             return
 
         self.enabled = False
         self.ctx.score += self.ctx.cfg.cherry_score
         self.timer = self.ctx.cfg.cherry_respawn_ticks
 
-        # Add visual effects
-        self.ctx.particles.create_large_seed_eat_effect(
-            self.x, self.y)  # Reuse large effect for cherry
+        # Reuse the large-seed effect for now to keep the change minimal.
+        self.ctx.particles.create_large_seed_eat_effect(self.x, self.y)
         self.ctx.floating_text.add_score_text(
-            self.ctx.cfg.cherry_score, self.x, self.y)
+            self.ctx.cfg.cherry_score, self.x, self.y
+        )
         self.ctx.screen_shake.shake(5.0, 0.35)
 
-    # если хочешь респавн — это уже "tick", но можно оставить здесь
     def tick(self) -> None:
         if self.timer > 0:
             self.timer -= 1
@@ -41,6 +42,12 @@ class Cherry(Cell):
     def draw(self) -> None:
         if not self.enabled:
             return
+
         cfg = self.ctx.cfg
         pyray.draw_texture_ex(
-            self.image, (self.x*cfg.tile_size, self.y*cfg.tile_size), 0.0, 1.0, colors.WHITE)
+            self.image,
+            (self.x * cfg.tile_size, self.y * cfg.tile_size),
+            0.0,
+            1.0,
+            colors.WHITE,
+        )

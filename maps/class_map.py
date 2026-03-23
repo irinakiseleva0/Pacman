@@ -9,6 +9,7 @@ from entities.empty_cell import EmptyCell
 from entities.wall import Wall
 from entities.door import Door
 from entities.teleport import Teleport
+from entities.cherry import Cherry
 from entities.seeds import Seed, LargeSeed
 from entities.pacman import Pacman
 from entities.ghost import Ghost, Blinky, Pinky, Inky, Clyde
@@ -106,6 +107,10 @@ class Map:
             actor.frame(actor.x, actor.y)
 
     def process(self) -> None:
+        for row in self.static_layer:
+            for cell in row:
+                cell.tick()
+
         for actor in self.dynamic_actors:
             actor.process()
 
@@ -167,6 +172,8 @@ class Map:
             return Seed(self.ctx)
         if symbol == "s":
             return LargeSeed(self.ctx)
+        if symbol == "c":
+            return Cherry(self.ctx)
 
         return EmptyCell(self.ctx)
 
