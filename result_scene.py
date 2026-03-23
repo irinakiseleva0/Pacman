@@ -5,6 +5,7 @@ from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import GAME_SCENE, MENU_SCENE
+from ui.navigation import ButtonNavigator
 from ui.ui import button_clicked, draw_button, draw_text_centered
 from utils.score_storage import save_high_score
 
@@ -18,6 +19,7 @@ class ResultScene(Scene):
         super().__init__()
         self.ctx = ctx
         self.btn_action = None
+        self.navigator = ButtonNavigator(1)
 
     def enter_tree(self) -> None:
         # Save high score when entering result screen
@@ -34,12 +36,9 @@ class ResultScene(Scene):
         )
 
     def update(self, dt: float) -> None:
-        if (
-            button_clicked(self.btn_action)
-            or pyray.is_key_pressed(pyray.KEY_ENTER)
-            or pyray.is_key_pressed(pyray.KEY_KP_ENTER)
-            or pyray.is_key_pressed(pyray.KEY_SPACE)
-        ):
+        self.navigator.move_vertical()
+
+        if button_clicked(self.btn_action) or self.navigator.confirm_pressed():
             self._activate_primary_action()
 
     def _activate_primary_action(self) -> None:

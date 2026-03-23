@@ -5,6 +5,7 @@ from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE, MENU_SCENE
+from ui.navigation import ButtonNavigator
 from ui.ui import button_clicked, draw_button, draw_text_centered
 from utils.visual_effects import with_alpha
 
@@ -13,10 +14,10 @@ class PauseScene(Scene):
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
-        self.focus_index = 0
+        self.navigator = ButtonNavigator(3)
 
     def enter_tree(self) -> None:
-        self.focus_index = 0
+        self.navigator.reset(0)
 
     def update(self, dt: float) -> None:
         # ESC or P -> resume back to game
@@ -29,42 +30,35 @@ class PauseScene(Scene):
 
         # Resume button
         if button_clicked(pyray.Rectangle(154, 220, 140, 45)):
-            self.focus_index = 0
+            self.navigator.focus_index = 0
             self._activate_focused_action()
             return
 
         # Back to Menu button
         if button_clicked(pyray.Rectangle(154, 280, 140, 45)):
-            self.focus_index = 1
+            self.navigator.focus_index = 1
             self._activate_focused_action()
             return
 
         # Exit button
         if button_clicked(pyray.Rectangle(154, 340, 140, 45)):
-            self.focus_index = 2
+            self.navigator.focus_index = 2
             self._activate_focused_action()
             return
 
     def _handle_keyboard_navigation(self) -> None:
-        if pyray.is_key_pressed(pyray.KEY_UP) or pyray.is_key_pressed(pyray.KEY_W):
-            self.focus_index = (self.focus_index - 1) % 3
-        elif pyray.is_key_pressed(pyray.KEY_DOWN) or pyray.is_key_pressed(pyray.KEY_S):
-            self.focus_index = (self.focus_index + 1) % 3
+        self.navigator.move_vertical()
 
-        if (
-            pyray.is_key_pressed(pyray.KEY_ENTER)
-            or pyray.is_key_pressed(pyray.KEY_KP_ENTER)
-            or pyray.is_key_pressed(pyray.KEY_SPACE)
-        ):
+        if self.navigator.confirm_pressed():
             self._activate_focused_action()
 
     def _activate_focused_action(self) -> None:
-        if self.focus_index == 0:
+        if self.navigator.focus_index == 0:
             self.ctx.should_resume_game = True
             self.request_switch(GAME_SCENE)
             return
 
-        if self.focus_index == 1:
+        if self.navigator.focus_index == 1:
             self.ctx.reset_run_state()
             self.request_switch(MENU_SCENE)
             return
@@ -81,9 +75,9 @@ class PauseScene(Scene):
         draw_text_centered("PAUSED", self.ctx.cfg.window_width // 2, 150, 40, colors.YELLOW)
         self._draw_summary()
 
-        draw_button(pyray.Rectangle(154, 220, 140, 45), "RESUME", focused=self.focus_index == 0)
-        draw_button(pyray.Rectangle(154, 280, 140, 45), "MENU", focused=self.focus_index == 1)
-        draw_button(pyray.Rectangle(154, 340, 140, 45), "EXIT", focused=self.focus_index == 2)
+        draw_button(pyray.Rectangle(154, 220, 140, 45), "RESUME", focused=self.navigator.focus_index == 0)
+        draw_button(pyray.Rectangle(154, 280, 140, 45), "MENU", focused=self.navigator.focus_index == 1)
+        draw_button(pyray.Rectangle(154, 340, 140, 45), "EXIT", focused=self.navigator.focus_index == 2)
 
         draw_text_centered("ESC or P = RESUME", self.ctx.cfg.window_width // 2, 410, 16, colors.WHITE)
         draw_text_centered("W/S or Arrows to move, Enter to confirm", self.ctx.cfg.window_width // 2, 430, 16, colors.LIGHTGRAY)
