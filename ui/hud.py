@@ -16,12 +16,14 @@ def draw_game_hud(ctx, seeds_left: int, cherry_status: tuple[bool, int] | None =
     cherry_text = None
     cherry_color = colors.WHITE
     if cherry_status is not None:
-        cherry_ready, cherry_timer = cherry_status
+        cherry_ready, cherry_value = cherry_status
         if cherry_ready:
             cherry_text = "Cherry: READY"
+            if cherry_value > 1:
+                cherry_text = f"Cherry: READY x{cherry_value}"
             cherry_color = colors.GOLD
         else:
-            cherry_text = f"Cherry: {cherry_timer}"
+            cherry_text = f"Cherry: {cherry_value}"
             cherry_color = colors.GRAY
 
     lines = [

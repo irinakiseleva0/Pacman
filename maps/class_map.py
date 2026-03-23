@@ -131,10 +131,21 @@ class Map:
         return total
 
     def cherry_status(self) -> tuple[bool, int] | None:
+        ready_count = 0
+        cooldown_timers: list[int] = []
+
         for row in self.static_layer:
             for cell in row:
                 if isinstance(cell, Cherry):
-                    return cell.enabled, cell.timer
+                    if cell.enabled:
+                        ready_count += 1
+                    elif cell.timer > 0:
+                        cooldown_timers.append(cell.timer)
+
+        if ready_count > 0:
+            return True, ready_count
+        if cooldown_timers:
+            return False, min(cooldown_timers)
         return None
 
     def load(self, path: str) -> None:
