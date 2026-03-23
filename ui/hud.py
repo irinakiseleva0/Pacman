@@ -11,6 +11,7 @@ def draw_game_hud(
     seeds_left: int,
     cherry_status: tuple[bool, int] | None = None,
     ghost_release_status: tuple[int, int] | None = None,
+    ghost_return_status: tuple[int, int] | None = None,
 ) -> None:
     rage_text = "ON" if getattr(ctx.pacman, "rage", False) else "OFF"
     difficulty_color = (
@@ -52,6 +53,11 @@ def draw_game_hud(
         pending_ghosts, total_ghosts = ghost_release_status
         release_text = f"Ghosts deploying: {pending_ghosts}/{total_ghosts}"
         lines.insert(5, (release_text, colors.LIGHTGRAY))
+
+    if ghost_return_status is not None:
+        returning_ghosts, total_ghosts = ghost_return_status
+        return_text = f"Ghosts returning: {returning_ghosts}/{total_ghosts}"
+        lines.insert(5, (return_text, colors.WHITE))
 
     if rage_text == "ON":
         next_combo_score = ctx.next_ghost_combo_score()

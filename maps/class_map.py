@@ -179,6 +179,21 @@ class Map:
 
         return pending_releases, total_ghosts
 
+    def ghost_return_status(self) -> tuple[int, int] | None:
+        total_ghosts = 0
+        returning_ghosts = 0
+
+        for actor in self.dynamic_actors:
+            if isinstance(actor, Ghost):
+                total_ghosts += 1
+                if actor.returning_home:
+                    returning_ghosts += 1
+
+        if total_ghosts == 0 or returning_ghosts == 0:
+            return None
+
+        return returning_ghosts, total_ghosts
+
     def item_counts(self) -> tuple[int, int, int]:
         dots = 0
         large_seeds = 0

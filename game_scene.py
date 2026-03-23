@@ -183,6 +183,7 @@ class GameScene(Scene):
             game_map.remaining_seeds(),
             game_map.cherry_status(),
             game_map.ghost_release_status(),
+            game_map.ghost_return_status(),
         )
 
     def draw_ready_overlay(self) -> None:
