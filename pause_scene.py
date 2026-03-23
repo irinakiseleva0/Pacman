@@ -58,14 +58,19 @@ class PauseScene(Scene):
         draw_text_centered("ESC or P = RESUME", self.ctx.cfg.window_width // 2, 410, 16, colors.WHITE)
 
     def _draw_summary(self) -> None:
+        ghost_chase_ticks, ghost_scatter_ticks = self.ctx.effective_ghost_cycle()
         summary_lines = [
             f"Score: {self.ctx.score}",
             f"Lives: {self.ctx.lives}",
+            f"Level: {self.ctx.current_level}",
             f"Mode: {self.ctx.difficulty.upper()}",
             f"Ghosts: {self.ctx.ghost_mode.upper()}",
+            f"Cycle: {ghost_chase_ticks}/{ghost_scatter_ticks}",
+            f"Rage: {self.ctx.effective_rage_duration()}",
+            f"Cherry: {self.ctx.effective_cherry_respawn()}",
         ]
 
-        y = 188
+        y = 182
         for line in summary_lines:
             draw_text_centered(line, self.ctx.cfg.window_width // 2, y, 18, colors.LIGHTGRAY)
-            y += 20
+            y += 18
