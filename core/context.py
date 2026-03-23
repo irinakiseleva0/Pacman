@@ -87,7 +87,7 @@ DIFFICULTY_PRESETS: dict[str, DifficultyPreset] = {
 class Config:
     # Display & Map
     fps: int = 16
-    tile_size: int = 16
+    tile_size: int = 20
     map_width: int = 28
     map_height: int = 30
 

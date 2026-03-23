@@ -53,10 +53,11 @@ class Cherry(Cell):
             return
 
         cfg = self.ctx.cfg
+        scale = cfg.tile_size / 16
         pyray.draw_texture_ex(
             self.image,
             (self.x * cfg.tile_size, self.y * cfg.tile_size),
             0.0,
-            1.0,
+            scale,
             colors.WHITE,
         )

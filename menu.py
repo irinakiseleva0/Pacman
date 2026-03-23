@@ -6,12 +6,12 @@ from raylib import colors
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE
 from ui.navigation import ButtonNavigator
-from ui.ui import button_clicked, centered_rect, draw_button
+from ui.ui import button_clicked, centered_rect, draw_button, draw_text_centered
 
 
 class Menu(Scene):
-    BTN_W = 140
-    BTN_H = 50
+    BTN_W = 190
+    BTN_H = 52
     FOCUS_ORDER = ("Easy", "Normal", "Hard", "Start", "Exit")
 
     def __init__(self, ctx):
@@ -27,16 +27,16 @@ class Menu(Scene):
 
     def enter_tree(self) -> None:
         cx = self.ctx.cfg.window_width // 2
-        cy = self.ctx.cfg.window_height // 2
+        top_y = 150
+        button_gap = 16
 
-        # Difficulty buttons
-        self.btn_easy = centered_rect(cx, cy - 80 - self.BTN_H, self.BTN_W, self.BTN_H)
-        self.btn_normal = centered_rect(cx, cy - 20 - self.BTN_H, self.BTN_W, self.BTN_H)
-        self.btn_hard = centered_rect(cx, cy + 40 - self.BTN_H, self.BTN_W, self.BTN_H)
+        self.btn_easy = centered_rect(cx, top_y, self.BTN_W, self.BTN_H)
+        self.btn_normal = centered_rect(cx, top_y + self.BTN_H + button_gap, self.BTN_W, self.BTN_H)
+        self.btn_hard = centered_rect(cx, top_y + (self.BTN_H + button_gap) * 2, self.BTN_W, self.BTN_H)
 
-        # Action buttons
-        self.btn_start = centered_rect(cx, cy + 120 - self.BTN_H, self.BTN_W, self.BTN_H)
-        self.btn_exit = centered_rect(cx, cy + 180 - self.BTN_H, self.BTN_W, self.BTN_H)
+        action_start_y = top_y + (self.BTN_H + button_gap) * 3 + 92
+        self.btn_start = centered_rect(cx, action_start_y, self.BTN_W, self.BTN_H)
+        self.btn_exit = centered_rect(cx, action_start_y + self.BTN_H + button_gap, self.BTN_W, self.BTN_H)
         self.navigator.reset(1)
 
     def update(self, dt: float) -> None:
@@ -86,10 +86,11 @@ class Menu(Scene):
         return list(self.ctx.difficulty_summary_lines(self.difficulty))
 
     def draw(self) -> None:
-        pyray.draw_text("PACMAN", 140, 90, 48, colors.YELLOW)
+        center_x = self.ctx.cfg.window_width // 2
+        draw_text_centered("PACMAN", center_x, 56, 56, colors.YELLOW)
 
         # Difficulty selection
-        pyray.draw_text("Select Difficulty:", 120, 140, 24, colors.WHITE)
+        draw_text_centered("Select Difficulty", center_x, 112, 24, colors.WHITE)
         draw_button(self.btn_easy, "EASY", focused=self.navigator.focus_index == 0)
         draw_button(self.btn_normal, "NORMAL", focused=self.navigator.focus_index == 1)
         draw_button(self.btn_hard, "HARD", focused=self.navigator.focus_index == 2)
@@ -98,15 +99,26 @@ class Menu(Scene):
         selected_color = colors.GREEN if self.difficulty == "Easy" else \
             colors.YELLOW if self.difficulty == "Normal" else \
             colors.RED
-        pyray.draw_text(f"Selected: {self.difficulty}",
-                        120, 280, 20, selected_color)
+        draw_text_centered(
+            f"Selected: {self.difficulty}",
+            center_x,
+            330,
+            22,
+            selected_color,
+        )
 
-        summary_y = 308
+        summary_y = 362
         for line in self._difficulty_summary_lines():
-            pyray.draw_text(line, 100, summary_y, 18, colors.LIGHTGRAY)
-            summary_y += 22
+            draw_text_centered(line, center_x, summary_y, 18, colors.LIGHTGRAY)
+            summary_y += 24
 
         # Action buttons
         draw_button(self.btn_start, "START GAME", focused=self.navigator.focus_index == 3)
         draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 4)
-        pyray.draw_text("W/S or Arrows to move, Enter to confirm", 70, 445, 18, colors.LIGHTGRAY)
+        draw_text_centered(
+            "W/S or Arrows to move, Enter to confirm",
+            center_x,
+            self.ctx.cfg.window_height - 36,
+            18,
+            colors.LIGHTGRAY,
+        )

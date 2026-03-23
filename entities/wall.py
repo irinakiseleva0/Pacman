@@ -74,8 +74,10 @@ class Wall(Cell):
 
     def draw(self) -> None:
         cfg = self.ctx.cfg
+        scale = cfg.tile_size / 16
         Wall._sprite().draw_specified(
             self.wall_key,
             0,
             (self.x * cfg.tile_size, self.y * cfg.tile_size),
+            scale=scale,
         )

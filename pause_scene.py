@@ -78,7 +78,7 @@ class PauseScene(Scene):
     def draw(self) -> None:
         # Dark overlay over game
         pyray.draw_rectangle_rec(
-            pyray.Rectangle(0, 0, 448, 496),
+            pyray.Rectangle(0, 0, self.ctx.cfg.window_width, self.ctx.cfg.window_height),
             with_alpha(colors.BLACK, 160)
         )
 

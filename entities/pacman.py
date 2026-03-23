@@ -78,8 +78,11 @@ class Pacman(Actor):
             return
 
         cfg = self.ctx.cfg
+        scale = cfg.tile_size / 16
         self.pacman_sprite.draw(
-            (self.x * cfg.tile_size, self.y * cfg.tile_size))
+            (self.x * cfg.tile_size, self.y * cfg.tile_size),
+            scale=scale,
+        )
 
     def _direction_to_delta(self, state: str) -> tuple[int, int]:
         if state == State.RIGHT:

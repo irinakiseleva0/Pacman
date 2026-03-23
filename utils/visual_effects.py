@@ -318,6 +318,6 @@ class ScreenFlash:
         if self.duration > 0 and self.intensity > 0:
             flash_color = with_alpha(self.color, int(255 * self.intensity))
             pyray.draw_rectangle_rec(
-                pyray.Rectangle(0, 0, 448, 496),
+                pyray.Rectangle(0, 0, pyray.get_screen_width(), pyray.get_screen_height()),
                 flash_color,
             )
