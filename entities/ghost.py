@@ -50,11 +50,43 @@ class Ghost(Actor):
 
         return colors.BLUE
 
+    def _draw_returning_home(self, px: int, py: int, tile: int) -> None:
+        eye_radius = max(2, tile // 6)
+        pupil_radius = max(1, eye_radius // 2)
+        eye_offset_x = tile // 5
+        eye_offset_y = tile // 10
+
+        left_eye_x = px - eye_offset_x
+        right_eye_x = px + eye_offset_x
+        eye_y = py - eye_offset_y
+
+        pyray.draw_circle(left_eye_x, eye_y, eye_radius, colors.WHITE)
+        pyray.draw_circle(right_eye_x, eye_y, eye_radius, colors.WHITE)
+
+        pupil_dx = 0
+        pupil_dy = 0
+        if self.last_dx < 0:
+            pupil_dx = -1
+        elif self.last_dx > 0:
+            pupil_dx = 1
+
+        if self.last_dy < 0:
+            pupil_dy = -1
+        elif self.last_dy > 0:
+            pupil_dy = 1
+
+        pyray.draw_circle(left_eye_x + pupil_dx, eye_y + pupil_dy, pupil_radius, colors.BLACK)
+        pyray.draw_circle(right_eye_x + pupil_dx, eye_y + pupil_dy, pupil_radius, colors.BLACK)
+
     def draw(self) -> None:
         cfg = self.ctx.cfg
         tile = cfg.tile_size
         px = self.x * tile + tile // 2
         py = self.y * tile + tile // 2
+
+        if self.returning_home:
+            self._draw_returning_home(px, py, tile)
+            return
 
         pyray.draw_circle(px, py, tile // 2 - 2, self._get_draw_color())
 
