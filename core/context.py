@@ -95,6 +95,10 @@ class Config:
     ghost_chase_tick_step: int = 10
     ghost_scatter_tick_step: int = 5
     ghost_scatter_tick_min: int = 10
+    rage_duration_tick_step: int = 25
+    rage_duration_tick_min: int = 120
+    cherry_respawn_tick_step: int = 10
+    cherry_respawn_tick_min: int = 45
     ready_duration_ticks: int = 45
 
     # Score Values
@@ -190,6 +194,20 @@ class GameContext:
             self.cfg.ghost_scatter_ticks - level_offset * self.cfg.ghost_scatter_tick_step,
         )
         return chase_ticks, scatter_ticks
+
+    def effective_rage_duration(self) -> int:
+        level_offset = max(0, self.current_level - 1)
+        return max(
+            self.cfg.rage_duration_tick_min,
+            self.cfg.rage_duration_ticks - level_offset * self.cfg.rage_duration_tick_step,
+        )
+
+    def effective_cherry_respawn(self) -> int:
+        level_offset = max(0, self.current_level - 1)
+        return max(
+            self.cfg.cherry_respawn_tick_min,
+            self.cfg.cherry_respawn_ticks - level_offset * self.cfg.cherry_respawn_tick_step,
+        )
 
     def advance_ghost_mode_cycle(self) -> None:
         self.ghost_mode_timer += 1

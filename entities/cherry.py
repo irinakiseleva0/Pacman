@@ -24,7 +24,7 @@ class Cherry(Cell):
 
         self.enabled = False
         self.ctx.score += self.ctx.cfg.cherry_score
-        self.timer = self.ctx.cfg.cherry_respawn_ticks
+        self.timer = self.ctx.effective_cherry_respawn()
 
         self.ctx.particles.create_cherry_eat_effect(self.x, self.y)
         self.ctx.floating_text.add_score_text(

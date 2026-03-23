@@ -51,7 +51,7 @@ class LargeSeed(Cell):
         if getattr(actor, "kind", None) == "pacman" and self.enabled:
             self.enabled = False
             self.ctx.score += self.ctx.cfg.large_seed_score
-            actor.enable_rage(self.ctx.cfg.rage_duration_ticks)
+            actor.enable_rage(self.ctx.effective_rage_duration())
 
             # Add visual effects
             self.ctx.particles.create_large_seed_eat_effect(self.x, self.y)
