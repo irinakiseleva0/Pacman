@@ -26,8 +26,7 @@ class Cherry(Cell):
         self.ctx.score += self.ctx.cfg.cherry_score
         self.timer = self.ctx.cfg.cherry_respawn_ticks
 
-        # Reuse the large-seed effect for now to keep the change minimal.
-        self.ctx.particles.create_large_seed_eat_effect(self.x, self.y)
+        self.ctx.particles.create_cherry_eat_effect(self.x, self.y)
         self.ctx.floating_text.add_score_text(
             self.ctx.cfg.cherry_score, self.x, self.y
         )

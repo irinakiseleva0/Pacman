@@ -104,6 +104,26 @@ class ParticleSystem:
                 particle_color, random.uniform(2, 4)
             ))
 
+    def create_cherry_eat_effect(self, x: int, y: int) -> None:
+        """Create a warm, fruit-like burst when eating a cherry."""
+        center_x = x * 16 + 8
+        center_y = y * 16 + 8
+
+        num_particles = random.randint(10, 14)
+        palette = (colors.RED, colors.PINK, colors.GOLD, colors.ORANGE)
+        for _ in range(num_particles):
+            angle = random.uniform(0, 2 * math.pi)
+            speed = random.uniform(35, 70)
+            vx = math.cos(angle) * speed
+            vy = math.sin(angle) * speed
+            lifetime = random.uniform(0.45, 0.9)
+            particle_color = random.choice(palette)
+
+            self.add_particle(Particle(
+                center_x, center_y, vx, vy, lifetime,
+                particle_color, random.uniform(2, 4)
+            ))
+
     def create_ghost_eat_effect(self, x: int, y: int) -> None:
         """Create particles when eating a ghost."""
         center_x = x * 16 + 8
