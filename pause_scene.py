@@ -59,6 +59,10 @@ class PauseScene(Scene):
 
     def _draw_summary(self) -> None:
         ghost_chase_ticks, ghost_scatter_ticks = self.ctx.effective_ghost_cycle()
+        dots = large_seeds = cherries = 0
+        if self.ctx.game_map is not None:
+            dots, large_seeds, cherries = self.ctx.game_map.item_counts()
+
         summary_lines = [
             f"Score: {self.ctx.score}",
             f"Lives: {self.ctx.lives}",
@@ -68,6 +72,7 @@ class PauseScene(Scene):
             f"Cycle: {ghost_chase_ticks}/{ghost_scatter_ticks}",
             f"Rage: {self.ctx.effective_rage_duration()}",
             f"Cherry: {self.ctx.effective_cherry_respawn()}",
+            f"Items: .{dots} s{large_seeds} c{cherries}",
         ]
 
         y = 182

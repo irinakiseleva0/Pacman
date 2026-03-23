@@ -152,6 +152,22 @@ class Map:
             return False, min(cooldown_timers)
         return None
 
+    def item_counts(self) -> tuple[int, int, int]:
+        dots = 0
+        large_seeds = 0
+        cherries = 0
+
+        for row in self.static_layer:
+            for cell in row:
+                if isinstance(cell, Seed):
+                    dots += 1
+                elif isinstance(cell, LargeSeed):
+                    large_seeds += 1
+                elif isinstance(cell, Cherry):
+                    cherries += 1
+
+        return dots, large_seeds, cherries
+
     def load(self, path: str) -> None:
         with open(path, "r", encoding="utf-8") as file:
             raw_lines = [line.rstrip("\n") for line in file]
