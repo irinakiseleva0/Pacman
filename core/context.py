@@ -209,6 +209,11 @@ class GameContext:
             self.cfg.cherry_respawn_ticks - level_offset * self.cfg.cherry_respawn_tick_step,
         )
 
+    def effective_item_counts(self) -> tuple[int, int, int] | None:
+        if self.game_map is None:
+            return None
+        return self.game_map.item_counts()
+
     def advance_ghost_mode_cycle(self) -> None:
         self.ghost_mode_timer += 1
 
