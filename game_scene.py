@@ -12,17 +12,21 @@ from ui.ui import draw_text_centered
 
 
 class GameScene(Scene):
+    TOTAL_LEVELS = 3
+
     def __init__(self, ctx) -> None:
         super().__init__()
         self.ctx = ctx
         self.tick_counter = 0
         self.ready_ticks = 0
         self.level_complete_ticks = 0
+        self.transition_result = ""
 
     def enter_tree(self) -> None:
         self.tick_counter = 0
         self.ready_ticks = 0
         self.level_complete_ticks = 0
+        self.transition_result = ""
 
         if self.ctx.should_resume_game and self.ctx.game_map is not None:
             self.ctx.should_resume_game = False
@@ -58,7 +62,7 @@ class GameScene(Scene):
         if self.level_complete_ticks > 0:
             self.level_complete_ticks -= 1
             if self.level_complete_ticks == 0:
-                self.ctx.last_result = "level_complete"
+                self.ctx.last_result = self.transition_result or "level_complete"
                 self.request_switch(RESULT_SCENE)
             return
 
@@ -109,9 +113,14 @@ class GameScene(Scene):
         self.tick_counter = 0
         self.ready_ticks = self.ctx.cfg.ready_duration_ticks
         self.level_complete_ticks = 0
+        self.transition_result = ""
 
     def start_level_complete_transition(self) -> None:
         self.level_complete_ticks = self.ctx.cfg.level_complete_duration_ticks
+        if self.ctx.current_level >= self.TOTAL_LEVELS:
+            self.transition_result = "game_won"
+        else:
+            self.transition_result = "level_complete"
         self.ctx.reset_ghost_combo()
         self.ctx.screen_flash.flash(colors.GREEN, 0.25, 0.2)
         self.ctx.screen_shake.shake(3.0, 0.2)
@@ -162,6 +171,15 @@ class GameScene(Scene):
         center_x = self.ctx.cfg.window_width // 2
         y = self.ctx.cfg.window_height // 2 - 24
 
-        draw_text_centered("LEVEL CLEAR!", center_x + 2, y + 2, 38, colors.BLACK)
-        draw_text_centered("LEVEL CLEAR!", center_x, y, 38, colors.GREEN)
-        draw_text_centered("Preparing result...", center_x, y + 42, 18, colors.WHITE)
+        if self.transition_result == "game_won":
+            headline = "ALL CLEAR!"
+            headline_color = colors.GOLD
+            detail = "Final result incoming..."
+        else:
+            headline = "LEVEL CLEAR!"
+            headline_color = colors.GREEN
+            detail = "Preparing result..."
+
+        draw_text_centered(headline, center_x + 2, y + 2, 38, colors.BLACK)
+        draw_text_centered(headline, center_x, y, 38, headline_color)
+        draw_text_centered(detail, center_x, y + 42, 18, colors.WHITE)

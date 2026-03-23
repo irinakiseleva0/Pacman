@@ -38,13 +38,10 @@ class ResultScene(Scene):
 
     def _activate_primary_action(self) -> None:
         if self.ctx.last_result == "level_complete":
-            if self.ctx.current_level < self.TOTAL_LEVELS:
-                self.ctx.screen_flash.flash(colors.GREEN, 0.4, 0.5)
-                self.ctx.screen_shake.shake(3.0, 0.4)
-                self.ctx.next_level()
-                self.request_switch(GAME_SCENE)
-            else:
-                self.ctx.last_result = "game_won"
+            self.ctx.screen_flash.flash(colors.GREEN, 0.4, 0.5)
+            self.ctx.screen_shake.shake(3.0, 0.4)
+            self.ctx.next_level()
+            self.request_switch(GAME_SCENE)
             return
 
         self.ctx.reset_run_state()
@@ -52,16 +49,10 @@ class ResultScene(Scene):
 
     def _summary_lines(self) -> list[str]:
         if self.ctx.last_result == "level_complete":
-            if self.ctx.current_level < self.TOTAL_LEVELS:
-                return [
-                    "Board cleared successfully.",
-                    "Carry your score into the next level.",
-                    "Take a breath, the ghosts will reset.",
-                ]
             return [
-                "Final level cleared.",
-                "One more step to close out the run.",
-                "Your score is locked in.",
+                "Board cleared successfully.",
+                "Carry your score into the next level.",
+                "Take a breath, the ghosts will reset.",
             ]
 
         if self.ctx.last_result == "game_won":
