@@ -94,16 +94,19 @@ class Map:
 
         if getattr(pacman, "rage", False):
             # Pacman eats ghost
+            score_value = self.ctx.next_ghost_combo_score()
+            self.ctx.ghost_combo += 1
             ghost.reset_to_spawn()
-            self.ctx.score += self.ctx.cfg.ghost_score
+            self.ctx.score += score_value
 
             # Add visual effects
             self.ctx.particles.create_ghost_eat_effect(ghost.x, ghost.y)
             self.ctx.floating_text.add_score_text(
-                self.ctx.cfg.ghost_score, ghost.x, ghost.y)
+                score_value, ghost.x, ghost.y)
             self.ctx.screen_shake.shake(4.0, 0.3)
         else:
             # Ghost eats Pacman
+            self.ctx.reset_ghost_combo()
             pacman.kill()
 
     def frame(self) -> None:

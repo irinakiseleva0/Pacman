@@ -83,7 +83,7 @@ class Config:
     fps: int = 16
     tile_size: int = 16
     map_width: int = 28
-    map_height: int = 31
+    map_height: int = 30
 
     # Game Speed & Timing
     logic_tick_rate: int = 3
@@ -132,6 +132,7 @@ class GameContext:
     should_resume_game: bool = False
     ghost_mode: str = "chase"
     ghost_mode_timer: int = 0
+    ghost_combo: int = 0
 
     # Visual effects systems
     particles: ParticleSystem = field(default_factory=ParticleSystem)
@@ -156,6 +157,7 @@ class GameContext:
         self.last_result = ""
         self.should_resume_game = False
         self.reset_ghost_mode_cycle()
+        self.reset_ghost_combo()
         self.pacman = None
         self.game_map = None
 
@@ -185,6 +187,13 @@ class GameContext:
     def reset_ghost_mode_cycle(self) -> None:
         self.ghost_mode = "chase"
         self.ghost_mode_timer = 0
+
+    def reset_ghost_combo(self) -> None:
+        self.ghost_combo = 0
+
+    def next_ghost_combo_score(self) -> int:
+        combo_step = min(self.ghost_combo, 3)
+        return self.cfg.ghost_score * (2 ** combo_step)
 
     def effective_ghost_cycle(self) -> tuple[int, int]:
         level_offset = max(0, self.current_level - 1)

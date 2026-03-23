@@ -59,6 +59,7 @@ class Pacman(Actor):
 
         self.rage = True
         self.rage_timer = ticks
+        self.ctx.reset_ghost_combo()
 
     def kill(self) -> None:
         if self.state in (State.DEAD, State.NONE):
@@ -66,6 +67,7 @@ class Pacman(Actor):
 
         self.rage = False
         self.rage_timer = 0
+        self.ctx.reset_ghost_combo()
         self.death_timer = 0
         self.state = State.DEAD
         self.next_state = State.DEAD
@@ -153,6 +155,7 @@ class Pacman(Actor):
             self.rage_timer -= 1
             if self.rage_timer == 0:
                 self.rage = False
+                self.ctx.reset_ghost_combo()
 
         keys = {
             pyray.KEY_W: State.UP,
