@@ -55,10 +55,26 @@ class Ghost(Actor):
         pupil_radius = max(1, eye_radius // 2)
         eye_offset_x = tile // 5
         eye_offset_y = tile // 10
+        trail_radius = max(1, tile // 8)
 
         left_eye_x = px - eye_offset_x
         right_eye_x = px + eye_offset_x
         eye_y = py - eye_offset_y
+
+        trail_dx = 0
+        trail_dy = 0
+        if self.last_dx < 0:
+            trail_dx = 2
+        elif self.last_dx > 0:
+            trail_dx = -2
+
+        if self.last_dy < 0:
+            trail_dy = 2
+        elif self.last_dy > 0:
+            trail_dy = -2
+
+        pyray.draw_circle(px + trail_dx * 2, py + trail_dy * 2, trail_radius, colors.LIGHTGRAY)
+        pyray.draw_circle(px + trail_dx * 4, py + trail_dy * 4, trail_radius, colors.GRAY)
 
         pyray.draw_circle(left_eye_x, eye_y, eye_radius, colors.WHITE)
         pyray.draw_circle(right_eye_x, eye_y, eye_radius, colors.WHITE)
