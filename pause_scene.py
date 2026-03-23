@@ -116,6 +116,13 @@ class PauseScene(Scene):
             dots, large_seeds, cherries = item_counts
             summary_lines.append(f"Items: .{dots} s{large_seeds} c{cherries}")
 
+        game_map = self.ctx.game_map
+        if game_map is not None:
+            return_status = game_map.ghost_return_status()
+            if return_status is not None:
+                returning_ghosts, total_ghosts = return_status
+                summary_lines.append(f"Returning: {returning_ghosts}/{total_ghosts}")
+
         y = 182
         for line in summary_lines:
             draw_text_centered(line, self.ctx.cfg.window_width // 2, y, 18, colors.LIGHTGRAY)
