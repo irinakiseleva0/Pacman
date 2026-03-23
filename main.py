@@ -32,6 +32,7 @@ class Game:
 
         pyray.init_window(cfg.window_width, cfg.window_height, "Pacman")
         pyray.set_target_fps(cfg.fps)
+        self.ctx.screen_flash.set_size(cfg.window_width, cfg.window_height)
 
         self.current_scene_index = MENU_SCENE
         self.current_scene.enter_tree()

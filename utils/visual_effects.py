@@ -298,6 +298,12 @@ class ScreenFlash:
         self.intensity = 0.0
         self.duration = 0.0
         self.color = colors.WHITE
+        self.width = 448
+        self.height = 496
+
+    def set_size(self, width: int, height: int) -> None:
+        self.width = width
+        self.height = height
 
     def flash(self, color, intensity: float, duration: float) -> None:
         """Start screen flash effect."""
@@ -318,6 +324,6 @@ class ScreenFlash:
         if self.duration > 0 and self.intensity > 0:
             flash_color = with_alpha(self.color, int(255 * self.intensity))
             pyray.draw_rectangle_rec(
-                pyray.Rectangle(0, 0, pyray.get_screen_width(), pyray.get_screen_height()),
+                pyray.Rectangle(0, 0, self.width, self.height),
                 flash_color,
             )
