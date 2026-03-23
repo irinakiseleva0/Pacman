@@ -97,7 +97,10 @@ class Map:
             score_value = self.ctx.next_ghost_combo_score()
             self.ctx.ghost_combo += 1
             combo_step = self.ctx.ghost_combo
-            ghost.reset_to_spawn()
+            if isinstance(ghost, Ghost):
+                ghost.on_eaten()
+            else:
+                ghost.reset_to_spawn()
             self.ctx.score += score_value
 
             # Add visual effects

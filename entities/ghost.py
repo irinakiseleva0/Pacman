@@ -10,6 +10,7 @@ from entities.cell import Actor
 class Ghost(Actor):
     FRIGHTENED_BLINK_TICKS = 60
     FRIGHTENED_BLINK_INTERVAL = 8
+    EATEN_RESPAWN_TICKS = 12
 
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
@@ -19,8 +20,14 @@ class Ghost(Actor):
         self.target_y = 0
         self.mode = "chase"  # chase, scatter, frightened
         self.scatter_target = (0, 0)
+        self.respawn_lock_ticks = 0
 
     def _get_draw_color(self):
+        if self.respawn_lock_ticks > 0:
+            if (self.respawn_lock_ticks // 2) % 2 == 0:
+                return colors.WHITE
+            return colors.SKYBLUE
+
         pacman = self.ctx.pacman
         if not getattr(pacman, "rage", False):
             return self.color
@@ -49,6 +56,12 @@ class Ghost(Actor):
         if pacman:
             self.target_x = pacman.x
             self.target_y = pacman.y
+
+    def on_eaten(self) -> None:
+        self.reset_to_spawn()
+        self.respawn_lock_ticks = self.EATEN_RESPAWN_TICKS
+        self.last_dx = 0
+        self.last_dy = 0
 
     def _update_mode(self) -> None:
         pacman = self.ctx.pacman
@@ -109,6 +122,10 @@ class Ghost(Actor):
         pacman = self.ctx.pacman
 
         if game_map is None or pacman is None:
+            return
+
+        if self.respawn_lock_ticks > 0:
+            self.respawn_lock_ticks -= 1
             return
 
         if getattr(pacman, "state", None) in ("DEATH", "NONE"):
