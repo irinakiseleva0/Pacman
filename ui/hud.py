@@ -44,6 +44,7 @@ def draw_game_hud(
 
     if cherry_text is not None:
         lines.insert(5, (cherry_text, cherry_color))
+        lines.insert(6, (f"Cherry score: {ctx.effective_cherry_score()}", colors.GOLD))
 
     if ghost_release_status is not None:
         pending_ghosts, total_ghosts = ghost_release_status
