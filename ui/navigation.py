@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import pyray
 
+KEY_ENTER = getattr(pyray, "KEY_ENTER", 257)
+KEY_KP_ENTER = getattr(pyray, "KEY_KP_ENTER", 335)
+KEY_SPACE = getattr(pyray, "KEY_SPACE", 32)
+
 
 class ButtonNavigator:
     def __init__(self, item_count: int, initial_index: int = 0) -> None:
@@ -35,7 +39,7 @@ class ButtonNavigator:
 
     def confirm_pressed(self) -> bool:
         return (
-            pyray.is_key_pressed(pyray.KEY_ENTER)
-            or pyray.is_key_pressed(pyray.KEY_KP_ENTER)
-            or pyray.is_key_pressed(pyray.KEY_SPACE)
+            pyray.is_key_pressed(KEY_ENTER)
+            or pyray.is_key_pressed(KEY_KP_ENTER)
+            or pyray.is_key_pressed(KEY_SPACE)
         )
