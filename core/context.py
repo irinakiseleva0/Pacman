@@ -16,6 +16,7 @@ class DifficultyPreset:
     cherry_respawn_ticks: int
     ghost_chase_ticks: int
     ghost_scatter_ticks: int
+    ghost_release_tick_interval: int
     initial_lives: int
     seed_score: int
     large_seed_score: int
@@ -31,6 +32,7 @@ DIFFICULTY_PRESETS: dict[str, DifficultyPreset] = {
         cherry_respawn_ticks=200,
         ghost_chase_ticks=90,
         ghost_scatter_ticks=70,
+        ghost_release_tick_interval=24,
         initial_lives=5,
         seed_score=15,
         large_seed_score=75,
@@ -38,7 +40,7 @@ DIFFICULTY_PRESETS: dict[str, DifficultyPreset] = {
         ghost_score=300,
         summary_lines=(
             "Lives: 5  Rage: long",
-            "Ghosts: lighter pressure",
+            "Ghosts: lighter pressure, slower release",
             "Score: generous rewards",
         ),
     ),
@@ -48,6 +50,7 @@ DIFFICULTY_PRESETS: dict[str, DifficultyPreset] = {
         cherry_respawn_ticks=150,
         ghost_chase_ticks=120,
         ghost_scatter_ticks=40,
+        ghost_release_tick_interval=18,
         initial_lives=3,
         seed_score=10,
         large_seed_score=50,
@@ -65,6 +68,7 @@ DIFFICULTY_PRESETS: dict[str, DifficultyPreset] = {
         cherry_respawn_ticks=100,
         ghost_chase_ticks=150,
         ghost_scatter_ticks=25,
+        ghost_release_tick_interval=12,
         initial_lives=2,
         seed_score=5,
         large_seed_score=25,
@@ -72,7 +76,7 @@ DIFFICULTY_PRESETS: dict[str, DifficultyPreset] = {
         ghost_score=100,
         summary_lines=(
             "Lives: 2  Rage: short",
-            "Ghosts: aggressive pressure",
+            "Ghosts: aggressive pressure, fast release",
             "Score: reduced rewards",
         ),
     ),
@@ -193,6 +197,7 @@ class GameContext:
         self.cfg.cherry_respawn_ticks = preset.cherry_respawn_ticks
         self.cfg.ghost_chase_ticks = preset.ghost_chase_ticks
         self.cfg.ghost_scatter_ticks = preset.ghost_scatter_ticks
+        self.cfg.ghost_release_tick_interval = preset.ghost_release_tick_interval
         self.cfg.initial_lives = preset.initial_lives
         self.cfg.seed_score = preset.seed_score
         self.cfg.large_seed_score = preset.large_seed_score
