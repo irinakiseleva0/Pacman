@@ -81,10 +81,40 @@ class Ghost(Actor):
     def _is_reverse_direction(self, dx: int, dy: int) -> bool:
         return (dx, dy) == (-self.last_dx, -self.last_dy) and (self.last_dx, self.last_dy) != (0, 0)
 
+    def _valid_moves(self, game_map) -> list[tuple[int, int]]:
+        moves: list[tuple[int, int]] = []
+        for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+            new_x = self.x + dx
+            new_y = self.y + dy
+            if not game_map.in_bounds(new_x, new_y):
+                continue
+
+            cell = game_map.get_cell(new_x, new_y)
+            if cell is None or cell.is_blocking(self):
+                continue
+
+            moves.append((dx, dy))
+        return moves
+
+    def _should_choose_new_direction(self, valid_moves: list[tuple[int, int]]) -> bool:
+        current_direction = (self.last_dx, self.last_dy)
+        if current_direction == (0, 0):
+            return True
+        if current_direction not in valid_moves:
+            return True
+        if len(valid_moves) <= 2:
+            return False
+        return True
+
     def get_best_move(self, game_map) -> Tuple[int, int]:
         """Find the best move towards the target using simple pathfinding"""
-        directions = [(0, -1), (0, 1), (-1, 0), (1, 0)
-                      ]  # Up, Down, Left, Right
+        directions = self._valid_moves(game_map)
+        if not directions:
+            return 0, 0
+
+        if not self._should_choose_new_direction(directions):
+            return self.last_dx, self.last_dy
+
         best_score = float('inf')
         best_move = (0, 0)
         reverse_move = (0, 0)
@@ -93,15 +123,6 @@ class Ghost(Actor):
         for dx, dy in directions:
             new_x = self.x + dx
             new_y = self.y + dy
-
-            # Check if move is valid
-            if not game_map.in_bounds(new_x, new_y):
-                continue
-
-            cell = game_map.get_cell(new_x, new_y)
-            if cell is None or cell.is_blocking(self):
-                continue
-
             distance = abs(new_x - self.target_x) + abs(new_y - self.target_y)
             score = -distance if self.mode == "frightened" else distance
 
