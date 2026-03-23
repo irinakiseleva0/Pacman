@@ -100,6 +100,7 @@ class Config:
     cherry_respawn_tick_step: int = 10
     cherry_respawn_tick_min: int = 45
     ready_duration_ticks: int = 45
+    level_complete_duration_ticks: int = 30
 
     # Score Values
     seed_score: int = 10

@@ -17,10 +17,12 @@ class GameScene(Scene):
         self.ctx = ctx
         self.tick_counter = 0
         self.ready_ticks = 0
+        self.level_complete_ticks = 0
 
     def enter_tree(self) -> None:
         self.tick_counter = 0
         self.ready_ticks = 0
+        self.level_complete_ticks = 0
 
         if self.ctx.should_resume_game and self.ctx.game_map is not None:
             self.ctx.should_resume_game = False
@@ -53,6 +55,13 @@ class GameScene(Scene):
         self.tick_counter += 1
         game_map.frame()
 
+        if self.level_complete_ticks > 0:
+            self.level_complete_ticks -= 1
+            if self.level_complete_ticks == 0:
+                self.ctx.last_result = "level_complete"
+                self.request_switch(RESULT_SCENE)
+            return
+
         if self.ready_ticks > 0:
             self.ready_ticks -= 1
             if self.ready_ticks == 0:
@@ -77,9 +86,8 @@ class GameScene(Scene):
             self.handle_pacman_death()
             return
 
-        if game_map.remaining_seeds() == 0:
-            self.ctx.last_result = "level_complete"
-            self.request_switch(RESULT_SCENE)
+        if game_map.remaining_seeds() == 0 and self.level_complete_ticks == 0:
+            self.start_level_complete_transition()
             return
 
     def handle_pacman_death(self) -> None:
@@ -100,6 +108,13 @@ class GameScene(Scene):
         self.ctx.game_map = Map(self.ctx, path=map_path)
         self.tick_counter = 0
         self.ready_ticks = self.ctx.cfg.ready_duration_ticks
+        self.level_complete_ticks = 0
+
+    def start_level_complete_transition(self) -> None:
+        self.level_complete_ticks = self.ctx.cfg.level_complete_duration_ticks
+        self.ctx.reset_ghost_combo()
+        self.ctx.screen_flash.flash(colors.GREEN, 0.25, 0.2)
+        self.ctx.screen_shake.shake(3.0, 0.2)
 
     def draw(self) -> None:
         game_map = self.ctx.game_map
@@ -122,6 +137,8 @@ class GameScene(Scene):
 
         if self.ready_ticks > 0:
             self.draw_ready_overlay()
+        elif self.level_complete_ticks > 0:
+            self.draw_level_complete_overlay()
 
         # Draw screen flash overlay
         self.ctx.screen_flash.draw()
@@ -140,3 +157,11 @@ class GameScene(Scene):
 
         draw_text_centered(message, self.ctx.cfg.window_width // 2 + 2, y + 2, text_size, colors.BLACK)
         draw_text_centered(message, self.ctx.cfg.window_width // 2, y, text_size, colors.YELLOW)
+
+    def draw_level_complete_overlay(self) -> None:
+        center_x = self.ctx.cfg.window_width // 2
+        y = self.ctx.cfg.window_height // 2 - 24
+
+        draw_text_centered("LEVEL CLEAR!", center_x + 2, y + 2, 38, colors.BLACK)
+        draw_text_centered("LEVEL CLEAR!", center_x, y, 38, colors.GREEN)
+        draw_text_centered("Preparing result...", center_x, y + 42, 18, colors.WHITE)
