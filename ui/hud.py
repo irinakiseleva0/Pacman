@@ -3,6 +3,8 @@ from __future__ import annotations
 import pyray
 from raylib import colors
 
+from entities.ghost import Ghost
+
 
 def draw_game_hud(
     ctx,
@@ -55,6 +57,11 @@ def draw_game_hud(
         next_combo_score = ctx.next_ghost_combo_score()
         combo_label = f"Ghost combo: x{ctx.ghost_combo + 1} ({next_combo_score})"
         lines.insert(5, (combo_label, colors.GOLD))
+        lines.insert(6, (f"Large seed: {ctx.effective_large_seed_score()}", colors.MAGENTA))
+
+        rage_timer = getattr(ctx.pacman, "rage_timer", 0)
+        if 0 < rage_timer <= Ghost.FRIGHTENED_BLINK_TICKS:
+            lines.insert(7, ("Rage ending soon!", colors.ORANGE))
 
     x = 10
     y = 10
