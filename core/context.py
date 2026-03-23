@@ -92,6 +92,9 @@ class Config:
     cherry_respawn_ticks: int = 150
     ghost_chase_ticks: int = 120
     ghost_scatter_ticks: int = 40
+    ghost_chase_tick_step: int = 10
+    ghost_scatter_tick_step: int = 5
+    ghost_scatter_tick_min: int = 10
     ready_duration_ticks: int = 45
 
     # Score Values
@@ -179,11 +182,19 @@ class GameContext:
         self.ghost_mode = "chase"
         self.ghost_mode_timer = 0
 
+    def effective_ghost_cycle(self) -> tuple[int, int]:
+        level_offset = max(0, self.current_level - 1)
+        chase_ticks = self.cfg.ghost_chase_ticks + level_offset * self.cfg.ghost_chase_tick_step
+        scatter_ticks = max(
+            self.cfg.ghost_scatter_tick_min,
+            self.cfg.ghost_scatter_ticks - level_offset * self.cfg.ghost_scatter_tick_step,
+        )
+        return chase_ticks, scatter_ticks
+
     def advance_ghost_mode_cycle(self) -> None:
         self.ghost_mode_timer += 1
 
-        chase_ticks = self.cfg.ghost_chase_ticks
-        scatter_ticks = self.cfg.ghost_scatter_ticks
+        chase_ticks, scatter_ticks = self.effective_ghost_cycle()
         cycle_length = chase_ticks + scatter_ticks
         cycle_tick = self.ghost_mode_timer % cycle_length
 
