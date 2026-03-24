@@ -109,6 +109,9 @@ class Map:
             else:
                 ghost.reset_to_spawn()
             self.ctx.score += score_value
+            rage_extension = self.ctx.map_ghost_rage_extension()
+            if rage_extension > 0 and getattr(pacman, "rage", False):
+                pacman.rage_timer += rage_extension
 
             # Add visual effects
             self.ctx.particles.create_ghost_eat_effect(ghost.x, ghost.y, palette["ghost"])
@@ -116,6 +119,15 @@ class Map:
                 score_value, ghost.x, ghost.y)
             self.ctx.floating_text.add_ghost_combo_text(
                 combo_step, score_value, ghost.x, ghost.y)
+            if rage_extension > 0:
+                self.ctx.floating_text.add_text(
+                    "OVERCLOCK",
+                    ghost.x * 16 - 16,
+                    ghost.y * 16 - 40,
+                    colors.WHITE,
+                    0.9,
+                    12,
+                )
             flash_strength = 0.12 if combo_step <= 1 else min(0.22, 0.12 + combo_step * 0.025)
             shake_strength = 4.5 if combo_step <= 1 else min(8.0, 4.5 + combo_step * 0.9)
             self.ctx.trigger_screen_flash(palette["ghost"], flash_strength, 0.08)
@@ -215,6 +227,11 @@ class Map:
         for actor in self.dynamic_actors:
             if isinstance(actor, Ghost):
                 actor.stall_release(ticks)
+
+    def nudge_pending_ghosts(self, ticks: int) -> None:
+        for actor in self.dynamic_actors:
+            if isinstance(actor, Ghost) and actor.release_delay_ticks > 0:
+                actor.release_delay_ticks = max(0, actor.release_delay_ticks - max(0, ticks))
 
     def item_counts(self) -> tuple[int, int, int]:
         dots = 0

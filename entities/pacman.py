@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-import pyray
+import math
+
+import core.raylib_api as pyray
+from raylib import colors
 
 from entities.cell import Actor
+from ui import gamepad
 from utils.animated_sprite import Sprite
 from assets.assets import Assets
-from utils.visual_effects import with_alpha
+from utils.visual_effects import Particle, with_alpha
 
 
 class State:
@@ -30,6 +34,8 @@ class Pacman(Actor):
         self.rage = False
         self.rage_timer = 0
         self.death_timer = 0
+        self.turn_feedback_timer = 0.0
+        self.turn_feedback_dir = (0, -1)
 
         # Track last movement direction for ghost AI
         self.last_dx = 0
@@ -54,13 +60,14 @@ class Pacman(Actor):
         }
         return {key: [Assets.texture(path) for path in value] for key, value in paths.items()}
 
-    def enable_rage(self, ticks: int) -> None:
+    def enable_rage(self, ticks: int, *, keep_combo: bool = False) -> None:
         if self.state in (State.DEAD, State.NONE):
             return
 
         self.rage = True
         self.rage_timer = ticks
-        self.ctx.reset_ghost_combo()
+        if not keep_combo:
+            self.ctx.reset_ghost_combo()
 
     def kill(self) -> None:
         if self.state in (State.DEAD, State.NONE):
@@ -87,6 +94,21 @@ class Pacman(Actor):
         py = base_y + cfg.tile_size // 2
         glow_radius = max(10, cfg.tile_size // 2 + int((0.5 + 0.5 * __import__("math").sin(time_s * 6.0)) * 6))
         pyray.draw_circle(px, py, glow_radius, with_alpha((255, 225, 70, 255), 44))
+        if self.turn_feedback_timer > 0:
+            turn_alpha = min(1.0, self.turn_feedback_timer / 0.14)
+            ring_color = colors.ORANGE if not self.rage else colors.GOLD
+            ring_radius = max(8, cfg.tile_size // 2 + int((1.0 - turn_alpha) * 10))
+            pyray.draw_circle_lines(px, py, ring_radius, with_alpha(ring_color, 180 * turn_alpha))
+            dx, dy = self.turn_feedback_dir
+            if dx != 0 or dy != 0:
+                dash_w = max(3, cfg.tile_size // 5)
+                dash_h = max(3, cfg.tile_size // 5)
+                dash_x = int(px + dx * (cfg.tile_size * 0.55) - dash_w / 2)
+                dash_y = int(py + dy * (cfg.tile_size * 0.55) - dash_h / 2)
+                pyray.draw_rectangle_rec(
+                    pyray.Rectangle(dash_x, dash_y, dash_w, dash_h),
+                    with_alpha(colors.WHITE, 210 * turn_alpha),
+                )
         self.pacman_sprite.draw(
             (base_x, base_y),
             scale=scale,
@@ -126,6 +148,33 @@ class Pacman(Actor):
             if self.state != self.next_state:
                 self.state = self.next_state
                 self.pacman_sprite.set_key(self.state, False)
+                self._trigger_turn_feedback()
+
+    def _trigger_turn_feedback(self) -> None:
+        dx, dy = self._direction_to_delta(self.state)
+        self.turn_feedback_timer = 0.14
+        self.turn_feedback_dir = (dx, dy)
+
+        center_x = self.x * 16 + 8
+        center_y = self.y * 16 + 8
+        accent = colors.GOLD if self.rage else self.ctx.effect_palette()["dot"]
+        for index in range(4):
+            spread = (index - 1.5) * 0.22
+            speed = 22 + index * 8
+            vx = (dx + (dy * spread)) * speed
+            vy = (dy - (dx * spread)) * speed
+            self.ctx.particles.add_particle(
+                Particle(
+                    center_x,
+                    center_y,
+                    vx,
+                    vy,
+                    0.12 + index * 0.02,
+                    accent if index < 3 else colors.WHITE,
+                    1.0 + index * 0.2,
+                )
+            )
+        self.ctx.trigger_screen_shake(0.5, 0.04)
 
     def queue_direction(self, state: str) -> None:
         if state not in (State.UP, State.DOWN, State.LEFT, State.RIGHT):
@@ -169,11 +218,14 @@ class Pacman(Actor):
 
             return
 
+        if self.turn_feedback_timer > 0:
+            self.turn_feedback_timer = max(0.0, self.turn_feedback_timer - pyray.get_frame_time())
+
         if self.rage_timer > 0:
             self.rage_timer -= 1
             if self.rage_timer == 0:
                 self.rage = False
-                self.ctx.reset_ghost_combo()
+                self.ctx.begin_power_chain_window()
 
         keys = {
             pyray.KEY_W: State.UP,
@@ -189,3 +241,14 @@ class Pacman(Actor):
         for key, state in keys.items():
             if pyray.is_key_pressed(key):
                 self.queue_direction(state)
+                return
+
+        controller_direction = gamepad.movement_direction()
+        if controller_direction == "up":
+            self.queue_direction(State.UP)
+        elif controller_direction == "down":
+            self.queue_direction(State.DOWN)
+        elif controller_direction == "left":
+            self.queue_direction(State.LEFT)
+        elif controller_direction == "right":
+            self.queue_direction(State.RIGHT)

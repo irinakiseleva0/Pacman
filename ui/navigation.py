@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import pyray
+import core.raylib_api as pyray
+from ui import gamepad
 
 KEY_ENTER = getattr(pyray, "KEY_ENTER", 257)
 KEY_KP_ENTER = getattr(pyray, "KEY_KP_ENTER", 335)
@@ -16,10 +17,10 @@ class ButtonNavigator:
         self.focus_index = index
 
     def move_vertical(self) -> bool:
-        if pyray.is_key_pressed(pyray.KEY_UP) or pyray.is_key_pressed(pyray.KEY_W):
+        if pyray.is_key_pressed(pyray.KEY_UP) or pyray.is_key_pressed(pyray.KEY_W) or gamepad.up_pressed():
             self.focus_index = (self.focus_index - 1) % self.item_count
             return True
-        if pyray.is_key_pressed(pyray.KEY_DOWN) or pyray.is_key_pressed(pyray.KEY_S):
+        if pyray.is_key_pressed(pyray.KEY_DOWN) or pyray.is_key_pressed(pyray.KEY_S) or gamepad.down_pressed():
             self.focus_index = (self.focus_index + 1) % self.item_count
             return True
         return False
@@ -27,11 +28,11 @@ class ButtonNavigator:
     def move_horizontal_within(self, group_size: int) -> bool:
         if group_size <= 0:
             return False
-        if pyray.is_key_pressed(pyray.KEY_LEFT) or pyray.is_key_pressed(pyray.KEY_A):
+        if pyray.is_key_pressed(pyray.KEY_LEFT) or pyray.is_key_pressed(pyray.KEY_A) or gamepad.left_pressed():
             if self.focus_index < group_size:
                 self.focus_index = (self.focus_index - 1) % group_size
                 return True
-        if pyray.is_key_pressed(pyray.KEY_RIGHT) or pyray.is_key_pressed(pyray.KEY_D):
+        if pyray.is_key_pressed(pyray.KEY_RIGHT) or pyray.is_key_pressed(pyray.KEY_D) or gamepad.right_pressed():
             if self.focus_index < group_size:
                 self.focus_index = (self.focus_index + 1) % group_size
                 return True
@@ -42,4 +43,5 @@ class ButtonNavigator:
             pyray.is_key_pressed(KEY_ENTER)
             or pyray.is_key_pressed(KEY_KP_ENTER)
             or pyray.is_key_pressed(KEY_SPACE)
+            or gamepad.confirm_pressed()
         )

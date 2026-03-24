@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pyray
+import core.raylib_api as pyray
 from raylib import colors
 
 from entities.cell import Cell
@@ -25,12 +25,40 @@ class Seed(Cell):
             self.ctx.score += score_value
             self.ctx.record_dot_eaten()
             self.ctx.play_sfx("dot")
+            route_chain_count, route_bonus = self.ctx.register_route_chain_dot()
 
             # Add visual effects
             self.ctx.particles.create_dot_eat_effect(self.x, self.y, palette["dot"])
             self.ctx.floating_text.add_score_text(
                 score_value, self.x, self.y)
             dot_count = self.ctx.run_stats.dots_eaten
+            link_step = self.ctx.map_link_bonus_step()
+            link_bonus = self.ctx.map_link_bonus_value()
+            if link_step > 0:
+                level_dots = self.ctx.level_progress_snapshot()["dots"]
+                if level_dots > 0 and level_dots % link_step == 0:
+                    self.ctx.score += link_bonus
+                    self.ctx.floating_text.add_text(
+                        f"LINK +{link_bonus}",
+                        self.x * 16 - 18,
+                        self.y * 16 - 22,
+                        palette["power"],
+                        0.95,
+                        12,
+                    )
+                    self.ctx.trigger_screen_flash(palette["dot"], 0.05, 0.06)
+            if route_bonus > 0:
+                self.ctx.score += route_bonus
+                self.ctx.floating_text.add_text(
+                    f"ROUTE {route_chain_count} +{route_bonus}",
+                    self.x * 16 - 22,
+                    self.y * 16 - 38,
+                    palette["power"],
+                    0.88,
+                    12,
+                )
+                self.ctx.trigger_screen_shake(1.8, 0.07)
+                self.ctx.trigger_screen_flash(palette["dot"], 0.055, 0.05)
             if dot_count % 6 == 0:
                 self.ctx.trigger_screen_shake(1.4, 0.05)
                 self.ctx.trigger_screen_flash(palette["dot"], 0.035, 0.045)
@@ -64,11 +92,13 @@ class LargeSeed(Cell):
         if getattr(actor, "kind", None) == "pacman" and self.enabled:
             palette = self.ctx.effect_palette()
             score_value = self.ctx.effective_large_seed_score()
+            already_raging = bool(getattr(actor, "rage", False))
+            chain_level, chain_bonus, rage_bonus, keep_combo = self.ctx.trigger_power_chain(already_raging)
             self.enabled = False
-            self.ctx.score += score_value
+            self.ctx.score += score_value + chain_bonus
             self.ctx.record_power_seed_eaten()
             self.ctx.play_sfx("power")
-            actor.enable_rage(self.ctx.effective_rage_duration())
+            actor.enable_rage(self.ctx.effective_rage_duration() + rage_bonus, keep_combo=keep_combo)
 
             game_map = self.ctx.game_map
             if game_map is not None:
@@ -80,6 +110,24 @@ class LargeSeed(Cell):
             self.ctx.particles.create_large_seed_eat_effect(self.x, self.y, (palette["power"], colors.WHITE))
             self.ctx.floating_text.add_score_text(
                 score_value, self.x, self.y)
+            if chain_bonus > 0:
+                self.ctx.floating_text.add_text(
+                    f"CHAIN {chain_level} +{chain_bonus}",
+                    self.x * 16 - 28,
+                    self.y * 16 - 28,
+                    palette["power"],
+                    1.0,
+                    12,
+                )
+            if keep_combo and self.ctx.ghost_combo > 0:
+                self.ctx.floating_text.add_text(
+                    "COMBO HELD",
+                    self.x * 16 - 20,
+                    self.y * 16 - 42,
+                    colors.GOLD,
+                    0.9,
+                    11,
+                )
             self.ctx.trigger_screen_shake(6.0, 0.4)
             self.ctx.trigger_screen_flash(palette["power_flash"], 0.2, 0.15)
 

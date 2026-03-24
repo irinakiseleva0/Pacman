@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-import pyray
+import math
+
+import core.raylib_api as pyray
 from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import GAME_SCENE, MENU_SCENE
 from ui.navigation import ButtonNavigator
-from ui.ui import PANEL_ACCENT, TEXT_DIM, button_clicked, centered_rect, draw_arcade_background, draw_button, draw_cinematic_menu_background, draw_glass_card, draw_panel, draw_scene_footer, draw_text_centered
+from ui.ui import PANEL_ACCENT, TEXT_DIM, button_clicked, centered_rect, draw_arcade_background, draw_button, draw_cinematic_menu_background, draw_glass_card, draw_panel, draw_presentation_bars, draw_scene_footer, draw_text_centered
 from utils.score_storage import save_high_score
 
 
@@ -60,11 +62,26 @@ class ResultScene(Scene):
 
     def _summary_lines(self) -> list[str]:
         if self.ctx.last_result == "level_complete":
+            if self.ctx.game_mode == "Arcade":
+                chapter = self.ctx.arcade_campaign_chapter()
+                if chapter is not None:
+                    return [
+                        f"{chapter.subtitle.title()} secured.",
+                        chapter.briefing.capitalize() + ".",
+                        "Move to the next campaign district.",
+                    ]
             if self.ctx.game_mode == "Endless":
+                tier = self.ctx.endless_tier()
                 return [
-                    "District cleared. The loop keeps going.",
-                    "Your remaining lives carry forward.",
-                    "Push deeper for a bigger score run.",
+                    f"{tier.title.title()} secured.",
+                    "Lives carry forward into the next wave.",
+                    "Deeper districts hit harder and pay more.",
+                ]
+            if self.ctx.game_mode == "Time Attack":
+                return [
+                    "District clock beaten cleanly.",
+                    f"Bank {math.ceil(self.ctx.time_attack_clear_bonus_seconds())} extra seconds for the next board.",
+                    "Tempo routes matter more than safe resets.",
                 ]
             return [
                 "Board cleared successfully.",
@@ -78,6 +95,18 @@ class ResultScene(Scene):
                     "Challenge district cleared in one life.",
                     "This counts as a prestige run clear.",
                     "Return to menu to queue another test.",
+                ]
+            if self.ctx.game_mode == "Arcade":
+                return [
+                    "Campaign run completed across all districts.",
+                    "Your arcade file records a full clear.",
+                    "Return to menu to launch another campaign.",
+                ]
+            if self.ctx.game_mode == "Time Attack":
+                return [
+                    "Clock run completed across all three districts.",
+                    "Your fastest tempo clear has been logged.",
+                    "Return to menu to race another route.",
                 ]
             return [
                 "All levels completed.",
@@ -105,11 +134,59 @@ class ResultScene(Scene):
                 "Return to menu to try again.",
             ]
 
+        if self.ctx.game_mode == "Time Attack":
+            return [
+                "The district clock hit zero.",
+                "Your score and mastery gain were still recorded.",
+                "Return to menu to queue another clock run.",
+            ]
         return [
             "Pacman ran out of lives.",
             "Your high score has been saved.",
             "Return to menu to try again.",
         ]
+
+    def _result_header(self) -> tuple[str, object, str]:
+        if self.ctx.last_result == "level_complete":
+            if self.ctx.game_mode == "Endless":
+                return ("DISTRICT SECURED", colors.GREEN, "NEXT LOOP")
+            if self.ctx.game_mode == "Time Attack":
+                return ("CLOCK DISTRICT CLEARED", colors.ORANGE, "BANK TIME")
+            return (f"LEVEL {self.ctx.current_level} COMPLETE!", colors.GREEN, "NEXT LEVEL")
+
+        if self.ctx.last_result == "game_won":
+            if self.ctx.game_mode == "Challenge":
+                return ("TRIAL CLEARED", colors.GOLD, "BACK TO MENU")
+            if self.ctx.game_mode == "Time Attack":
+                return ("CLOCK RUN COMPLETE", colors.GOLD, "BACK TO MENU")
+            if self.ctx.game_mode == "Arcade":
+                return ("CAMPAIGN COMPLETE", colors.GOLD, "BACK TO MENU")
+            return ("FULL RUN CLEAR", colors.GOLD, "BACK TO MENU")
+
+        if self.ctx.last_result == "challenge_failed":
+            return ("TRIAL FAILED", colors.RED, "BACK TO MENU")
+
+        if self.ctx.game_mode == "Time Attack":
+            return ("TIME OUT", colors.ORANGE, "BACK TO MENU")
+        return ("GAME OVER", colors.RED, "BACK TO MENU")
+
+    def _status_label(self) -> str:
+        if self.ctx.last_result == "level_complete":
+            return "CLEAR STATUS"
+        if self.ctx.last_result == "game_won":
+            return "RUN STATUS"
+        if self.ctx.last_result == "challenge_failed":
+            return "TRIAL STATUS"
+        return "FAIL STATUS"
+
+    def _progression_accent(self):
+        if self.ctx.last_result in {"lose", "challenge_failed"}:
+            return colors.ORANGE if self.ctx.game_mode == "Time Attack" else colors.RED
+        if self.ctx.game_mode == "Challenge":
+            return colors.MAGENTA
+        if self.ctx.game_mode == "Time Attack":
+            return colors.ORANGE
+        return colors.MAGENTA
 
     def draw(self) -> None:
         cfg = self.ctx.cfg
@@ -122,27 +199,21 @@ class ResultScene(Scene):
             self.enter_tree()
         panel = self.panel
         draw_panel(panel, "RUN REPORT")
-
-        if self.ctx.last_result == "level_complete":
-            result_text = f"LEVEL {self.ctx.current_level} COMPLETE!"
-            result_color = colors.GREEN
-            button_text = "NEXT LOOP" if self.ctx.game_mode == "Endless" else "NEXT LEVEL"
-        elif self.ctx.last_result == "game_won":
-            result_text = "CHALLENGE CLEARED!" if self.ctx.game_mode == "Challenge" else "YOU WON THE GAME!"
-            result_color = colors.GOLD
-            button_text = "BACK TO MENU"
-        elif self.ctx.last_result == "challenge_failed":
-            result_text = "CHALLENGE FAILED"
-            result_color = colors.RED
-            button_text = "BACK TO MENU"
-        else:  # "lose"
-            result_text = "GAME OVER"
-            result_color = colors.RED
-            button_text = "BACK TO MENU"
+        result_text, result_color, button_text = self._result_header()
 
         draw_text_centered("RUN REPORT", center_x, int(panel.y + 24), 18, PANEL_ACCENT)
         draw_text_centered(result_text, center_x, int(panel.y + 54), 42, result_color)
-        draw_text_centered("NEON DISTRICT REPORT", center_x, int(panel.y + 98), 16, TEXT_DIM)
+        report_subtitle = "NEON DISTRICT REPORT"
+        if self.ctx.game_mode == "Arcade":
+            chapter = self.ctx.arcade_campaign_chapter()
+            if chapter is not None:
+                report_subtitle = f"{chapter.title}  |  {chapter.subtitle}"
+        elif self.ctx.game_mode == "Endless":
+            tier = self.ctx.endless_tier()
+            report_subtitle = f"{tier.title}  |  {tier.subtitle.upper()}"
+        elif self.ctx.game_mode == "Time Attack":
+            report_subtitle = f"TIME ATTACK  |  T-{max(0, math.ceil(self.ctx.time_attack_seconds)):02d} BANKED"
+        draw_text_centered(report_subtitle, center_x, int(panel.y + 98), 16, TEXT_DIM)
 
         score_card = pyray.Rectangle(panel.x + 34, panel.y + 152, int(panel.width - 68), 118)
         draw_glass_card(score_card, accent_color=result_color, glow_alpha=16)
@@ -152,18 +223,18 @@ class ResultScene(Scene):
         draw_text_centered(f"HIGH SCORE {self.ctx.high_score}", center_x, int(score_card.y + 84), 20, colors.YELLOW)
 
         summary_card = pyray.Rectangle(panel.x + 34, panel.y + 292, int(panel.width - 68), 148)
-        draw_glass_card(summary_card, accent_color=PANEL_ACCENT, glow_alpha=14)
-        draw_text_centered("STATUS", center_x, int(summary_card.y + 16), 18, TEXT_DIM)
+        draw_glass_card(summary_card, accent_color=result_color, glow_alpha=14)
+        draw_text_centered(self._status_label(), center_x, int(summary_card.y + 16), 18, TEXT_DIM)
 
         summary_y = int(summary_card.y + 52)
         for line in self._summary_lines():
             draw_text_centered(line, center_x, summary_y, 18, TEXT_DIM)
             summary_y += 28
 
-        profile_card = pyray.Rectangle(panel.x + 34, panel.y + 456, int(panel.width - 68), 120)
-        draw_glass_card(profile_card, accent_color=colors.MAGENTA, glow_alpha=12)
-        draw_text_centered("PROGRESSION", center_x, int(profile_card.y + 16), 18, TEXT_DIM)
-        profile_y = int(profile_card.y + 48)
+        profile_card = pyray.Rectangle(panel.x + 34, panel.y + 456, int(panel.width - 68), 102)
+        draw_glass_card(profile_card, accent_color=self._progression_accent(), glow_alpha=12)
+        draw_text_centered("PROFILE SAVED", center_x, int(profile_card.y + 14), 18, TEXT_DIM)
+        profile_y = int(profile_card.y + 40)
         mastery_gain = self.ctx.mode_mastery_gain(self.ctx.last_result)
         if self.ctx.game_mode == "Challenge":
             credit_gain = self.ctx.challenge_credit_reward(self.ctx.last_result)
@@ -179,16 +250,19 @@ class ResultScene(Scene):
                 self.ctx.profile_summary_lines()[1],
             )
         tag = self.ctx.challenge_preset().title if self.ctx.game_mode == "Challenge" else self.ctx.mode_label()
-        profile_lines = (f"{tag} / {self.ctx.rank_title()}",) + profile_lines[:2]
+        save_hint = self.ctx.profile_save_summary_lines()[1]
+        profile_lines = (f"{tag} / {self.ctx.rank_title()}", profile_lines[0], save_hint)
         for line in profile_lines:
             draw_text_centered(line, center_x, profile_y, 16, TEXT_DIM)
             profile_y += 22
 
-        unlock_card = pyray.Rectangle(panel.x + 34, panel.y + 592, int(panel.width - 68), 92)
-        draw_glass_card(unlock_card, accent_color=PANEL_ACCENT, glow_alpha=10, fill_alpha=148)
-        draw_text_centered("UNLOCKS", center_x, int(unlock_card.y + 12), 16, TEXT_DIM)
+        unlock_card = pyray.Rectangle(panel.x + 34, panel.y + 574, int(panel.width - 68), 110)
+        reward_accent = colors.GOLD if self.ctx.last_unlocks_are_new else PANEL_ACCENT
+        reward_label = "NEW REWARDS" if self.ctx.last_unlocks_are_new else "NEXT REWARDS"
+        draw_glass_card(unlock_card, accent_color=reward_accent, glow_alpha=10, fill_alpha=148)
+        draw_text_centered(reward_label, center_x, int(unlock_card.y + 12), 16, TEXT_DIM)
         unlock_y = int(unlock_card.y + 34)
-        for line in self.ctx.last_unlock_lines:
+        for line in self.ctx.reward_showcase_lines():
             if not line:
                 continue
             draw_text_centered(line, center_x, unlock_y, 14, colors.WHITE)
@@ -197,3 +271,4 @@ class ResultScene(Scene):
         draw_text_centered("CONTINUE", center_x, int(panel.y + panel.height - 156), 18, TEXT_DIM)
         draw_button(self.btn_action, button_text, focused=True)
         draw_scene_footer(panel)
+        draw_presentation_bars(cfg.window_width, cfg.window_height)

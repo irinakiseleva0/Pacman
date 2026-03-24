@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import pyray
+from collections import deque
+import core.raylib_api as pyray
 from raylib import colors
 from typing import Tuple
 
@@ -177,8 +178,53 @@ class Ghost(Actor):
             return False
         return True
 
+    def _path_distance(self, game_map, start_x: int, start_y: int, target_x: int, target_y: int, *, max_depth: int = 18) -> int:
+        if (start_x, start_y) == (target_x, target_y):
+            return 0
+
+        visited = {(start_x, start_y)}
+        queue = deque([(start_x, start_y, 0)])
+
+        while queue:
+            x, y, depth = queue.popleft()
+            if depth >= max_depth:
+                continue
+
+            for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+                nx = x + dx
+                ny = y + dy
+                if (nx, ny) in visited or not game_map.in_bounds(nx, ny):
+                    continue
+
+                cell = game_map.get_cell(nx, ny)
+                if cell is None or cell.is_blocking(self):
+                    continue
+
+                if (nx, ny) == (target_x, target_y):
+                    return depth + 1
+
+                visited.add((nx, ny))
+                queue.append((nx, ny, depth + 1))
+
+        return max_depth + abs(start_x - target_x) + abs(start_y - target_y)
+
+    def _future_path_score(self, game_map, new_x: int, new_y: int, *, max_depth: int = 10) -> int:
+        best = None
+        for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+            nx = new_x + dx
+            ny = new_y + dy
+            if not game_map.in_bounds(nx, ny):
+                continue
+            cell = game_map.get_cell(nx, ny)
+            if cell is None or cell.is_blocking(self):
+                continue
+            dist = self._path_distance(game_map, nx, ny, self.target_x, self.target_y, max_depth=max_depth)
+            if best is None or dist < best:
+                best = dist
+        return best if best is not None else max_depth + 6
+
     def get_best_move(self, game_map) -> Tuple[int, int]:
-        """Find the best move towards the target using simple pathfinding"""
+        """Find the best move towards the target using lookahead grid path scoring."""
         directions = self._valid_moves(game_map)
         if not directions:
             return 0, 0
@@ -195,15 +241,17 @@ class Ghost(Actor):
         for dx, dy in directions:
             new_x = self.x + dx
             new_y = self.y + dy
+            path_distance = self._path_distance(game_map, new_x, new_y, self.target_x, self.target_y)
+            future_distance = self._future_path_score(game_map, new_x, new_y)
             distance = abs(new_x - self.target_x) + abs(new_y - self.target_y)
             if self.mode == "frightened":
-                score = -distance + abs(new_x - pacman.x) * 0.35 + abs(new_y - pacman.y) * 0.35
+                path_away = self._path_distance(game_map, new_x, new_y, pacman.x, pacman.y, max_depth=12)
+                score = -(path_away * 1.15) - distance * 0.15
             else:
-                score = distance
+                score = path_distance * 1.1 + future_distance * 0.35 + distance * 0.15
 
-            # Prefer continuing in current direction, then shortest distance
             if (dx, dy) == (self.last_dx, self.last_dy):
-                score -= 0.5  # Slight preference for current direction
+                score -= 0.55
 
             score += self.personality_score_adjustment(dx, dy, new_x, new_y, pacman)
 
@@ -292,6 +340,7 @@ class Blinky(Ghost):
             adjustment -= 0.9
         if abs(new_x - pacman.x) + abs(new_y - pacman.y) <= 3:
             adjustment -= 0.8
+        adjustment += self.ctx.map_blinky_bias()
         return adjustment
 
 
@@ -320,6 +369,9 @@ class Pinky(Ghost):
         ahead_x = pacman.x + pacman.last_dx * 2
         ahead_y = pacman.y + pacman.last_dy * 2
         adjustment += (abs(new_x - ahead_x) + abs(new_y - ahead_y)) * 0.12
+        if self.ctx.current_map_number() in {1, 4} and (dx, dy) != (pacman.last_dx, pacman.last_dy):
+            adjustment -= 0.22
+        adjustment += self.ctx.map_pinky_bias()
         return adjustment
 
 
@@ -364,6 +416,9 @@ class Inky(Ghost):
             adjustment -= 0.45
         if (new_x + new_y + self.ctx.ghost_mode_timer) % 3 == 0:
             adjustment -= 0.18
+        if self.ctx.current_map_number() == 1 and abs(new_x - pacman.x) + abs(new_y - pacman.y) >= 4:
+            adjustment -= 0.22
+        adjustment += self.ctx.map_inky_bias()
         return adjustment
 
 
@@ -400,4 +455,7 @@ class Clyde(Ghost):
         else:
             if (dx, dy) != (self.last_dx, self.last_dy) and (self.last_dx, self.last_dy) != (0, 0):
                 adjustment -= 0.35
+        if self.ctx.current_map_number() == 3 and distance <= 8:
+            adjustment -= 0.3
+        adjustment += self.ctx.map_clyde_bias()
         return adjustment

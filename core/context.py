@@ -5,41 +5,11 @@ from typing import Optional
 
 from raylib import colors
 
+from core.balance import Config, DIFFICULTY_PRESETS, DifficultyPreset
+from core.state import ProgressionState, RunStats, RuntimeRefs, VisualSystems
 from ui.layout import DEFAULT_LAYOUT, LAYOUT_PROFILES
-from utils.profile_storage import load_profile, save_profile
+from utils.profile_storage import PROFILE_FILE, save_profile
 from utils.score_storage import load_high_score
-from utils.visual_effects import ParticleSystem, ScreenShake, FloatingTextSystem, ScreenFlash
-
-
-@dataclass(frozen=True)
-class DifficultyPreset:
-    logic_tick_rate: int
-    rage_duration_ticks: int
-    cherry_respawn_ticks: int
-    ghost_chase_ticks: int
-    ghost_scatter_ticks: int
-    ghost_release_tick_interval: int
-    initial_lives: int
-    seed_score: int
-    large_seed_score: int
-    cherry_score: int
-    ghost_score: int
-    summary_lines: tuple[str, str, str]
-
-
-@dataclass
-class RunStats:
-    dots_eaten: int = 0
-    power_seeds_eaten: int = 0
-    cherries_eaten: int = 0
-    ghosts_eaten: int = 0
-    levels_cleared: int = 0
-    level_start_score: int = 0
-    level_start_dots: int = 0
-    level_start_power_seeds: int = 0
-    level_start_cherries: int = 0
-    level_start_ghosts: int = 0
-    finalized: bool = False
 
 
 @dataclass(frozen=True)
@@ -61,6 +31,8 @@ class ChallengePreset:
     accent: tuple[int, int, int, int]
     map_cycle: tuple[int, ...]
     starting_lives: int
+    board_tag: str
+    threat_label: str
     target_score: int = 0
     target_ghosts: int = 0
     unlock_text: str = "Available from the start"
@@ -69,6 +41,20 @@ class ChallengePreset:
 
 @dataclass(frozen=True)
 class ThemePreset:
+    title: str
+    subtitle: str
+    unlock_text: str
+
+
+@dataclass(frozen=True)
+class HudPackPreset:
+    title: str
+    subtitle: str
+    unlock_text: str
+
+
+@dataclass(frozen=True)
+class TitleVariantPreset:
     title: str
     subtitle: str
     unlock_text: str
@@ -101,6 +87,22 @@ class RunDirective:
 
 
 @dataclass(frozen=True)
+class ArcadeChapter:
+    title: str
+    subtitle: str
+    briefing: str
+    accent: tuple[int, int, int, int]
+
+
+@dataclass(frozen=True)
+class EndlessTier:
+    title: str
+    subtitle: str
+    accent: tuple[int, int, int, int]
+    clear_bonus: int
+
+
+@dataclass(frozen=True)
 class MapTrait:
     title: str
     subtitle: str
@@ -112,64 +114,6 @@ class MapTrait:
     cherry_respawn_bonus: int = 0
     cherry_score_bonus: int = 0
     ghost_score_bonus: int = 0
-
-
-DIFFICULTY_PRESETS: dict[str, DifficultyPreset] = {
-    "Easy": DifficultyPreset(
-        logic_tick_rate=2,
-        rage_duration_ticks=450,
-        cherry_respawn_ticks=200,
-        ghost_chase_ticks=90,
-        ghost_scatter_ticks=70,
-        ghost_release_tick_interval=24,
-        initial_lives=5,
-        seed_score=15,
-        large_seed_score=75,
-        cherry_score=750,
-        ghost_score=300,
-        summary_lines=(
-            "Lives: 5  Rage: long",
-            "Ghosts: lighter pressure, slower release",
-            "Score: generous rewards",
-        ),
-    ),
-    "Normal": DifficultyPreset(
-        logic_tick_rate=3,
-        rage_duration_ticks=300,
-        cherry_respawn_ticks=150,
-        ghost_chase_ticks=120,
-        ghost_scatter_ticks=40,
-        ghost_release_tick_interval=18,
-        initial_lives=3,
-        seed_score=10,
-        large_seed_score=50,
-        cherry_score=500,
-        ghost_score=200,
-        summary_lines=(
-            "Lives: 3  Rage: standard",
-            "Ghosts: balanced pressure",
-            "Score: standard rewards",
-        ),
-    ),
-    "Hard": DifficultyPreset(
-        logic_tick_rate=4,
-        rage_duration_ticks=200,
-        cherry_respawn_ticks=100,
-        ghost_chase_ticks=150,
-        ghost_scatter_ticks=25,
-        ghost_release_tick_interval=12,
-        initial_lives=2,
-        seed_score=5,
-        large_seed_score=25,
-        cherry_score=250,
-        ghost_score=100,
-        summary_lines=(
-            "Lives: 2  Rage: short",
-            "Ghosts: aggressive pressure, fast release",
-            "Score: reduced rewards",
-        ),
-    ),
-}
 
 
 GAME_MODE_PRESETS: dict[str, GameModePreset] = {
@@ -212,6 +156,19 @@ GAME_MODE_PRESETS: dict[str, GameModePreset] = {
         map_cycle=(3, 5),
         reset_lives_each_level=False,
     ),
+    "Time Attack": GameModePreset(
+        title="TIME ATTACK",
+        subtitle="Beat the district clock",
+        summary_lines=(
+            "Race through three timed districts",
+            "Bank seconds on every successful clear",
+            "Built for tempo routes and fast recovery",
+        ),
+        accent=colors.ORANGE,
+        max_levels=3,
+        map_cycle=(4, 2, 5),
+        reset_lives_each_level=True,
+    ),
 }
 
 
@@ -227,6 +184,8 @@ CHALLENGE_PRESETS: dict[str, ChallengePreset] = {
         accent=colors.MAGENTA,
         map_cycle=(3,),
         starting_lives=1,
+        board_tag="BOARD A1",
+        threat_label="SURVIVAL",
         unlock_text="Available from the start",
         reward_title="ONE LIFE SIGIL",
     ),
@@ -241,6 +200,8 @@ CHALLENGE_PRESETS: dict[str, ChallengePreset] = {
         accent=colors.GOLD,
         map_cycle=(2,),
         starting_lives=2,
+        board_tag="BOARD B2",
+        threat_label="SCORE",
         target_score=3200,
         unlock_text="Unlock: finish 3 total runs",
         reward_title="RUSH CIRCUIT",
@@ -256,6 +217,8 @@ CHALLENGE_PRESETS: dict[str, ChallengePreset] = {
         accent=colors.SKYBLUE,
         map_cycle=(3,),
         starting_lives=2,
+        board_tag="BOARD C1",
+        threat_label="HUNT",
         target_ghosts=4,
         unlock_text="Unlock: eat 10 ghosts total",
         reward_title="HUNTER EMBLEM",
@@ -271,6 +234,8 @@ CHALLENGE_PRESETS: dict[str, ChallengePreset] = {
         accent=colors.GREEN,
         map_cycle=(4,),
         starting_lives=2,
+        board_tag="BOARD A2",
+        threat_label="ROUTE",
         target_score=1800,
         unlock_text="Unlock: reach level 2",
         reward_title="SPRINT STRIP",
@@ -286,6 +251,8 @@ CHALLENGE_PRESETS: dict[str, ChallengePreset] = {
         accent=colors.ORANGE,
         map_cycle=(2,),
         starting_lives=1,
+        board_tag="BOARD C3",
+        threat_label="RISK",
         target_ghosts=6,
         unlock_text="Unlock: win 1 run",
         reward_title="PHANTOM MARK",
@@ -301,6 +268,8 @@ CHALLENGE_PRESETS: dict[str, ChallengePreset] = {
         accent=colors.VIOLET,
         map_cycle=(3,),
         starting_lives=2,
+        board_tag="BOARD D1",
+        threat_label="PRESTIGE",
         target_score=4200,
         unlock_text="Unlock: best score 3500",
         reward_title="ACE CREST",
@@ -316,6 +285,8 @@ CHALLENGE_PRESETS: dict[str, ChallengePreset] = {
         accent=colors.BLUE,
         map_cycle=(4,),
         starting_lives=2,
+        board_tag="BOARD B1",
+        threat_label="CHAIN",
         target_ghosts=3,
         unlock_text="Unlock: clear 1 level",
         reward_title="RELAY BAND",
@@ -331,6 +302,8 @@ CHALLENGE_PRESETS: dict[str, ChallengePreset] = {
         accent=colors.YELLOW,
         map_cycle=(5,),
         starting_lives=1,
+        board_tag="BOARD C2",
+        threat_label="SCORE",
         target_score=2600,
         unlock_text="Unlock: total score 2000",
         reward_title="BURNER CHIP",
@@ -346,9 +319,45 @@ CHALLENGE_PRESETS: dict[str, ChallengePreset] = {
         accent=colors.PINK,
         map_cycle=(3,),
         starting_lives=2,
+        board_tag="BOARD D2",
+        threat_label="HUNT",
         target_ghosts=8,
         unlock_text="Unlock: eat 20 ghosts total",
         reward_title="LAST CALL PASS",
+    ),
+    "Redline Protocol": ChallengePreset(
+        title="REDLINE EX",
+        subtitle="Elite district clear above 5200",
+        summary_lines=(
+            "Prestige board with elite pressure",
+            "Finish above 5200 on the final district",
+            "Built for top-rank score routing",
+        ),
+        accent=colors.RED,
+        map_cycle=(5,),
+        starting_lives=2,
+        board_tag="BOARD E1",
+        threat_label="ELITE",
+        target_score=5200,
+        unlock_text="Unlock: Challenge rank HUNTER",
+        reward_title="REDLINE CORE",
+    ),
+    "Clock Reaper": ChallengePreset(
+        title="CLOCK REAPER",
+        subtitle="Timed hunt, clear and eat 7 ghosts",
+        summary_lines=(
+            "Tempo-heavy hunt on a timed board",
+            "Eat 7 ghosts before the district falls",
+            "Designed for high-pressure chain play",
+        ),
+        accent=colors.ORANGE,
+        map_cycle=(4,),
+        starting_lives=1,
+        board_tag="BOARD E2",
+        threat_label="ELITE",
+        target_ghosts=7,
+        unlock_text="Unlock: Time Attack mastery PRO",
+        reward_title="REAPER CLOCK",
     ),
 }
 
@@ -361,6 +370,36 @@ THEME_PRESETS: dict[str, ThemePreset] = {
     "Grid Echo": ThemePreset("GRID ECHO", "Arcade mastery cyan-grid pack", "Unlock: Arcade mastery PRO"),
     "After Hours": ThemePreset("AFTER HOURS", "Endless mastery late-night pack", "Unlock: Endless mastery PRO"),
     "Trial Chrome": ThemePreset("TRIAL CHROME", "Challenge mastery steel-magenta pack", "Unlock: Challenge mastery PRO"),
+}
+
+HUD_PACK_PRESETS: dict[str, HudPackPreset] = {
+    "Standard": HudPackPreset(
+        title="STANDARD",
+        subtitle="Balanced district HUD",
+        unlock_text="Available from the start",
+    ),
+    "Relay Grid": HudPackPreset(
+        title="RELAY GRID",
+        subtitle="Route-first broadcast layout",
+        unlock_text="Unlock: reach Arcade mastery 9",
+    ),
+    "Hunter Scope": HudPackPreset(
+        title="HUNTER SCOPE",
+        subtitle="Aggressive ghost-tracking layout",
+        unlock_text="Unlock: earn 4 challenge trophies",
+    ),
+    "Chrome Vector": HudPackPreset(
+        title="CHROME VECTOR",
+        subtitle="High-end operator telemetry",
+        unlock_text="Unlock: reach best score 6500",
+    ),
+}
+
+TITLE_VARIANT_PRESETS: dict[str, TitleVariantPreset] = {
+    "Standard": TitleVariantPreset("STANDARD", "Clean cinematic stack", "Available from the start"),
+    "Broadcast": TitleVariantPreset("BROADCAST", "Wide scanline title treatment", "Unlock: win 2 runs"),
+    "Splitline": TitleVariantPreset("SPLITLINE", "Sharp tempo-led title module", "Unlock: Time Attack mastery PRO"),
+    "Executive": TitleVariantPreset("EXECUTIVE", "Prestige premium title frame", "Unlock: best score 7000"),
 }
 
 
@@ -401,6 +440,26 @@ DISTRICT_MODIFIERS: dict[str, DistrictModifier] = {
         rage_bonus=-40,
         ghost_score_bonus=100,
     ),
+    "Redline Sector": DistrictModifier(
+        "REDLINE SECTOR",
+        "Elite overrun district",
+        colors.RED,
+        chase_bonus=32,
+        scatter_penalty=16,
+        release_bonus=4,
+        ghost_score_bonus=160,
+        seed_score_bonus=8,
+    ),
+    "Null Pulse": DistrictModifier(
+        "NULL PULSE",
+        "Cold precision and short windows",
+        colors.SKYBLUE,
+        chase_bonus=18,
+        scatter_penalty=10,
+        release_bonus=3,
+        rage_bonus=-28,
+        cherry_score_bonus=220,
+    ),
 }
 
 MAP_TRAITS: dict[int, MapTrait] = {
@@ -410,6 +469,19 @@ MAP_TRAITS: dict[int, MapTrait] = {
     4: MapTrait("MARKET LOOP", "warmer bonus tempo", colors.GOLD, cherry_respawn_bonus=-24, cherry_score_bonus=100),
     5: MapTrait("CREDIT SPIRAL", "high pressure survival board", colors.MAGENTA, release_bonus=3, scatter_penalty=8, chase_bonus=14),
 }
+
+ARCADE_CHAPTERS: tuple[ArcadeChapter, ...] = (
+    ArcadeChapter("CHAPTER 01", "TRANSIT GATE", "secure the district and establish tempo", colors.SKYBLUE),
+    ArcadeChapter("CHAPTER 02", "NIGHT MARKET", "push bonus routes through the warm loop", colors.GOLD),
+    ArcadeChapter("CHAPTER 03", "CREDIT SPIRAL", "survive the final pressure district", colors.MAGENTA),
+)
+
+ENDLESS_TIERS: tuple[tuple[int, EndlessTier], ...] = (
+    (1, EndlessTier("SURVIVAL TIER 1", "district drift", colors.SKYBLUE, 250)),
+    (3, EndlessTier("SURVIVAL TIER 2", "pressure climb", colors.GOLD, 360)),
+    (5, EndlessTier("SURVIVAL TIER 3", "overrun lanes", colors.ORANGE, 500)),
+    (7, EndlessTier("SURVIVAL TIER 4", "after hours collapse", colors.RED, 650)),
+)
 
 
 ACHIEVEMENT_DEFS: tuple[tuple[str, str, callable], ...] = (
@@ -448,117 +520,6 @@ CHALLENGE_TRACK_THRESHOLDS: tuple[tuple[int, str], ...] = (
 
 
 @dataclass
-class Config:
-    # Display & Map
-    fps: int = 16
-    layout_name: str = DEFAULT_LAYOUT
-    tile_size: int = 20
-    map_width: int = 28
-    map_height: int = 30
-    hud_mode: str = "side"
-    hud_extent: int = 250
-    menu_button_width: int = 220
-    menu_button_height: int = 56
-    menu_title_size: int = 64
-    menu_heading_size: int = 26
-    menu_body_size: int = 20
-    menu_footer_size: int = 18
-    hud_font_size: int = 22
-    hud_line_height: int = 28
-    hud_columns: int = 1
-
-    # Game Speed & Timing
-    logic_tick_rate: int = 3
-    death_animation_fps: int = 1
-    rage_duration_ticks: int = 300
-    cherry_respawn_ticks: int = 150
-    ghost_chase_ticks: int = 120
-    ghost_scatter_ticks: int = 40
-    ghost_chase_tick_step: int = 10
-    ghost_scatter_tick_step: int = 5
-    ghost_scatter_tick_min: int = 10
-    rage_duration_tick_step: int = 25
-    rage_duration_tick_min: int = 120
-    cherry_respawn_tick_step: int = 10
-    cherry_respawn_tick_min: int = 45
-    cherry_score_step: int = 100
-    large_seed_score_step: int = 25
-    ready_duration_ticks: int = 45
-    death_pause_ticks: int = 24
-    game_over_pause_ticks: int = 36
-    level_complete_duration_ticks: int = 30
-    ghost_release_tick_interval: int = 18
-    ghost_release_tick_step: int = 2
-    ghost_release_tick_min: int = 6
-    ghost_fright_release_stall_ticks: int = 10
-
-    # Score Values
-    seed_score: int = 10
-    large_seed_score: int = 50
-    cherry_score: int = 500
-    ghost_score: int = 200
-
-    # Game State
-    initial_lives: int = 3
-
-    @property
-    def board_width(self) -> int:
-        return self.map_width * self.tile_size
-
-    @property
-    def board_height(self) -> int:
-        return self.map_height * self.tile_size
-
-    @property
-    def board_gap(self) -> int:
-        return 56 if self.layout_name == "desktop" and self.hud_mode == "side" else 0
-
-    @property
-    def board_offset_x(self) -> int:
-        return 72 if self.layout_name == "desktop" and self.hud_mode == "side" else 0
-
-    @property
-    def board_offset_y(self) -> int:
-        return 60 if self.layout_name == "desktop" else 0
-
-    @property
-    def window_width(self) -> int:
-        if self.hud_mode == "side":
-            return self.board_offset_x * 2 + self.board_width + self.board_gap + self.hud_extent
-        return self.board_width
-
-    @property
-    def window_height(self) -> int:
-        if self.hud_mode == "bottom":
-            return self.board_height + self.hud_extent
-        return self.board_height + self.board_offset_y * 2
-
-    @property
-    def hud_x(self) -> int:
-        if self.hud_mode == "side":
-            return self.board_offset_x + self.board_width + self.board_gap
-        return 0
-
-    @property
-    def hud_y(self) -> int:
-        if self.hud_mode == "bottom":
-            return self.board_height
-        return self.board_offset_y
-
-    @property
-    def hud_width(self) -> int:
-        if self.hud_mode == "side":
-            return self.hud_extent
-        return self.board_width
-
-    @property
-    def hud_height(self) -> int:
-        if self.hud_mode == "bottom":
-            return self.hud_extent
-        return self.board_height
-
-
-@dataclass
 class GameContext:
     cfg: Config = field(default_factory=Config)
 
@@ -574,29 +535,111 @@ class GameContext:
     ghost_mode: str = "chase"
     ghost_mode_timer: int = 0
     ghost_combo: int = 0
+    power_chain_level: int = 0
+    power_chain_window: int = 0
+    route_chain_count: int = 0
+    route_chain_window: int = 0
     pressure_stage: int = 0
-    visual_time: float = 0.0
+    time_attack_seconds: float = 0.0
 
-    # Visual effects systems
-    particles: ParticleSystem = field(default_factory=ParticleSystem)
-    screen_shake: ScreenShake = field(default_factory=ScreenShake)
-    floating_text: FloatingTextSystem = field(
-        default_factory=FloatingTextSystem)
-    screen_flash: ScreenFlash = field(default_factory=ScreenFlash)
-
-    pacman: Optional[object] = None
-    game_map: Optional[object] = None
-    audio_manager: Optional[object] = None
-    profile: dict = field(default_factory=load_profile)
-    run_stats: RunStats = field(default_factory=RunStats)
-    pre_run_unlock_snapshot: dict = field(default_factory=dict)
-    last_unlock_lines: tuple[str, str, str] = field(default_factory=lambda: ("", "", ""))
+    visual: VisualSystems = field(default_factory=VisualSystems)
+    runtime: RuntimeRefs = field(default_factory=RuntimeRefs)
+    progression: ProgressionState = field(default_factory=ProgressionState)
 
     def __post_init__(self):
         self.apply_layout(self.cfg.layout_name)
+        self.set_capture_mode_enabled(self.capture_mode_enabled(), save=False)
         # Initialize lives from config if not already set
         if self.lives == 3:
             self.lives = self.cfg.initial_lives
+
+    @property
+    def particles(self):
+        return self.visual.particles
+
+    @property
+    def screen_shake(self):
+        return self.visual.screen_shake
+
+    @property
+    def floating_text(self):
+        return self.visual.floating_text
+
+    @property
+    def screen_flash(self):
+        return self.visual.screen_flash
+
+    @property
+    def visual_time(self) -> float:
+        return self.visual.visual_time
+
+    @visual_time.setter
+    def visual_time(self, value: float) -> None:
+        self.visual.visual_time = value
+
+    @property
+    def pacman(self):
+        return self.runtime.pacman
+
+    @pacman.setter
+    def pacman(self, value) -> None:
+        self.runtime.pacman = value
+
+    @property
+    def game_map(self):
+        return self.runtime.game_map
+
+    @game_map.setter
+    def game_map(self, value) -> None:
+        self.runtime.game_map = value
+
+    @property
+    def audio_manager(self):
+        return self.runtime.audio_manager
+
+    @audio_manager.setter
+    def audio_manager(self, value) -> None:
+        self.runtime.audio_manager = value
+
+    @property
+    def profile(self) -> dict:
+        return self.progression.profile
+
+    @profile.setter
+    def profile(self, value: dict) -> None:
+        self.progression.profile = value
+
+    @property
+    def run_stats(self) -> RunStats:
+        return self.progression.run_stats
+
+    @run_stats.setter
+    def run_stats(self, value: RunStats) -> None:
+        self.progression.run_stats = value
+
+    @property
+    def pre_run_unlock_snapshot(self) -> dict:
+        return self.progression.pre_run_unlock_snapshot
+
+    @pre_run_unlock_snapshot.setter
+    def pre_run_unlock_snapshot(self, value: dict) -> None:
+        self.progression.pre_run_unlock_snapshot = value
+
+    @property
+    def last_unlock_lines(self) -> tuple[str, str, str]:
+        return self.progression.last_unlock_lines
+
+    @last_unlock_lines.setter
+    def last_unlock_lines(self, value: tuple[str, str, str]) -> None:
+        self.progression.last_unlock_lines = value
+
+    @property
+    def last_unlocks_are_new(self) -> bool:
+        return self.progression.last_unlocks_are_new
+
+    @last_unlocks_are_new.setter
+    def last_unlocks_are_new(self, value: bool) -> None:
+        self.progression.last_unlocks_are_new = value
 
     def apply_layout(self, layout_name: str) -> None:
         profile = LAYOUT_PROFILES[layout_name]
@@ -621,12 +664,17 @@ class GameContext:
         self.lives = self.starting_lives()
         self.current_level = 1
         self.last_result = ""
+        self.last_unlock_lines = ("", "", "")
+        self.last_unlocks_are_new = False
         self.should_resume_game = False
         self.reset_ghost_mode_cycle()
         self.reset_ghost_combo()
         self.pacman = None
         self.game_map = None
         self.run_stats = RunStats()
+        self.reset_power_chain()
+        self.reset_route_chain()
+        self.time_attack_seconds = self.starting_time_attack_seconds()
         self.mark_level_baseline()
 
     def play_transition_effect(
@@ -687,6 +735,10 @@ class GameContext:
             return profile["best_score"] >= 2000
         if name == "Last Call":
             return profile["total_ghosts_eaten"] >= 20
+        if name == "Redline Protocol":
+            return int(self.profile.get("challenge_credits", 0)) >= 18
+        if name == "Clock Reaper":
+            return self.mode_mastery_value("Time Attack") >= 9
         return False
 
     def challenge_entries(self) -> list[tuple[str, ChallengePreset, bool]]:
@@ -694,6 +746,16 @@ class GameContext:
             (name, preset, self.challenge_unlocked(name))
             for name, preset in CHALLENGE_PRESETS.items()
         ]
+
+    def challenge_board_summary_lines(self) -> tuple[str, str, str]:
+        entries = self.challenge_entries()
+        unlocked = sum(1 for _name, _preset, is_open in entries if is_open)
+        cleared = self.challenge_reward_count()
+        return (
+            f"Unlocked {unlocked}/{len(entries)}",
+            f"Cleared {cleared}/{len(entries)}",
+            f"Rank {self.challenge_track_rank()}",
+        )
 
     def challenge_reward_unlocked(self, challenge_name: Optional[str] = None) -> bool:
         name = challenge_name or self.challenge_name
@@ -760,6 +822,12 @@ class GameContext:
 
     def current_run_directive(self) -> RunDirective:
         if self.game_mode == "Arcade":
+            if self.mode_mastery_value("Arcade") >= 18:
+                if self.current_level == 1:
+                    return RunDirective("CAMPAIGN EX", "earn 1600 score", "score", 1600, 420, colors.SKYBLUE)
+                if self.current_level == 2:
+                    return RunDirective("MARKET CUT", "eat 3 ghosts", "ghosts", 3, 640, colors.GOLD)
+                return RunDirective("FINAL PUSH", "collect 1 cherry", "cherries", 1, 760, colors.RED)
             if self.current_level == 1:
                 return RunDirective("CLEAN SWEEP", "eat 2 power seeds", "power_seeds", 2, 300, colors.MAGENTA)
             if self.current_level == 2:
@@ -767,12 +835,32 @@ class GameContext:
             return RunDirective("GHOST BREAK", "eat 3 ghosts", "ghosts", 3, 700, colors.RED)
 
         if self.game_mode == "Endless":
+            if self.mode_mastery_value("Endless") >= 18:
+                cycle = self.current_level % 3
+                if cycle == 1:
+                    return RunDirective("OVERCLOCK", "earn 2200 score", "score", 2200 + max(0, self.current_level - 1) * 140, 520, colors.ORANGE)
+                if cycle == 2:
+                    return RunDirective("HUNTER LOOP", "eat 5 ghosts", "ghosts", 5, 760, colors.RED)
+                return RunDirective("BONUS MARKET", "collect 2 cherries", "cherries", 2, 680, colors.GOLD)
             cycle = self.current_level % 3
             if cycle == 1:
                 return RunDirective("HARVEST RUN", "earn 1800 score", "score", 1800 + max(0, self.current_level - 1) * 120, 400, colors.GOLD)
             if cycle == 2:
                 return RunDirective("VOLTAGE CHAIN", "eat 4 ghosts", "ghosts", 4, 650, colors.SKYBLUE)
             return RunDirective("LUCK RUSH", "collect 1 cherry", "cherries", 1, 500, colors.GREEN)
+
+        if self.game_mode == "Time Attack":
+            if self.mode_mastery_value("Time Attack") >= 9:
+                if self.current_level == 1:
+                    return RunDirective("SPLIT PUSH", "finish above 1700", "score", 1700, 520, colors.ORANGE)
+                if self.current_level == 2:
+                    return RunDirective("CLOCK HUNT", "eat 4 ghosts", "ghosts", 4, 720, colors.RED)
+                return RunDirective("ZERO HOUR", "collect 1 cherry", "cherries", 1, 820, colors.GOLD)
+            if self.current_level == 1:
+                return RunDirective("FAST LINE", "finish above 1400", "score", 1400, 450, colors.ORANGE)
+            if self.current_level == 2:
+                return RunDirective("CUT ROUTE", "eat 3 ghosts", "ghosts", 3, 650, colors.SKYBLUE)
+            return RunDirective("FINAL LAP", "collect 1 cherry", "cherries", 1, 700, colors.GOLD)
 
         preset = self.challenge_preset()
         if preset.target_score > 0:
@@ -830,6 +918,154 @@ class GameContext:
             return
         self.profile["settings"]["theme_name"] = name
         self.save_profile()
+
+    def hud_pack_name(self) -> str:
+        name = str(self.profile["settings"].get("hud_pack_name", "Standard"))
+        if name not in HUD_PACK_PRESETS:
+            return "Standard"
+        if not self.hud_pack_unlocked(name):
+            return "Standard"
+        return name
+
+    def set_hud_pack_name(self, name: str) -> None:
+        if name not in HUD_PACK_PRESETS or not self.hud_pack_unlocked(name):
+            return
+        self.profile["settings"]["hud_pack_name"] = name
+        self.save_profile()
+
+    def hud_pack_unlocked(self, name: str) -> bool:
+        if name == "Standard":
+            return True
+        if name == "Relay Grid":
+            return self.mode_mastery_value("Arcade") >= 9
+        if name == "Hunter Scope":
+            return self.challenge_reward_count() >= 4
+        if name == "Chrome Vector":
+            return self.profile["best_score"] >= 6500
+        return False
+
+    def hud_pack_entries(self) -> list[tuple[str, HudPackPreset, bool]]:
+        return [(name, preset, self.hud_pack_unlocked(name)) for name, preset in HUD_PACK_PRESETS.items()]
+
+    def next_hud_pack_goal(self) -> Optional[str]:
+        for name, _preset, unlocked in self.hud_pack_entries():
+            if unlocked:
+                continue
+            if name == "Relay Grid":
+                remaining = max(0, 9 - self.mode_mastery_value("Arcade"))
+                return f"{name}: gain {remaining} Arcade mastery"
+            if name == "Hunter Scope":
+                remaining = max(0, 4 - self.challenge_reward_count())
+                return f"{name}: earn {remaining} more trophies"
+            if name == "Chrome Vector":
+                remaining = max(0, 6500 - int(self.profile["best_score"]))
+                return f"{name}: score {remaining} more best-score pts"
+        return None
+
+    def reward_progress_lines(self) -> tuple[str, str, str]:
+        themes_open = sum(1 for _name, _preset, unlocked in self.theme_entries() if unlocked)
+        hud_open = sum(1 for _name, _preset, unlocked in self.hud_pack_entries() if unlocked)
+        title_open = sum(1 for _name, _preset, unlocked in self.title_variant_entries() if unlocked)
+        return (
+            f"Themes {themes_open}/{len(THEME_PRESETS)}  HUD {hud_open}/{len(HUD_PACK_PRESETS)}",
+            f"Titles {title_open}/{len(TITLE_VARIANT_PRESETS)}  Trials {self.challenge_reward_count()}/{len(CHALLENGE_PRESETS)}",
+            f"Directive Packs {len(self.directive_pack_names())}  Elite Districts {len(self.elite_district_names())}",
+        )
+
+    def next_unlock_spotlight_lines(self) -> tuple[str, str, str]:
+        goals = [
+            self.next_theme_goal(),
+            self.next_hud_pack_goal(),
+            self.next_title_variant_goal(),
+            self.next_directive_pack_goal(),
+            self.next_elite_district_goal(),
+            self.next_challenge_unlock_goal(),
+        ]
+        lines = [goal for goal in goals if goal]
+        if not lines:
+            return (
+                "Reward board fully lit",
+                "All visible unlock tracks are open",
+                "Push mastery and score for prestige",
+            )
+        while len(lines) < 3:
+            lines.append("Complete another run to push unlock progress")
+        return (lines[0], lines[1], lines[2])
+
+    def title_variant_name(self) -> str:
+        name = str(self.profile["settings"].get("title_variant_name", "Standard"))
+        if name not in TITLE_VARIANT_PRESETS or not self.title_variant_unlocked(name):
+            return "Standard"
+        return name
+
+    def set_title_variant_name(self, name: str) -> None:
+        if name not in TITLE_VARIANT_PRESETS or not self.title_variant_unlocked(name):
+            return
+        self.profile["settings"]["title_variant_name"] = name
+        self.save_profile()
+
+    def title_variant_unlocked(self, name: str) -> bool:
+        if name == "Standard":
+            return True
+        if name == "Broadcast":
+            return int(self.profile.get("total_wins", 0)) >= 2
+        if name == "Splitline":
+            return self.mode_mastery_value("Time Attack") >= 9
+        if name == "Executive":
+            return int(self.profile.get("best_score", 0)) >= 7000
+        return False
+
+    def title_variant_entries(self) -> list[tuple[str, TitleVariantPreset, bool]]:
+        return [(name, preset, self.title_variant_unlocked(name)) for name, preset in TITLE_VARIANT_PRESETS.items()]
+
+    def next_title_variant_goal(self) -> Optional[str]:
+        for name, _preset, unlocked in self.title_variant_entries():
+            if unlocked:
+                continue
+            if name == "Broadcast":
+                remaining = max(0, 2 - int(self.profile.get("total_wins", 0)))
+                return f"{name}: win {remaining} more runs"
+            if name == "Splitline":
+                remaining = max(0, 9 - self.mode_mastery_value("Time Attack"))
+                return f"{name}: gain {remaining} Time Attack mastery"
+            if name == "Executive":
+                remaining = max(0, 7000 - int(self.profile.get("best_score", 0)))
+                return f"{name}: score {remaining} more best-score pts"
+        return None
+
+    def directive_pack_names(self) -> set[str]:
+        packs = {"Core Directives"}
+        if self.mode_mastery_value("Arcade") >= 18:
+            packs.add("Campaign EX")
+        if self.mode_mastery_value("Endless") >= 18:
+            packs.add("Overclock Pack")
+        if self.mode_mastery_value("Time Attack") >= 9:
+            packs.add("Split-Second Pack")
+        return packs
+
+    def next_directive_pack_goal(self) -> Optional[str]:
+        if self.mode_mastery_value("Arcade") < 18:
+            return f"Campaign EX: gain {18 - self.mode_mastery_value('Arcade')} Arcade mastery"
+        if self.mode_mastery_value("Endless") < 18:
+            return f"Overclock Pack: gain {18 - self.mode_mastery_value('Endless')} Endless mastery"
+        if self.mode_mastery_value("Time Attack") < 9:
+            return f"Split-Second Pack: gain {9 - self.mode_mastery_value('Time Attack')} Time Attack mastery"
+        return None
+
+    def elite_district_names(self) -> set[str]:
+        names = set()
+        if self.mode_mastery_value("Endless") >= 12:
+            names.add("Redline Sector")
+        if int(self.profile.get("best_score", 0)) >= 6000:
+            names.add("Null Pulse")
+        return names
+
+    def next_elite_district_goal(self) -> Optional[str]:
+        if self.mode_mastery_value("Endless") < 12:
+            return f"Redline Sector: gain {12 - self.mode_mastery_value('Endless')} Endless mastery"
+        if int(self.profile.get("best_score", 0)) < 6000:
+            return f"Null Pulse: score {6000 - int(self.profile.get('best_score', 0))} more best-score pts"
+        return None
 
     def theme_unlocked(self, name: str) -> bool:
         if name == "Neon District":
@@ -972,9 +1208,22 @@ class GameContext:
             return self.challenge_preset().starting_lives
         return self.cfg.initial_lives
 
+    def starting_time_attack_seconds(self) -> float:
+        if self.game_mode != "Time Attack":
+            return 0.0
+        return 55.0
+
+    def time_attack_clear_bonus_seconds(self) -> float:
+        return 18.0
+
+    def time_attack_warning_active(self) -> bool:
+        return self.game_mode == "Time Attack" and self.time_attack_seconds <= 12.0
+
     def mode_score_multiplier(self) -> float:
         if self.game_mode == "Challenge":
             return 1.4
+        if self.game_mode == "Time Attack":
+            return 1.25
         if self.game_mode == "Endless":
             return min(1.35, 1.1 + max(0, self.current_level - 1) * 0.05)
         return 1.0
@@ -982,6 +1231,8 @@ class GameContext:
     def mode_pressure_bonus(self) -> int:
         if self.game_mode == "Challenge":
             return 2
+        if self.game_mode == "Time Attack":
+            return 1
         if self.game_mode == "Endless":
             return 1 + min(2, max(0, self.current_level - 1) // 2)
         return 0
@@ -996,8 +1247,10 @@ class GameContext:
     def mode_clear_bonus(self) -> int:
         if self.game_mode == "Challenge":
             return 0
+        if self.game_mode == "Time Attack":
+            return 300 * self.current_level
         if self.game_mode == "Endless":
-            return 250 * self.current_level
+            return self.endless_tier().clear_bonus * self.current_level // max(1, min(self.current_level, 3))
         return 400 * self.current_level
 
     def total_levels_for_mode(self, game_mode: Optional[str] = None) -> Optional[int]:
@@ -1009,7 +1262,19 @@ class GameContext:
     def mode_subtitle(self) -> str:
         if self.game_mode == "Challenge":
             return self.challenge_preset().title
+        if self.game_mode == "Endless":
+            tier = self.endless_tier()
+            return f"{tier.title} | {tier.subtitle}".upper()
+        if self.game_mode == "Time Attack":
+            return f"CLOCK LIVE | {self.game_mode_preset().subtitle}".upper()
         return self.game_mode_preset().subtitle.upper()
+
+    def endless_tier(self) -> EndlessTier:
+        current = ENDLESS_TIERS[0][1]
+        for threshold, tier in ENDLESS_TIERS:
+            if self.current_level >= threshold:
+                current = tier
+        return current
 
     def district_modifier_name(self) -> str:
         if self.game_mode == "Challenge":
@@ -1020,12 +1285,26 @@ class GameContext:
                 "Neon Sprint": "Harvest Grid",
                 "Phantom Debt": "Power Surge",
                 "District Ace": "Blackout",
+                "Redline Protocol": "Redline Sector",
+                "Clock Reaper": "Null Pulse",
             }
             return challenge_mods.get(self.challenge_name, "Blackout")
 
         if self.game_mode == "Endless":
-            cycle = ("Neon Calm", "Harvest Grid", "Overdrive", "Power Surge")
+            cycle = ["Neon Calm", "Harvest Grid", "Overdrive", "Power Surge"]
+            if "Redline Sector" in self.elite_district_names():
+                cycle.append("Redline Sector")
+            if "Null Pulse" in self.elite_district_names():
+                cycle.append("Null Pulse")
             return cycle[(max(1, self.current_level) - 1) % len(cycle)]
+
+        if self.game_mode == "Time Attack":
+            cycle = ["Power Surge", "Harvest Grid", "Overdrive"]
+            if "Null Pulse" in self.elite_district_names():
+                cycle[1] = "Null Pulse"
+            if "Redline Sector" in self.elite_district_names():
+                cycle[2] = "Redline Sector"
+            return cycle[min(max(1, self.current_level), len(cycle)) - 1]
 
         arcade_cycle = ("Neon Calm", "Overdrive", "Power Surge")
         return arcade_cycle[min(max(1, self.current_level), len(arcade_cycle)) - 1]
@@ -1061,9 +1340,79 @@ class GameContext:
     def reset_ghost_combo(self) -> None:
         self.ghost_combo = 0
 
+    def reset_power_chain(self) -> None:
+        self.power_chain_level = 0
+        self.power_chain_window = 0
+
+    def reset_route_chain(self) -> None:
+        self.route_chain_count = 0
+        self.route_chain_window = 0
+
+    def route_chain_grace_ticks(self) -> int:
+        if self.game_mode == "Time Attack":
+            return 46
+        if self.game_mode == "Endless":
+            return 52
+        return 58
+
+    def tick_route_chain_window(self) -> None:
+        if self.route_chain_window > 0:
+            self.route_chain_window -= 1
+            if self.route_chain_window == 0:
+                self.reset_route_chain()
+
+    def register_route_chain_dot(self) -> tuple[int, int]:
+        if self.route_chain_window > 0:
+            self.route_chain_count += 1
+        else:
+            self.route_chain_count = 1
+
+        self.route_chain_window = self.route_chain_grace_ticks()
+
+        bonus = 0
+        if self.route_chain_count >= 6 and self.route_chain_count % 4 == 0:
+            bonus = 40 + max(0, self.route_chain_count - 4) * 12
+            bonus = int(bonus * self.mode_score_multiplier())
+        return self.route_chain_count, bonus
+
+    def power_chain_grace_ticks(self) -> int:
+        if self.game_mode == "Challenge":
+            return 72
+        if self.game_mode == "Endless":
+            return 84
+        return 96
+
+    def begin_power_chain_window(self) -> None:
+        if self.power_chain_level > 0:
+            self.power_chain_window = self.power_chain_grace_ticks()
+
+    def tick_power_chain_window(self) -> None:
+        pacman = self.pacman
+        if pacman is not None and getattr(pacman, "rage", False):
+            return
+        if self.power_chain_window > 0:
+            self.power_chain_window -= 1
+            if self.power_chain_window == 0:
+                self.reset_power_chain()
+                self.reset_ghost_combo()
+
+    def trigger_power_chain(self, already_raging: bool) -> tuple[int, int, int, bool]:
+        chained = already_raging or self.power_chain_window > 0
+        if chained:
+            self.power_chain_level += 1
+        else:
+            self.power_chain_level = 1
+        self.power_chain_window = 0
+
+        chain_bonus = max(0, self.power_chain_level - 1) * 150
+        rage_bonus = max(0, self.power_chain_level - 1) * 36
+        keep_combo = self.power_chain_level > 1
+        return self.power_chain_level, chain_bonus, rage_bonus, keep_combo
+
     def next_ghost_combo_score(self) -> int:
         combo_step = min(self.ghost_combo, 3)
-        base_score = self.cfg.ghost_score + self.district_modifier().ghost_score_bonus + self.current_map_trait().ghost_score_bonus
+        chain_bonus = max(0, self.power_chain_level - 1) * 40
+        base_score = self.cfg.ghost_score + self.district_modifier().ghost_score_bonus + self.current_map_trait().ghost_score_bonus + chain_bonus
         return int(base_score * (2 ** combo_step) * self.mode_score_multiplier())
 
     def compute_pressure_stage(self, remaining_pickups: int, total_pickups: int) -> int:
@@ -1084,6 +1433,13 @@ class GameContext:
 
         return min(3, max(stage, min(2, level_pressure) + self.mode_pressure_bonus()))
 
+    def elite_pressure_active(self) -> bool:
+        if self.game_mode == "Challenge":
+            return self.pressure_stage >= 2
+        if self.game_mode == "Endless":
+            return self.current_level >= 4 or self.pressure_stage >= 3
+        return self.current_level >= 3 and self.pressure_stage >= 2
+
     def update_pressure_stage(self, remaining_pickups: int, total_pickups: int) -> bool:
         new_stage = self.compute_pressure_stage(remaining_pickups, total_pickups)
         changed = new_stage != self.pressure_stage
@@ -1100,6 +1456,9 @@ class GameContext:
             self.cfg.ghost_scatter_tick_min,
             self.cfg.ghost_scatter_ticks - level_offset * self.cfg.ghost_scatter_tick_step - pressure * 6 - modifier.scatter_penalty - map_trait.scatter_penalty,
         )
+        if self.elite_pressure_active():
+            chase_ticks += 18
+            scatter_ticks = max(self.cfg.ghost_scatter_tick_min, scatter_ticks - 8)
         return chase_ticks, scatter_ticks
 
     def effective_rage_duration(self) -> int:
@@ -1138,10 +1497,13 @@ class GameContext:
         level_offset = max(0, self.current_level - 1)
         modifier = self.district_modifier()
         map_trait = self.current_map_trait()
-        return max(
+        interval = max(
             self.cfg.ghost_release_tick_min,
             self.cfg.ghost_release_tick_interval - level_offset * self.cfg.ghost_release_tick_step - modifier.release_bonus - map_trait.release_bonus,
         )
+        if self.elite_pressure_active():
+            interval = max(self.cfg.ghost_release_tick_min, interval - 2)
+        return interval
 
     def effective_item_counts(self) -> tuple[int, int, int] | None:
         if self.game_map is None:
@@ -1188,6 +1550,73 @@ class GameContext:
     def current_map_trait(self) -> MapTrait:
         return MAP_TRAITS.get(self.current_map_number(), MAP_TRAITS[1])
 
+    def arcade_campaign_chapter(self, level: Optional[int] = None) -> Optional[ArcadeChapter]:
+        if self.game_mode != "Arcade":
+            return None
+        chapter_index = min(max(1, level or self.current_level), len(ARCADE_CHAPTERS)) - 1
+        return ARCADE_CHAPTERS[chapter_index]
+
+    def arcade_campaign_summary_lines(self) -> tuple[str, str, str]:
+        chapter = self.arcade_campaign_chapter()
+        if chapter is None:
+            return self.mode_summary_lines()
+        return (
+            chapter.title,
+            chapter.subtitle,
+            chapter.briefing,
+        )
+
+    def map_link_bonus_value(self) -> int:
+        return 120 if self.current_map_number() == 1 else 0
+
+    def map_link_bonus_step(self) -> int:
+        return 60 if self.current_map_number() == 1 else 0
+
+    def map_cherry_bonus_value(self) -> int:
+        return 200 if self.current_map_number() == 4 else 0
+
+    def map_ghost_rage_extension(self) -> int:
+        return 22 if self.current_map_number() == 3 else 0
+
+    def map_release_surge_amount(self) -> int:
+        if self.current_map_number() == 5:
+            return 5
+        if self.current_map_number() == 2:
+            return 3
+        return 0
+
+    def map_blinky_bias(self) -> float:
+        number = self.current_map_number()
+        if number == 5:
+            return -0.55
+        if number == 2:
+            return -0.35
+        return 0.0
+
+    def map_pinky_bias(self) -> float:
+        number = self.current_map_number()
+        if number == 4:
+            return -0.5
+        if number == 1:
+            return -0.2
+        return 0.0
+
+    def map_inky_bias(self) -> float:
+        number = self.current_map_number()
+        if number == 1:
+            return -0.45
+        if number == 3:
+            return -0.2
+        return 0.0
+
+    def map_clyde_bias(self) -> float:
+        number = self.current_map_number()
+        if number == 3:
+            return -0.5
+        if number == 4:
+            return 0.2
+        return 0.0
+
     def run_won_on_level_clear(self) -> bool:
         if self.game_mode == "Challenge":
             return False
@@ -1206,6 +1635,8 @@ class GameContext:
 
     def next_level(self) -> None:
         """Advance to the next level."""
+        if self.game_mode == "Time Attack":
+            self.time_attack_seconds += self.time_attack_clear_bonus_seconds()
         self.current_level += 1
         if self.game_mode_preset().reset_lives_each_level:
             self.lives = self.starting_lives()
@@ -1213,6 +1644,9 @@ class GameContext:
 
     def record_dot_eaten(self) -> None:
         self.run_stats.dots_eaten += 1
+
+    def route_chain_active(self) -> bool:
+        return self.route_chain_count >= 4 and self.route_chain_window > 0
 
     def record_power_seed_eaten(self) -> None:
         self.run_stats.power_seeds_eaten += 1
@@ -1297,6 +1731,16 @@ class GameContext:
                 name for name, _preset, unlocked in self.theme_entries()
                 if unlocked
             },
+            "hud_packs": {
+                name for name, _preset, unlocked in self.hud_pack_entries()
+                if unlocked
+            },
+            "title_variants": {
+                name for name, _preset, unlocked in self.title_variant_entries()
+                if unlocked
+            },
+            "directive_packs": self.directive_pack_names(),
+            "elite_districts": self.elite_district_names(),
             "challenges": {
                 name for name, _preset, unlocked in self.challenge_entries()
                 if unlocked
@@ -1311,7 +1755,7 @@ class GameContext:
             },
         }
 
-    def new_unlock_lines(self, before: Optional[dict] = None) -> tuple[str, str, str]:
+    def _collect_new_unlock_lines(self, before: Optional[dict] = None) -> list[str]:
         before = before or {}
         after = self.unlock_snapshot()
         lines: list[str] = []
@@ -1331,6 +1775,23 @@ class GameContext:
         for name in new_themes:
             lines.append(f"Theme Unlocked: {name.upper()}")
 
+        new_hud_packs = sorted(after["hud_packs"] - before.get("hud_packs", set()))
+        for name in new_hud_packs:
+            lines.append(f"HUD Pack Unlocked: {name.upper()}")
+
+        new_title_variants = sorted(after["title_variants"] - before.get("title_variants", set()))
+        for name in new_title_variants:
+            lines.append(f"Title Variant: {name.upper()}")
+
+        new_directive_packs = sorted(after["directive_packs"] - before.get("directive_packs", set()))
+        for name in new_directive_packs:
+            if name != "Core Directives":
+                lines.append(f"Directive Pack: {name.upper()}")
+
+        new_elite_districts = sorted(after["elite_districts"] - before.get("elite_districts", set()))
+        for name in new_elite_districts:
+            lines.append(f"Elite District: {name.upper()}")
+
         new_challenges = sorted(after["challenges"] - before.get("challenges", set()))
         for name in new_challenges:
             lines.append(f"Trial Unlocked: {CHALLENGE_PRESETS[name].title}")
@@ -1343,6 +1804,12 @@ class GameContext:
         for name in new_rewards:
             lines.append(f"Trophy Earned: {CHALLENGE_PRESETS[name].reward_title}")
 
+        return lines
+
+    def new_unlock_lines(self, before: Optional[dict] = None) -> tuple[str, str, str]:
+        lines = self._collect_new_unlock_lines(before)
+        self.last_unlocks_are_new = bool(lines)
+
         if not lines:
             next_goals = [line for line in self.career_goal_lines() if line]
             while len(next_goals) < 3:
@@ -1352,6 +1819,20 @@ class GameContext:
         while len(lines) < 3:
             lines.append("More unlocks waiting in Career")
         return (lines[0], lines[1], lines[2])
+
+    def profile_save_summary_lines(self) -> tuple[str, str, str]:
+        return (
+            "AUTO-SAVE ACTIVE",
+            f"FILE {PROFILE_FILE.name.upper()}",
+            f"RUNS {int(self.profile.get('total_runs', 0))}  HISTORY {len(self.run_history_entries())}",
+        )
+
+    def reward_showcase_lines(self) -> tuple[str, str, str]:
+        if self.last_unlocks_are_new:
+            return self.last_unlock_lines
+        reward_lines = list(self.reward_progress_lines())
+        reward_lines[0] = "NO NEW UNLOCK THIS RUN"
+        return (reward_lines[0], reward_lines[1], reward_lines[2])
 
     def fx_intensity(self) -> str:
         return str(self.profile["settings"].get("fx_intensity", "High"))
@@ -1403,6 +1884,39 @@ class GameContext:
     def mark_tutorial_seen(self) -> None:
         self.profile["tutorial_seen"] = 1
         self.save_profile()
+
+    def reset_tutorial_seen(self) -> None:
+        self.profile["tutorial_seen"] = 0
+        self.save_profile()
+
+    def capture_mode_enabled(self) -> bool:
+        return bool(self.profile["settings"].get("capture_mode", 0))
+
+    def set_capture_mode_enabled(self, enabled: bool, *, save: bool = True) -> None:
+        self.profile["settings"]["capture_mode"] = 1 if enabled else 0
+        from ui import ui as ui_theme
+        ui_theme.set_presentation_mode(enabled)
+        if save:
+            self.save_profile()
+
+    def onboarding_summary_lines(self) -> tuple[str, str, str]:
+        if not self.tutorial_enabled():
+            return (
+                "Training disabled",
+                "Turn it on to show first-run guidance",
+                "Replay is always available from Options",
+            )
+        if self.tutorial_seen():
+            return (
+                "Training completed",
+                "Replay tutorial if you want a guided refresher",
+                "Gameplay hints stay hidden during normal runs",
+            )
+        return (
+            "Training armed",
+            "Your next run starts with guided movement and power-seed hints",
+            "Finish the four onboarding steps to clear it",
+        )
 
     def fx_multiplier(self) -> float:
         intensity = self.fx_intensity()
@@ -1489,7 +2003,7 @@ class GameContext:
         return (
             f"Arcade {self.mode_mastery_rank('Arcade')} {self.mode_mastery_value('Arcade')}",
             f"Endless {self.mode_mastery_rank('Endless')} {self.mode_mastery_value('Endless')}",
-            f"Challenge {self.mode_mastery_rank('Challenge')} {self.mode_mastery_value('Challenge')}",
+            f"Challenge {self.mode_mastery_rank('Challenge')} {self.mode_mastery_value('Challenge')}  Time {self.mode_mastery_rank('Time Attack')} {self.mode_mastery_value('Time Attack')}",
         )
 
     def achievement_entries(self) -> list[tuple[str, str, bool]]:
@@ -1558,9 +2072,9 @@ class GameContext:
     def mode_run_summary_lines(self) -> tuple[str, str, str]:
         mode_runs = self.profile.get("mode_runs", {})
         return (
-            f"Arcade Runs {int(mode_runs.get('Arcade', 0))}",
-            f"Endless Runs {int(mode_runs.get('Endless', 0))}",
-            f"Challenge Runs {int(mode_runs.get('Challenge', 0))}",
+            f"Arcade {int(mode_runs.get('Arcade', 0))}  Endless {int(mode_runs.get('Endless', 0))}",
+            f"Challenge {int(mode_runs.get('Challenge', 0))}  Time {int(mode_runs.get('Time Attack', 0))}",
+            f"Total Runs {int(self.profile.get('total_runs', 0))}",
         )
 
     def difficulty_run_summary_lines(self) -> tuple[str, str, str]:
@@ -1590,6 +2104,10 @@ class GameContext:
             self.next_rank_goal(),
             self.next_challenge_unlock_goal(),
             self.next_theme_goal(),
+            self.next_hud_pack_goal(),
+            self.next_title_variant_goal(),
+            self.next_directive_pack_goal(),
+            self.next_elite_district_goal(),
             self.next_mode_mastery_goal(),
             self.next_challenge_rank_goal(),
             self.next_achievement_goal(),
@@ -1626,3 +2144,49 @@ class GameContext:
             f"Latest {tag} / {latest.get('difficulty', 'Normal')}",
             f"Latest Score {int(latest.get('score', 0))}",
         )
+
+    def journal_summary_lines(self) -> tuple[str, str, str]:
+        districts_open = sum(1 for _title, _subtitle, _detail, _accent, unlocked in self.district_journal_entries() if unlocked)
+        trials_open = sum(1 for _title, _subtitle, _reward, _accent, unlocked in self.challenge_journal_entries() if unlocked)
+        ghosts_known = len(self.ghost_journal_entries())
+        return (
+            f"District Files {districts_open}/{len(self.district_journal_entries())}",
+            f"Trial Files {trials_open}/{len(self.challenge_journal_entries())}",
+            f"Ghost Files {ghosts_known}/4",
+        )
+
+    def district_journal_entries(self) -> list[tuple[str, str, str, object, bool]]:
+        entries: list[tuple[str, str, str, object, bool]] = []
+        district_notes = {
+            1: "Fast cherries, angled ambush lanes",
+            2: "Heavy release pressure, shorter safe windows",
+            3: "Short rage, richer ghost reward routing",
+            4: "Bonus-heavy market tempo and relay routes",
+            5: "Survival board with escalating pressure spikes",
+        }
+        for map_number in sorted(MAP_TRAITS.keys()):
+            trait = MAP_TRAITS[map_number]
+            entries.append((trait.title, trait.subtitle, district_notes.get(map_number, "District routing file"), trait.accent, True))
+
+        elite_notes = {
+            "Redline Sector": "Elite overrun pattern with score-heavy pressure",
+            "Null Pulse": "Cold precision district with shorter power windows",
+        }
+        for name in ("Redline Sector", "Null Pulse"):
+            modifier = DISTRICT_MODIFIERS[name]
+            entries.append((modifier.title, modifier.subtitle, elite_notes[name], modifier.accent, name in self.elite_district_names()))
+        return entries
+
+    def challenge_journal_entries(self) -> list[tuple[str, str, str, object, bool]]:
+        entries: list[tuple[str, str, str, object, bool]] = []
+        for name, preset in CHALLENGE_PRESETS.items():
+            entries.append((preset.title, f"{preset.board_tag}  {preset.threat_label}", preset.reward_title, preset.accent, self.challenge_unlocked(name)))
+        return entries
+
+    def ghost_journal_entries(self) -> list[tuple[str, str, str, object]]:
+        return [
+            ("BLINKY", "Relentless direct chase", "Gets nastier in Pressure Lanes and Credit Spiral", colors.RED),
+            ("PINKY", "Front-cut ambush routes", "Excels in Transit Grid and Market Loop", colors.MAGENTA),
+            ("INKY", "Side-angle intercept logic", "Harder to read on Transit Grid", colors.SKYBLUE),
+            ("CLYDE", "Skittish until he gets close", "Turns meaner in Black Channel", colors.ORANGE),
+        ]

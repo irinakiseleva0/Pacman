@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import pyray
+import core.raylib_api as pyray
 from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE, MODES_SCENE, OPTIONS_SCENE
 from ui.layout import LAYOUT_PROFILES
 from ui.navigation import ButtonNavigator
-from ui.ui import LIVE_GOLD, PANEL_ACCENT, TEXT_DIM, draw_arcade_background, draw_cinematic_menu_background, draw_cinematic_title_stack, draw_panel, draw_scene_footer, draw_street_terminal, button_clicked, centered_rect, draw_button, draw_shadowed_text_centered, draw_text_centered
+from ui.ui import LIVE_GOLD, PANEL_ACCENT, TEXT_DIM, draw_arcade_background, draw_cinematic_menu_background, draw_cinematic_title_stack, draw_panel, draw_presentation_bars, draw_scene_footer, draw_street_terminal, button_clicked, centered_rect, draw_button, draw_shadowed_text_centered, draw_text_centered
 
 
 class Menu(Scene):
@@ -198,6 +198,7 @@ class Menu(Scene):
             draw_shadowed_text_centered("PAC-MAN", center_x, int(main_panel.y + 40), title_size, colors.WHITE)
             draw_text_centered("NEON DISTRICT", center_x, int(main_panel.y + 140), 18, colors.WHITE)
             self._draw_mobile_menu(main_panel)
+        draw_presentation_bars(cfg.window_width, cfg.window_height)
 
     def _draw_desktop_menu(self, main_panel) -> None:
         cfg = self.ctx.cfg
@@ -212,6 +213,7 @@ class Menu(Scene):
             "NEON DISTRICT",
             "ARCADE PROTOCOL V2.0",
             self.ctx.visual_time,
+            variant=self.ctx.title_variant_name(),
         )
         draw_text_centered(
             self.ctx.mode_label().upper(),
@@ -220,6 +222,24 @@ class Menu(Scene):
             16,
             PANEL_ACCENT,
         )
+
+        if not self.ctx.capture_mode_enabled():
+            reward_card = pyray.Rectangle(int(cfg.window_width * 0.08), int(cfg.window_height * 0.74), 252, 90)
+            goal_card = pyray.Rectangle(int(cfg.window_width * 0.08) + 270, int(cfg.window_height * 0.74), 336, 90)
+            draw_street_terminal(
+                reward_card,
+                "REWARDS",
+                f"{self.ctx.challenge_reward_count()} TROPHIES",
+                LIVE_GOLD,
+                subline=self.ctx.reward_progress_lines()[0].upper(),
+            )
+            draw_street_terminal(
+                goal_card,
+                "NEXT GOAL",
+                self.ctx.next_unlock_spotlight_lines()[0].upper(),
+                PANEL_ACCENT,
+                subline=self.ctx.next_unlock_spotlight_lines()[1].upper(),
+            )
 
         draw_text_centered("DISPLAY", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 18), 14, TEXT_DIM)
         draw_button(self.btn_desktop, "DESKTOP", focused=self.navigator.focus_index == 0)

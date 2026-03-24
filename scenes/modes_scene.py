@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import pyray
+import core.raylib_api as pyray
 from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import CHALLENGE_SCENE, MENU_SCENE
 from core.context import GAME_MODE_PRESETS
+from ui import gamepad
 from ui.navigation import ButtonNavigator
 from ui.ui import (
     PANEL_ACCENT,
@@ -24,12 +25,12 @@ from ui.ui import (
 
 
 class ModesScene(Scene):
-    MODES = ("Arcade", "Endless", "Challenge")
+    MODES = ("Arcade", "Endless", "Challenge", "Time Attack")
 
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
-        self.navigator = ButtonNavigator(4)
+        self.navigator = ButtonNavigator(5)
         self.panel = None
         self.mode_buttons: list[pyray.Rectangle] = []
         self.btn_back = None
@@ -46,14 +47,18 @@ class ModesScene(Scene):
         self.mode_buttons = []
         if cfg.layout_name == "desktop":
             card_gap = 18
-            card_width = int((panel_width - 84 - card_gap * 2) / 3)
+            card_width = int((panel_width - 96 - card_gap) / 2)
             card_y = int(panel_y + 168)
-            for index in range(3):
-                x = int(panel_x + 30 + index * (card_width + card_gap))
-                self.mode_buttons.append(pyray.Rectangle(x, card_y, card_width, 274))
+            card_height = 198
+            for index in range(4):
+                row = index // 2
+                col = index % 2
+                x = int(panel_x + 30 + col * (card_width + card_gap))
+                y = int(card_y + row * (card_height + 18))
+                self.mode_buttons.append(pyray.Rectangle(x, y, card_width, card_height))
         else:
             card_y = int(panel_y + 140)
-            for index in range(3):
+            for index in range(4):
                 self.mode_buttons.append(
                     pyray.Rectangle(panel_x + 20, card_y + index * 148, panel_width - 40, 126)
                 )
@@ -63,14 +68,14 @@ class ModesScene(Scene):
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
 
-        if pyray.is_key_pressed(pyray.KEY_ESCAPE):
+        if pyray.is_key_pressed(pyray.KEY_ESCAPE) or gamepad.back_pressed():
             self.ctx.play_sfx("ui_back")
             self.request_switch(MENU_SCENE)
             return
 
         self.navigator.move_vertical()
-        if self.ctx.cfg.layout_name == "desktop" and self.navigator.focus_index < 3:
-            self.navigator.move_horizontal_within(3)
+        if self.ctx.cfg.layout_name == "desktop" and self.navigator.focus_index < 4:
+            self.navigator.move_horizontal_within(2)
 
         if self.navigator.confirm_pressed():
             self._activate_focused()
@@ -80,12 +85,12 @@ class ModesScene(Scene):
                 self.navigator.focus_index = index
                 self._select_mode(self.MODES[index])
         if button_clicked(self.btn_back):
-            self.navigator.focus_index = 3
+            self.navigator.focus_index = 4
             self.ctx.play_sfx("ui_back")
             self.request_switch(MENU_SCENE)
 
     def _activate_focused(self) -> None:
-        if self.navigator.focus_index < 3:
+        if self.navigator.focus_index < 4:
             self._select_mode(self.MODES[self.navigator.focus_index])
             return
         self.ctx.play_sfx("ui_back")
@@ -113,7 +118,7 @@ class ModesScene(Scene):
         for index, mode in enumerate(self.MODES):
             self._draw_mode_card(self.mode_buttons[index], mode, focused=self.navigator.focus_index == index)
 
-        draw_button(self.btn_back, "BACK", focused=self.navigator.focus_index == 3)
+        draw_button(self.btn_back, "BACK", focused=self.navigator.focus_index == 4)
         draw_scene_footer(panel, "ENTER OR CLICK")
 
     def _draw_mode_card(self, rect, mode: str, *, focused: bool) -> None:

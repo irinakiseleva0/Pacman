@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import pyray
+import core.raylib_api as pyray
 from raylib import colors
 
-from core.context import CHALLENGE_PRESETS
+from core.context import CHALLENGE_PRESETS, HUD_PACK_PRESETS
 from core.scene import Scene
 from core.scene_ids import ACHIEVEMENTS_SCENE, OPTIONS_SCENE, RUN_HISTORY_SCENE
+from ui import gamepad
 from ui.navigation import ButtonNavigator
 from ui.ui import (
     PANEL_ACCENT,
@@ -48,7 +49,7 @@ class CareerScene(Scene):
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
 
-        if pyray.is_key_pressed(pyray.KEY_ESCAPE):
+        if pyray.is_key_pressed(pyray.KEY_ESCAPE) or gamepad.back_pressed():
             self.ctx.play_sfx("ui_back")
             self.request_switch(OPTIONS_SCENE)
             return
@@ -125,7 +126,8 @@ class CareerScene(Scene):
         self._draw_labeled_lines(top_left, self.ctx.rank_title(), self.ctx.profile_summary_lines(), max_lines=1)
         self._draw_labeled_lines(mid_left, "MODE MASTERY", self.ctx.mode_mastery_summary_lines(), max_lines=1)
         self._draw_labeled_lines(bottom_left, "LIFETIME STATS", self.ctx.lifetime_stat_lines(), max_lines=1)
-        self._draw_labeled_lines(trophy_left, f"TROPHIES {self.ctx.challenge_reward_count()}/{len(CHALLENGE_PRESETS)}", self.ctx.challenge_progress_lines(), max_lines=1)
+        hud_unlocked = sum(1 for _name, _preset, unlocked in self.ctx.hud_pack_entries() if unlocked)
+        self._draw_labeled_lines(trophy_left, f"UNLOCKS {self.ctx.challenge_reward_count()}/{len(CHALLENGE_PRESETS)}", (self.ctx.challenge_progress_lines()[0], f"HUD PACKS {hud_unlocked}/{len(HUD_PACK_PRESETS)}", f"ACTIVE {self.ctx.hud_pack_name().upper()}"), max_lines=2)
 
         center_x = int(right_card.x + right_card.width / 2)
         draw_text_centered("NEXT GOALS", center_x, int(right_card.y + 18), 20, TEXT_DIM)
@@ -137,15 +139,30 @@ class CareerScene(Scene):
             draw_text_centered(line, center_x, int(item.y + 17), 15, colors.WHITE)
             goal_y += 62
 
-        draw_text_centered("RECENT MILESTONES", center_x, goal_y + 10, 16, PANEL_ACCENT)
-        milestone_y = goal_y + 38
+        preview = pyray.Rectangle(right_card.x + 24, goal_y + 6, right_card.width - 48, 62)
+        save_card = pyray.Rectangle(right_card.x + 24, goal_y + 78, right_card.width - 48, 54)
+        draw_glass_card(preview, accent_color=colors.GOLD, glow_alpha=8, fill_alpha=132)
+        draw_glass_card(save_card, accent_color=PANEL_ACCENT, glow_alpha=8, fill_alpha=132)
+        draw_text_centered("REWARD PROGRESS", center_x, int(preview.y + 10), 14, TEXT_DIM)
+        progress_y = int(preview.y + 30)
+        for line in self.ctx.reward_progress_lines()[:2]:
+            draw_text_centered(line, center_x, progress_y, 13, colors.WHITE)
+            progress_y += 16
+        draw_text_centered("PROFILE SAVE", center_x, int(save_card.y + 10), 14, TEXT_DIM)
+        save_y = int(save_card.y + 28)
+        for line in self.ctx.profile_save_summary_lines()[:2]:
+            draw_text_centered(line, center_x, save_y, 12, colors.WHITE)
+            save_y += 14
+
+        draw_text_centered("RECENT MILESTONES", center_x, goal_y + 146, 16, PANEL_ACCENT)
+        milestone_y = goal_y + 174
         milestones = self.ctx.unlocked_milestones()
         if not milestones:
             draw_text_centered("NO MILESTONES YET", center_x, milestone_y, 18, colors.WHITE)
             draw_text_centered("START A RUN TO BEGIN YOUR FILE", center_x, milestone_y + 28, 14, TEXT_DIM)
             return
 
-        for title, detail in milestones[-4:]:
+        for title, detail in milestones[-3:]:
             item = pyray.Rectangle(right_card.x + 24, milestone_y, right_card.width - 48, 44)
             draw_glass_card(item, accent_color=colors.MAGENTA, glow_alpha=8, fill_alpha=132)
             pyray.draw_text(title, int(item.x + 14), int(item.y + 8), 18, colors.WHITE)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Dict, Any
-import pyray
+import core.raylib_api as pyray
 
 
 class Assets:

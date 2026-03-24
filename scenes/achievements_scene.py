@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import pyray
+import core.raylib_api as pyray
 from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import CAREER_SCENE
+from ui import gamepad
 from ui.navigation import ButtonNavigator
 from ui.ui import (
     PANEL_ACCENT,
@@ -42,7 +43,7 @@ class AchievementsScene(Scene):
 
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
-        if pyray.is_key_pressed(pyray.KEY_ESCAPE):
+        if pyray.is_key_pressed(pyray.KEY_ESCAPE) or gamepad.back_pressed():
             self.ctx.play_sfx("ui_back")
             self.request_switch(CAREER_SCENE)
             return

@@ -146,6 +146,10 @@ def draw_circle(center_x: int, center_y: int, radius: int, color):
     rl.DrawCircle(int(center_x), int(center_y), int(radius), color)
 
 
+def draw_circle_lines(center_x: int, center_y: int, radius: int, color):
+    rl.DrawCircleLines(int(center_x), int(center_y), float(radius), color)
+
+
 # -------------------------
 # Collision
 # -------------------------
@@ -163,6 +167,7 @@ def get_mouse_position():
 
 
 is_mouse_button_pressed = rl.IsMouseButtonPressed
+is_mouse_button_down = rl.IsMouseButtonDown
 
 
 # -------------------------
@@ -179,6 +184,10 @@ unload_texture = rl.UnloadTexture
 # Input
 # -------------------------
 is_key_pressed = rl.IsKeyPressed
+is_gamepad_available = rl.IsGamepadAvailable
+is_gamepad_button_pressed = rl.IsGamepadButtonPressed
+is_gamepad_button_down = rl.IsGamepadButtonDown
+get_gamepad_axis_movement = rl.GetGamepadAxisMovement
 
 KEY_W = rl.KEY_W
 KEY_A = rl.KEY_A
@@ -190,6 +199,22 @@ KEY_DOWN = rl.KEY_DOWN
 KEY_LEFT = rl.KEY_LEFT
 KEY_RIGHT = rl.KEY_RIGHT
 KEY_ESCAPE = rl.KEY_ESCAPE
+KEY_F10 = rl.KEY_F10
+KEY_ENTER = rl.KEY_ENTER
+KEY_KP_ENTER = rl.KEY_KP_ENTER
+KEY_SPACE = rl.KEY_SPACE
+
+GAMEPAD_AXIS_LEFT_X = rl.GAMEPAD_AXIS_LEFT_X
+GAMEPAD_AXIS_LEFT_Y = rl.GAMEPAD_AXIS_LEFT_Y
+GAMEPAD_BUTTON_LEFT_FACE_UP = rl.GAMEPAD_BUTTON_LEFT_FACE_UP
+GAMEPAD_BUTTON_LEFT_FACE_RIGHT = rl.GAMEPAD_BUTTON_LEFT_FACE_RIGHT
+GAMEPAD_BUTTON_LEFT_FACE_DOWN = rl.GAMEPAD_BUTTON_LEFT_FACE_DOWN
+GAMEPAD_BUTTON_LEFT_FACE_LEFT = rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT
+GAMEPAD_BUTTON_RIGHT_FACE_DOWN = rl.GAMEPAD_BUTTON_RIGHT_FACE_DOWN
+GAMEPAD_BUTTON_RIGHT_FACE_RIGHT = rl.GAMEPAD_BUTTON_RIGHT_FACE_RIGHT
+GAMEPAD_BUTTON_MIDDLE_LEFT = rl.GAMEPAD_BUTTON_MIDDLE_LEFT
+GAMEPAD_BUTTON_MIDDLE = rl.GAMEPAD_BUTTON_MIDDLE
+GAMEPAD_BUTTON_MIDDLE_RIGHT = rl.GAMEPAD_BUTTON_MIDDLE_RIGHT
 
 
 # -------------------------

@@ -27,11 +27,13 @@ DEFAULT_PROFILE = {
         "Arcade": 0,
         "Endless": 0,
         "Challenge": 0,
+        "Time Attack": 0,
     },
     "mode_mastery": {
         "Arcade": 0,
         "Endless": 0,
         "Challenge": 0,
+        "Time Attack": 0,
     },
     "challenge_credits": 0,
     "challenge_clears": 0,
@@ -46,7 +48,10 @@ DEFAULT_PROFILE = {
         "music_enabled": 1,
         "sfx_enabled": 1,
         "tutorial_enabled": 1,
+        "capture_mode": 0,
         "theme_name": "Neon District",
+        "hud_pack_name": "Standard",
+        "title_variant_name": "Standard",
     },
     "tutorial_seen": 0,
 }
@@ -99,7 +104,10 @@ def load_profile() -> dict:
                 profile["settings"]["music_enabled"] = 1 if int(value.get("music_enabled", 1)) else 0
                 profile["settings"]["sfx_enabled"] = 1 if int(value.get("sfx_enabled", 1)) else 0
                 profile["settings"]["tutorial_enabled"] = 1 if int(value.get("tutorial_enabled", 1)) else 0
+                profile["settings"]["capture_mode"] = 1 if int(value.get("capture_mode", 0)) else 0
                 profile["settings"]["theme_name"] = str(value.get("theme_name", "Neon District"))
+                profile["settings"]["hud_pack_name"] = str(value.get("hud_pack_name", "Standard"))
+                profile["settings"]["title_variant_name"] = str(value.get("title_variant_name", "Standard"))
             elif key in profile:
                 profile[key] = int(value)
     return profile

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import pyray
+import core.raylib_api as pyray
 from raylib import colors
 
 from core.context import THEME_PRESETS
 from core.scene import Scene
 from core.scene_ids import OPTIONS_SCENE
+from ui import gamepad
 from ui.navigation import ButtonNavigator
 from ui.ui import PANEL_ACCENT, TEXT_DIM, button_clicked, centered_rect, draw_arcade_background, draw_button, draw_cinematic_menu_background, draw_glass_card, draw_panel, draw_scene_footer, draw_scene_header, draw_text_centered
 
@@ -37,7 +38,7 @@ class ThemesScene(Scene):
 
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
-        if pyray.is_key_pressed(pyray.KEY_ESCAPE):
+        if pyray.is_key_pressed(pyray.KEY_ESCAPE) or gamepad.back_pressed():
             self.ctx.play_sfx("ui_back")
             self.request_switch(OPTIONS_SCENE)
             return
@@ -78,10 +79,19 @@ class ThemesScene(Scene):
         panel = self.panel
         draw_panel(panel, "VISUAL THEMES")
         draw_scene_header(panel, "VISUAL THEMES", "THEMES", "VISUAL PACKS")
+        self._draw_goal_preview(panel)
         for index, theme_name in enumerate(self.THEMES):
             self._draw_theme_card(self.theme_buttons[index], theme_name, focused=self.navigator.focus_index == index)
         draw_button(self.btn_back, "BACK", focused=self.navigator.focus_index == len(self.THEMES))
         draw_scene_footer(panel)
+
+    def _draw_goal_preview(self, panel) -> None:
+        preview = pyray.Rectangle(panel.x + 28, panel.y + 86, panel.width - 56, 52)
+        draw_glass_card(preview, accent_color=PANEL_ACCENT, glow_alpha=8, fill_alpha=132)
+        center_x = int(preview.x + preview.width / 2)
+        lines = self.ctx.next_unlock_spotlight_lines()
+        draw_text_centered("NEXT UNLOCK", center_x, int(preview.y + 8), 13, TEXT_DIM)
+        draw_text_centered(lines[0].upper(), center_x, int(preview.y + 26), 14, colors.WHITE)
 
     def _draw_theme_card(self, rect, theme_name: str, *, focused: bool) -> None:
         preset = THEME_PRESETS[theme_name]

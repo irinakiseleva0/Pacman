@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import pyray
+import core.raylib_api as pyray
 from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE, MENU_SCENE
+from ui import gamepad
 from ui.navigation import ButtonNavigator
-from ui.ui import PANEL_ACCENT, TEXT_DIM, button_clicked, centered_rect, draw_arcade_background, draw_button, draw_cinematic_menu_background, draw_glass_card, draw_panel, draw_scene_footer, draw_scene_header, draw_text_centered
+from ui.ui import PANEL_ACCENT, TEXT_DIM, button_clicked, centered_rect, draw_arcade_background, draw_button, draw_cinematic_menu_background, draw_glass_card, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_header, draw_text_centered
 from utils.visual_effects import with_alpha
 
 
@@ -41,7 +42,12 @@ class PauseScene(Scene):
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
         # ESC or P -> resume back to game
-        if pyray.is_key_pressed(pyray.KEY_ESCAPE) or pyray.is_key_pressed(pyray.KEY_P):
+        if (
+            pyray.is_key_pressed(pyray.KEY_ESCAPE)
+            or pyray.is_key_pressed(pyray.KEY_P)
+            or gamepad.back_pressed()
+            or gamepad.pause_pressed()
+        ):
             self.ctx.should_resume_game = True
             self.request_switch(GAME_SCENE)
             return
@@ -109,6 +115,7 @@ class PauseScene(Scene):
         draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 2)
 
         draw_scene_footer(panel, "ESC OR P TO RESUME")
+        draw_presentation_bars(cfg.window_width, cfg.window_height)
 
     def _draw_summary(self) -> None:
         if self.panel is None:

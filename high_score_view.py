@@ -1,8 +1,8 @@
-import pyray
+import core.raylib_api as pyray
 from raylib import colors
 
+from utils.score_storage import SCORE_FILE, load_high_score
 
-SCORES_PATH = "scores.txt"
 WINDOW_W = 500
 WINDOW_H = 600
 FPS = 30
@@ -13,11 +13,11 @@ class HighscoreTableDraw:
         pyray.init_window(WINDOW_W, WINDOW_H, "Highscore Table")
         pyray.set_target_fps(FPS)
 
-        try:
-            with open(SCORES_PATH, "r", encoding="utf-8") as file:
-                data = file.read().strip()
-        except FileNotFoundError:
-            data = "No scores yet.\nPlay the game to create scores.txt"
+        high_score = load_high_score()
+        if SCORE_FILE.exists():
+            data = f"High score\n\n{high_score}"
+        else:
+            data = "No scores yet.\nPlay the game to create scores.json"
 
         while not pyray.window_should_close():
             x, y = 50, 100

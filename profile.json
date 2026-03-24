@@ -1,35 +1,46 @@
 {
-  "total_runs": 26,
+  "total_runs": 32,
   "total_wins": 0,
-  "total_losses": 0,
+  "total_losses": 1,
   "total_levels_cleared": 0,
-  "best_score": 0,
+  "best_score": 1148,
   "highest_level": 1,
-  "total_dots_eaten": 0,
+  "total_dots_eaten": 19,
   "total_power_seeds": 0,
-  "total_cherries": 0,
+  "total_cherries": 1,
   "total_ghosts_eaten": 0,
   "difficulty_runs": {
-    "Easy": 4,
-    "Normal": 21,
+    "Easy": 5,
+    "Normal": 26,
     "Hard": 1
   },
   "mode_runs": {
-    "Arcade": 22,
+    "Arcade": 27,
     "Endless": 0,
-    "Challenge": 1
+    "Challenge": 2,
+    "Time Attack": 0
   },
   "mode_mastery": {
-    "Arcade": 0,
+    "Arcade": 1,
     "Endless": 0,
-    "Challenge": 0
+    "Challenge": 0,
+    "Time Attack": 0
   },
   "challenge_credits": 0,
   "challenge_clears": 0,
   "challenge_streak": 0,
   "best_challenge_streak": 0,
   "challenge_rewards": {},
-  "run_history": [],
+  "run_history": [
+    {
+      "mode": "Arcade",
+      "challenge": "",
+      "difficulty": "Normal",
+      "result": "lose",
+      "score": 1148,
+      "level": 1
+    }
+  ],
   "settings": {
     "fx_intensity": "High",
     "screen_flash": 1,
@@ -37,7 +48,10 @@
     "music_enabled": 1,
     "sfx_enabled": 1,
     "tutorial_enabled": 1,
-    "theme_name": "Neon District"
+    "capture_mode": 0,
+    "theme_name": "Neon District",
+    "hud_pack_name": "Standard",
+    "title_variant_name": "Standard"
   },
   "tutorial_seen": 1
 }

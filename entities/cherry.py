@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pyray
+import core.raylib_api as pyray
 from raylib import colors
 
 from assets.assets import Assets
@@ -30,11 +30,24 @@ class Cherry(Cell):
         self.ctx.record_cherry_eaten()
         self.ctx.play_sfx("cherry")
         self.timer = self.ctx.effective_cherry_respawn()
+        market_bonus = self.ctx.map_cherry_bonus_value()
+        if market_bonus > 0:
+            self.ctx.score += market_bonus
 
         self.ctx.particles.create_cherry_eat_effect(self.x, self.y, palette["cherry"])
         self.ctx.floating_text.add_score_text(
             score_value, self.x, self.y
         )
+        if market_bonus > 0:
+            self.ctx.floating_text.add_text(
+                f"MARKET +{market_bonus}",
+                self.x * 16 - 22,
+                self.y * 16 - 28,
+                palette["respawn"][0],
+                1.0,
+                12,
+            )
+            self.ctx.trigger_screen_flash(palette["respawn"][0], 0.06, 0.08)
         self.ctx.trigger_screen_shake(5.0, 0.35)
 
     def tick(self) -> None:

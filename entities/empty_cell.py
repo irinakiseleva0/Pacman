@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pyray
+import core.raylib_api as pyray
 
 from entities.cell import Cell
 

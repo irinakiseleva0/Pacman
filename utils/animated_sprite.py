@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Any
 
-from pyray import draw_texture_ex
+from core.raylib_api import draw_texture_ex
 from raylib import colors
 
 
