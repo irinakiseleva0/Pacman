@@ -5,6 +5,7 @@ import pyray
 from entities.cell import Actor
 from utils.animated_sprite import Sprite
 from assets.assets import Assets
+from utils.visual_effects import with_alpha
 
 
 class State:
@@ -79,8 +80,15 @@ class Pacman(Actor):
 
         cfg = self.ctx.cfg
         scale = cfg.tile_size / 16
+        time_s = getattr(self.ctx, "visual_time", 0.0)
+        base_x = cfg.board_offset_x + self.x * cfg.tile_size
+        base_y = cfg.board_offset_y + self.y * cfg.tile_size
+        px = base_x + cfg.tile_size // 2
+        py = base_y + cfg.tile_size // 2
+        glow_radius = max(10, cfg.tile_size // 2 + int((0.5 + 0.5 * __import__("math").sin(time_s * 6.0)) * 6))
+        pyray.draw_circle(px, py, glow_radius, with_alpha((255, 225, 70, 255), 44))
         self.pacman_sprite.draw(
-            (self.x * cfg.tile_size, self.y * cfg.tile_size),
+            (base_x, base_y),
             scale=scale,
         )
 

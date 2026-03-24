@@ -32,6 +32,7 @@ class Map:
         self.static_layer: List[List[Cell]] = []
         self.dynamic_actors: List[Actor] = []
         self.ghost_counter = 0  # Track ghost creation order
+        self.total_pickups = 0
         self.load(path)
 
     @property
@@ -96,9 +97,12 @@ class Map:
             return
 
         if getattr(pacman, "rage", False):
+            palette = self.ctx.effect_palette()
             # Pacman eats ghost
             score_value = self.ctx.next_ghost_combo_score()
             self.ctx.ghost_combo += 1
+            self.ctx.record_ghost_eaten()
+            self.ctx.play_sfx("ghost")
             combo_step = self.ctx.ghost_combo
             if isinstance(ghost, Ghost):
                 ghost.on_eaten()
@@ -107,12 +111,15 @@ class Map:
             self.ctx.score += score_value
 
             # Add visual effects
-            self.ctx.particles.create_ghost_eat_effect(ghost.x, ghost.y)
+            self.ctx.particles.create_ghost_eat_effect(ghost.x, ghost.y, palette["ghost"])
             self.ctx.floating_text.add_score_text(
                 score_value, ghost.x, ghost.y)
             self.ctx.floating_text.add_ghost_combo_text(
                 combo_step, score_value, ghost.x, ghost.y)
-            self.ctx.screen_shake.shake(4.0, 0.3)
+            flash_strength = 0.12 if combo_step <= 1 else min(0.22, 0.12 + combo_step * 0.025)
+            shake_strength = 4.5 if combo_step <= 1 else min(8.0, 4.5 + combo_step * 0.9)
+            self.ctx.trigger_screen_flash(palette["ghost"], flash_strength, 0.08)
+            self.ctx.trigger_screen_shake(shake_strength, 0.24)
         else:
             # Ghost eats Pacman
             self.ctx.reset_ghost_combo()
@@ -143,6 +150,16 @@ class Map:
         for row in self.static_layer:
             for cell in row:
                 if isinstance(cell, Seed) and getattr(cell, "enabled", False):
+                    total += 1
+        return total
+
+    def remaining_pickups(self) -> int:
+        total = 0
+        for row in self.static_layer:
+            for cell in row:
+                if isinstance(cell, Seed) and getattr(cell, "enabled", False):
+                    total += 1
+                elif isinstance(cell, LargeSeed) and getattr(cell, "enabled", False):
                     total += 1
         return total
 
@@ -248,6 +265,9 @@ class Map:
             for cell in row:
                 if isinstance(cell, Wall):
                     cell.set_key_from_map(self.static_layer)
+
+        dots, large_seeds, _ = self.item_counts()
+        self.total_pickups = dots + large_seeds
 
     def _normalize_lines(self, lines: List[str]) -> List[str]:
         target_width = self.ctx.cfg.map_width

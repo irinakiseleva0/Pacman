@@ -83,6 +83,37 @@ close_window = rl.CloseWindow
 
 
 # -------------------------
+# Audio
+# -------------------------
+init_audio_device = rl.InitAudioDevice
+close_audio_device = rl.CloseAudioDevice
+is_audio_device_ready = rl.IsAudioDeviceReady
+
+
+def load_sound(path):
+    return rl.LoadSound(_b(path))
+
+
+unload_sound = rl.UnloadSound
+play_sound = rl.PlaySound
+stop_sound = rl.StopSound
+set_sound_volume = rl.SetSoundVolume
+is_sound_playing = rl.IsSoundPlaying
+
+
+def load_music_stream(path):
+    return rl.LoadMusicStream(_b(path))
+
+
+unload_music_stream = rl.UnloadMusicStream
+play_music_stream = rl.PlayMusicStream
+stop_music_stream = rl.StopMusicStream
+update_music_stream = rl.UpdateMusicStream
+set_music_volume = rl.SetMusicVolume
+is_music_stream_playing = rl.IsMusicStreamPlaying
+
+
+# -------------------------
 # Drawing
 # -------------------------
 begin_drawing = rl.BeginDrawing

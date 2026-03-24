@@ -49,11 +49,11 @@ class Particle:
         if self.lifetime > 0:
             pyray.draw_circle(int(self.x), int(self.y), self.size, self.color)
 
-    def draw_with_offset(self, offset_x: float, offset_y: float) -> None:
+    def draw_with_offset(self, offset_x: float, offset_y: float, scale: float = 1.0) -> None:
         if self.lifetime > 0:
-            px = int(self.x + offset_x)
-            py = int(self.y + offset_y)
-            pyray.draw_circle(px, py, self.size, self.color)
+            px = int(self.x * scale + offset_x)
+            py = int(self.y * scale + offset_y)
+            pyray.draw_circle(px, py, self.size * scale, self.color)
 
 
 class ParticleSystem:
@@ -63,26 +63,43 @@ class ParticleSystem:
     def add_particle(self, particle: Particle) -> None:
         self.particles.append(particle)
 
-    def create_dot_eat_effect(self, x: int, y: int) -> None:
+    def create_dot_eat_effect(self, x: int, y: int, color=colors.YELLOW) -> None:
         """Create particles when eating a dot."""
         center_x = x * 16 + 8
         center_y = y * 16 + 8
 
-        # Create 3-5 small particles
-        num_particles = random.randint(3, 5)
+        highlight = colors.WHITE
+
+        # Create a tighter burst with a few bright sparks.
+        num_particles = random.randint(6, 9)
         for _ in range(num_particles):
             angle = random.uniform(0, 2 * math.pi)
-            speed = random.uniform(20, 40)
+            speed = random.uniform(26, 54)
             vx = math.cos(angle) * speed
             vy = math.sin(angle) * speed
-            lifetime = random.uniform(0.3, 0.6)
+            lifetime = random.uniform(0.18, 0.42)
+            particle_color = color if random.random() > 0.3 else highlight
 
             self.add_particle(Particle(
                 center_x, center_y, vx, vy, lifetime,
-                colors.YELLOW, random.uniform(1, 2)
+                particle_color, random.uniform(1.2, 2.6)
             ))
 
-    def create_large_seed_eat_effect(self, x: int, y: int) -> None:
+        # Add a couple of softer trailing motes so the pickup doesn't feel too abrupt.
+        for _ in range(2):
+            angle = random.uniform(-0.8, 0.8)
+            speed = random.uniform(10, 22)
+            self.add_particle(Particle(
+                center_x,
+                center_y,
+                math.cos(angle) * speed,
+                -abs(math.sin(angle) * speed) - random.uniform(8, 16),
+                random.uniform(0.28, 0.5),
+                color,
+                random.uniform(0.8, 1.6),
+            ))
+
+    def create_large_seed_eat_effect(self, x: int, y: int, palette: tuple | None = None) -> None:
         """Create particles when eating a large seed/power pellet."""
         center_x = x * 16 + 8
         center_y = y * 16 + 8
@@ -97,20 +114,21 @@ class ParticleSystem:
             lifetime = random.uniform(0.5, 1.0)
 
             # Mix of white and yellow particles
-            particle_color = colors.WHITE if random.random() < 0.5 else colors.YELLOW
+            palette_colors = palette or (colors.WHITE, colors.YELLOW)
+            particle_color = random.choice(palette_colors)
 
             self.add_particle(Particle(
                 center_x, center_y, vx, vy, lifetime,
                 particle_color, random.uniform(2, 4)
             ))
 
-    def create_cherry_eat_effect(self, x: int, y: int) -> None:
+    def create_cherry_eat_effect(self, x: int, y: int, palette: tuple | None = None) -> None:
         """Create a warm, fruit-like burst when eating a cherry."""
         center_x = x * 16 + 8
         center_y = y * 16 + 8
 
         num_particles = random.randint(10, 14)
-        palette = (colors.RED, colors.PINK, colors.GOLD, colors.ORANGE)
+        palette = palette or (colors.RED, colors.PINK, colors.GOLD, colors.ORANGE)
         for _ in range(num_particles):
             angle = random.uniform(0, 2 * math.pi)
             speed = random.uniform(35, 70)
@@ -124,13 +142,13 @@ class ParticleSystem:
                 particle_color, random.uniform(2, 4)
             ))
 
-    def create_cherry_respawn_effect(self, x: int, y: int) -> None:
+    def create_cherry_respawn_effect(self, x: int, y: int, palette: tuple | None = None) -> None:
         """Create a softer sparkle when a cherry returns."""
         center_x = x * 16 + 8
         center_y = y * 16 + 8
 
         num_particles = random.randint(6, 9)
-        palette = (colors.GOLD, colors.PINK, colors.WHITE)
+        palette = palette or (colors.GOLD, colors.PINK, colors.WHITE)
         for _ in range(num_particles):
             angle = random.uniform(0, 2 * math.pi)
             speed = random.uniform(18, 35)
@@ -144,33 +162,47 @@ class ParticleSystem:
                 particle_color, random.uniform(1, 3)
             ))
 
-    def create_ghost_eat_effect(self, x: int, y: int) -> None:
+    def create_ghost_eat_effect(self, x: int, y: int, color=colors.BLUE) -> None:
         """Create particles when eating a ghost."""
         center_x = x * 16 + 8
         center_y = y * 16 + 8
 
-        # Create explosion-like effect
-        num_particles = random.randint(10, 15)
+        # Create a more dramatic burst with a bright core and trailing fragments.
+        num_particles = random.randint(16, 22)
         for _ in range(num_particles):
             angle = random.uniform(0, 2 * math.pi)
-            speed = random.uniform(40, 80)
+            speed = random.uniform(44, 92)
             vx = math.cos(angle) * speed
             vy = math.sin(angle) * speed
-            lifetime = random.uniform(0.6, 1.2)
+            lifetime = random.uniform(0.45, 0.95)
+            particle_color = color if random.random() > 0.28 else colors.WHITE
 
             self.add_particle(Particle(
                 center_x, center_y, vx, vy, lifetime,
-                colors.BLUE, random.uniform(3, 5)
+                particle_color, random.uniform(2.8, 5.4)
+            ))
+
+        for _ in range(4):
+            angle = random.uniform(-math.pi, 0)
+            speed = random.uniform(12, 28)
+            self.add_particle(Particle(
+                center_x,
+                center_y,
+                math.cos(angle) * speed,
+                math.sin(angle) * speed - random.uniform(10, 24),
+                random.uniform(0.35, 0.65),
+                colors.WHITE,
+                random.uniform(1.2, 2.4),
             ))
 
     def update(self, dt: float) -> None:
         """Update all particles and remove dead ones."""
         self.particles = [p for p in self.particles if p.update(dt)]
 
-    def draw(self, offset_x: float = 0, offset_y: float = 0) -> None:
+    def draw(self, offset_x: float = 0, offset_y: float = 0, scale: float = 1.0) -> None:
         """Draw all particles."""
         for particle in self.particles:
-            particle.draw_with_offset(offset_x, offset_y)
+            particle.draw_with_offset(offset_x, offset_y, scale)
 
 
 class ScreenShake:
@@ -236,11 +268,12 @@ class FloatingText:
             pyray.draw_text(self.text, int(self.x), int(
                 self.y), self.font_size, self.color)
 
-    def draw_with_offset(self, offset_x: float, offset_y: float) -> None:
+    def draw_with_offset(self, offset_x: float, offset_y: float, scale: float = 1.0) -> None:
         if self.lifetime > 0:
-            tx = int(self.x + offset_x)
-            ty = int(self.y + offset_y)
-            pyray.draw_text(self.text, tx, ty, self.font_size, self.color)
+            tx = int(self.x * scale + offset_x)
+            ty = int(self.y * scale + offset_y)
+            font_size = max(12, int(self.font_size * scale))
+            pyray.draw_text(self.text, tx, ty, font_size, self.color)
 
 
 class FloatingTextSystem:
@@ -253,12 +286,27 @@ class FloatingTextSystem:
     def add_score_text(self, points: int, x: int, y: int) -> None:
         """Add floating score text."""
         color = colors.YELLOW
+        lifetime = 1.2
+        font_size = 14
+        x_offset = 0
+        y_offset = -10
+
+        if points <= 25:
+            color = colors.YELLOW
+            lifetime = 0.55
+            font_size = 10
+            x_offset = 3
+            y_offset = -6
         if points >= 500:  # Cherry or higher
             color = colors.GOLD
+            lifetime = 1.2
+            font_size = 14
         elif points >= 200:  # Ghost
             color = colors.RED
+            lifetime = 1.2
+            font_size = 14
 
-        self.add_text(f"+{points}", x * 16, y * 16 - 10, color, 1.2, 14)
+        self.add_text(f"+{points}", x * 16 + x_offset, y * 16 + y_offset, color, lifetime, font_size)
 
     def add_ghost_combo_text(self, combo_step: int, points: int, x: int, y: int) -> None:
         """Add a stronger callout for chained ghost scores."""
@@ -269,28 +317,28 @@ class FloatingTextSystem:
         self.add_text(
             f"x{combo_step} GHOST!",
             x * 16 - 10,
-            y * 16 - 24,
+            y * 16 - 28,
             combo_color,
-            1.0,
-            12,
+            1.05,
+            13,
         )
         self.add_text(
             f"{points}!",
             x * 16 + 4,
-            y * 16 - 40,
+            y * 16 - 46,
             combo_color,
-            0.9,
-            16,
+            0.95,
+            18,
         )
 
     def update(self, dt: float) -> None:
         """Update all floating texts."""
         self.texts = [t for t in self.texts if t.update(dt)]
 
-    def draw(self, offset_x: float = 0, offset_y: float = 0) -> None:
+    def draw(self, offset_x: float = 0, offset_y: float = 0, scale: float = 1.0) -> None:
         """Draw all floating texts."""
         for text in self.texts:
-            text.draw_with_offset(offset_x, offset_y)
+            text.draw_with_offset(offset_x, offset_y, scale)
 
 
 class ScreenFlash:

@@ -1,0 +1,43 @@
+{
+  "total_runs": 26,
+  "total_wins": 0,
+  "total_losses": 0,
+  "total_levels_cleared": 0,
+  "best_score": 0,
+  "highest_level": 1,
+  "total_dots_eaten": 0,
+  "total_power_seeds": 0,
+  "total_cherries": 0,
+  "total_ghosts_eaten": 0,
+  "difficulty_runs": {
+    "Easy": 4,
+    "Normal": 21,
+    "Hard": 1
+  },
+  "mode_runs": {
+    "Arcade": 22,
+    "Endless": 0,
+    "Challenge": 1
+  },
+  "mode_mastery": {
+    "Arcade": 0,
+    "Endless": 0,
+    "Challenge": 0
+  },
+  "challenge_credits": 0,
+  "challenge_clears": 0,
+  "challenge_streak": 0,
+  "best_challenge_streak": 0,
+  "challenge_rewards": {},
+  "run_history": [],
+  "settings": {
+    "fx_intensity": "High",
+    "screen_flash": 1,
+    "screen_shake": 1,
+    "music_enabled": 1,
+    "sfx_enabled": 1,
+    "tutorial_enabled": 1,
+    "theme_name": "Neon District"
+  },
+  "tutorial_seen": 1
+}

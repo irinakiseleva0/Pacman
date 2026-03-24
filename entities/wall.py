@@ -78,6 +78,9 @@ class Wall(Cell):
         Wall._sprite().draw_specified(
             self.wall_key,
             0,
-            (self.x * cfg.tile_size, self.y * cfg.tile_size),
+            (
+                cfg.board_offset_x + self.x * cfg.tile_size,
+                cfg.board_offset_y + self.y * cfg.tile_size,
+            ),
             scale=scale,
         )

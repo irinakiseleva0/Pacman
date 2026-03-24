@@ -6,6 +6,32 @@ import pyray
 from raylib import colors
 
 from entities.ghost import Ghost
+from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, TEXT_DIM, draw_glass_card
+
+
+def _card_height(line_count: int, line_height: int) -> int:
+    return 40 + max(1, line_count) * line_height + 14
+
+
+def _draw_card(title: str, lines: list[tuple[str, object]], rect, font_size: int, line_height: int, accent_color) -> None:
+    draw_glass_card(rect, accent_color=accent_color, glow_alpha=16, fill_alpha=150)
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x + 18, rect.y + 30, max(48, rect.width * 0.24), 2),
+        accent_color,
+    )
+    pyray.draw_text(title, int(rect.x + 22), int(rect.y + 12), max(15, font_size - 3), TEXT_DIM)
+
+    content_y = int(rect.y + 38)
+    for text, color in lines:
+        label_color = TEXT_DIM if color == colors.WHITE else color
+        if ":" in text:
+            label, value = text.split(":", 1)
+            pyray.draw_text(f"{label}:", int(rect.x + 22), content_y, font_size, label_color)
+            label_width = pyray.measure_text(f"{label}:", font_size)
+            pyray.draw_text(value.strip(), int(rect.x + 22 + label_width + 8), content_y, font_size, color)
+        else:
+            pyray.draw_text(text, int(rect.x + 22), content_y, font_size, color)
+        content_y += line_height
 
 
 def draw_game_hud(
@@ -23,7 +49,7 @@ def draw_game_hud(
     line_height: int,
     columns: int,
 ) -> None:
-    rage_text = "ON" if getattr(ctx.pacman, "rage", False) else "OFF"
+    rage_active = bool(getattr(ctx.pacman, "rage", False))
     difficulty_color = (
         colors.GREEN if ctx.difficulty == "Easy"
         else colors.RED if ctx.difficulty == "Hard"
@@ -40,61 +66,94 @@ def draw_game_hud(
             if cherry_value > 1:
                 cherry_text = f"Cherry: READY x{cherry_value}"
             cherry_color = colors.GOLD
-        else:
-            cherry_text = f"Cherry: {cherry_value}"
-            cherry_color = colors.GRAY
 
-    lines = [
+    core_lines = [
         (f"Score: {ctx.score}", colors.WHITE),
+        (f"High score: {ctx.high_score}", colors.WHITE),
         (f"Lives: {ctx.lives}", colors.WHITE),
         (f"Level: {ctx.current_level}", colors.SKYBLUE),
-        (f"Rage: {rage_text}", colors.YELLOW if rage_text == "ON" else colors.GRAY),
-        (f"Seeds left: {seeds_left}", colors.WHITE),
-        (f"Ghosts: {ctx.ghost_mode.upper()}", ghost_color),
-        (f"Mode: {ctx.difficulty.upper()}", difficulty_color),
-        (f"High score: {ctx.high_score}", colors.WHITE),
     ]
 
+    field_lines = [(f"Seeds: {seeds_left}", colors.WHITE)]
+    if ctx.game_mode != "Arcade":
+        field_lines.append((f"Mode: {ctx.mode_label().upper()}", difficulty_color))
+    map_trait = ctx.current_map_trait()
+    field_lines.append((f"District: {map_trait.title}", map_trait.accent))
+    if getattr(ctx, "pressure_stage", 0) > 0 or ctx.ghost_mode != "chase":
+        field_lines.append((f"Ghosts: {ctx.ghost_mode.upper()}", ghost_color))
+
+    bonus_lines: list[tuple[str, object]] = []
+    directive = ctx.current_run_directive()
+    directive_line = f"{directive.title}: {ctx.directive_progress_text()}"
+    bonus_lines.append((directive_line, directive.accent))
+
     if cherry_text is not None:
-        lines.insert(5, (cherry_text, cherry_color))
-        lines.insert(6, (f"Cherry score: {ctx.effective_cherry_score()}", colors.GOLD))
+        bonus_lines.append((cherry_text, cherry_color))
 
     if ghost_release_status is not None:
         pending_ghosts, total_ghosts = ghost_release_status
-        release_text = f"Ghosts deploying: {pending_ghosts}/{total_ghosts}"
-        lines.insert(5, (release_text, colors.LIGHTGRAY))
+        release_text = f"Deploying: {pending_ghosts}/{total_ghosts}"
+        bonus_lines.insert(0, (release_text, colors.LIGHTGRAY))
 
     if ghost_return_status is not None:
         returning_ghosts, total_ghosts = ghost_return_status
-        return_text = f"Ghosts returning: {returning_ghosts}/{total_ghosts}"
-        lines.insert(5, (return_text, colors.WHITE))
+        return_text = f"Returning: {returning_ghosts}/{total_ghosts}"
+        bonus_lines.insert(0, (return_text, colors.WHITE))
 
-    if rage_text == "ON":
-        next_combo_score = ctx.next_ghost_combo_score()
-        combo_label = f"Ghost combo: x{ctx.ghost_combo + 1} ({next_combo_score})"
-        lines.insert(5, (combo_label, colors.GOLD))
-        lines.insert(6, (f"Large seed: {ctx.effective_large_seed_score()}", colors.MAGENTA))
+    if rage_active:
+        bonus_lines.append(("Rage: ON", colors.YELLOW))
+        bonus_lines.append((f"Combo: x{ctx.ghost_combo + 1}", colors.GOLD))
 
         rage_timer = getattr(ctx.pacman, "rage_timer", 0)
         if 0 < rage_timer <= Ghost.FRIGHTENED_BLINK_TICKS:
-            lines.insert(7, ("Rage ending soon!", colors.ORANGE))
+            bonus_lines.append(("Rage ending soon!", colors.ORANGE))
 
-    title = "RUN STATUS"
-    title_size = font_size + 6
-    title_width = pyray.measure_text(title, title_size)
-    title_x = int(x + (width - title_width) / 2)
-    pyray.draw_text(title, title_x, y, title_size, colors.YELLOW)
+    sections = [("RUN STATUS", core_lines, LIVE_CYAN), ("FIELD STATUS", field_lines, LIVE_PINK)]
+    if bonus_lines:
+        sections.append(("LIVE BONUS", bonus_lines, LIVE_GOLD))
 
-    content_y = y + title_size + 14
-    column_count = max(1, columns)
-    column_width = max(1, width // column_count)
-    rows_per_column = max(1, math.ceil(len(lines) / column_count))
+    theme_name = getattr(ctx, "theme_name", lambda: "Neon District")()
+    if theme_name == "Amber Rain":
+        sections = [
+            ("RUN STATUS", core_lines, LIVE_GOLD),
+            ("FIELD STATUS", field_lines, LIVE_PINK),
+        ] + ([("LIVE BONUS", bonus_lines, LIVE_CYAN)] if bonus_lines else [])
+    elif theme_name == "Ice Circuit":
+        sections = [
+            ("RUN STATUS", core_lines, LIVE_CYAN),
+            ("FIELD STATUS", field_lines, colors.SKYBLUE),
+        ] + ([("LIVE BONUS", bonus_lines, LIVE_GOLD)] if bonus_lines else [])
+    elif theme_name == "Velvet Alley":
+        sections = [
+            ("RUN STATUS", core_lines, LIVE_PINK),
+            ("FIELD STATUS", field_lines, LIVE_GOLD),
+        ] + ([("LIVE BONUS", bonus_lines, LIVE_CYAN)] if bonus_lines else [])
 
-    for index, (text, color) in enumerate(lines):
-        column = min(column_count - 1, index // rows_per_column)
-        row = index % rows_per_column
-        draw_x = x + column * column_width
-        draw_y = content_y + row * line_height
-        if draw_y + font_size > y + height:
+    gap = 14
+    if max(1, columns) > 1 and len(sections) >= 2:
+        top_width = max(1, int((width - gap) / 2))
+        first_height = _card_height(len(sections[0][1]), line_height)
+        second_height = _card_height(len(sections[1][1]), line_height)
+        top_height = max(first_height, second_height)
+
+        first_rect = pyray.Rectangle(x, y, top_width, top_height)
+        second_rect = pyray.Rectangle(x + top_width + gap, y, width - top_width - gap, top_height)
+        _draw_card(sections[0][0], sections[0][1], first_rect, font_size, line_height, sections[0][2])
+        _draw_card(sections[1][0], sections[1][1], second_rect, font_size, line_height, sections[1][2])
+
+        if len(sections) > 2:
+            third_height = _card_height(len(sections[2][1]), line_height)
+            third_rect = pyray.Rectangle(x, y + top_height + gap, width, min(third_height, height - top_height - gap))
+            _draw_card(sections[2][0], sections[2][1], third_rect, font_size, line_height, sections[2][2])
+        return
+
+    current_y = y
+    for title, lines, accent in sections:
+        card_height = _card_height(len(lines), line_height)
+        if current_y + card_height > y + height:
+            card_height = max(80, int(y + height - current_y))
+        rect = pyray.Rectangle(x, current_y, width, card_height)
+        _draw_card(title, lines, rect, font_size, line_height, accent)
+        current_y += card_height + gap
+        if current_y >= y + height:
             break
-        pyray.draw_text(text, draw_x, draw_y, font_size, color)

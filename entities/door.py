@@ -21,5 +21,8 @@ class Door(Cell):
     def draw(self) -> None:
         cfg = self.ctx.cfg
         scale = cfg.tile_size / 16
-        pos = (self.x * cfg.tile_size, self.y * cfg.tile_size)
+        pos = (
+            cfg.board_offset_x + self.x * cfg.tile_size,
+            cfg.board_offset_y + self.y * cfg.tile_size,
+        )
         self.sprite.draw_specified("door", 0, pos, scale=scale)

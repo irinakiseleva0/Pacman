@@ -5,6 +5,7 @@ from raylib import colors
 from typing import Tuple
 
 from entities.cell import Actor
+from utils.visual_effects import with_alpha
 
 
 class Ghost(Actor):
@@ -23,6 +24,9 @@ class Ghost(Actor):
         self.respawn_lock_ticks = 0
         self.release_delay_ticks = 0
         self.returning_home = False
+
+    def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
+        return 0.0
 
     def _get_draw_color(self):
         if self.returning_home:
@@ -97,14 +101,19 @@ class Ghost(Actor):
     def draw(self) -> None:
         cfg = self.ctx.cfg
         tile = cfg.tile_size
-        px = self.x * tile + tile // 2
-        py = self.y * tile + tile // 2
+        px = cfg.board_offset_x + self.x * tile + tile // 2
+        py = cfg.board_offset_y + self.y * tile + tile // 2
+        base_color = self._get_draw_color()
+        time_s = getattr(self.ctx, "visual_time", 0.0)
 
         if self.returning_home:
             self._draw_returning_home(px, py, tile)
             return
 
-        pyray.draw_circle(px, py, tile // 2 - 2, self._get_draw_color())
+        pulse = 0.5 + 0.5 * __import__("math").sin(time_s * 5.0 + self.x + self.y)
+        glow_radius = tile // 2 + 4 + int(pulse * 3)
+        pyray.draw_circle(px, py, glow_radius, with_alpha(base_color, 34))
+        pyray.draw_circle(px, py, tile // 2 - 2, base_color)
 
     def update_target(self) -> None:
         """Override in subclasses for different AI behaviors"""
@@ -181,16 +190,22 @@ class Ghost(Actor):
         best_move = (0, 0)
         reverse_move = (0, 0)
         reverse_score = float('inf')
+        pacman = self.ctx.pacman
 
         for dx, dy in directions:
             new_x = self.x + dx
             new_y = self.y + dy
             distance = abs(new_x - self.target_x) + abs(new_y - self.target_y)
-            score = -distance if self.mode == "frightened" else distance
+            if self.mode == "frightened":
+                score = -distance + abs(new_x - pacman.x) * 0.35 + abs(new_y - pacman.y) * 0.35
+            else:
+                score = distance
 
             # Prefer continuing in current direction, then shortest distance
             if (dx, dy) == (self.last_dx, self.last_dy):
                 score -= 0.5  # Slight preference for current direction
+
+            score += self.personality_score_adjustment(dx, dy, new_x, new_y, pacman)
 
             if self._is_reverse_direction(dx, dy):
                 if score < reverse_score:
@@ -270,6 +285,15 @@ class Blinky(Ghost):
             self.target_x = pacman.x
             self.target_y = pacman.y
 
+    def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
+        # Blinky is relentless: heavily favors direct approach and keeping pace.
+        adjustment = 0.0
+        if dx == pacman.last_dx and dy == pacman.last_dy:
+            adjustment -= 0.9
+        if abs(new_x - pacman.x) + abs(new_y - pacman.y) <= 3:
+            adjustment -= 0.8
+        return adjustment
+
 
 class Pinky(Ghost):
     """Pink ghost - Ambushes ahead of Pacman"""
@@ -287,6 +311,16 @@ class Pinky(Ghost):
         if pacman:
             self.target_x = pacman.x + pacman.last_dx * 4
             self.target_y = pacman.y + pacman.last_dy * 4
+
+    def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
+        # Pinky prefers turns and front-cuts over raw shortest pursuit.
+        adjustment = 0.0
+        if (dx, dy) != (self.last_dx, self.last_dy) and (self.last_dx, self.last_dy) != (0, 0):
+            adjustment -= 0.65
+        ahead_x = pacman.x + pacman.last_dx * 2
+        ahead_y = pacman.y + pacman.last_dy * 2
+        adjustment += (abs(new_x - ahead_x) + abs(new_y - ahead_y)) * 0.12
+        return adjustment
 
 
 class Inky(Ghost):
@@ -321,6 +355,17 @@ class Inky(Ghost):
                 self.target_x = pacman.x
                 self.target_y = pacman.y
 
+    def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
+        # Inky is less predictable: slight sideways bias and looser pursuit.
+        adjustment = 0.0
+        if pacman.last_dx != 0 and dy != 0:
+            adjustment -= 0.45
+        if pacman.last_dy != 0 and dx != 0:
+            adjustment -= 0.45
+        if (new_x + new_y + self.ctx.ghost_mode_timer) % 3 == 0:
+            adjustment -= 0.18
+        return adjustment
+
 
 class Clyde(Ghost):
     """Orange ghost - Cowardly, switches between chase and scatter"""
@@ -344,3 +389,15 @@ class Clyde(Ghost):
             else:  # Close to Pacman - scatter to corner
                 self.target_x = self.scatter_target[0]
                 self.target_y = self.scatter_target[1]
+
+    def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
+        # Clyde is skittish and drifty, preferring exits when he's too close.
+        distance = abs(pacman.x - self.x) + abs(pacman.y - self.y)
+        adjustment = 0.0
+        if distance <= 6:
+            adjustment -= abs(new_x - self.scatter_target[0]) * 0.08
+            adjustment -= abs(new_y - self.scatter_target[1]) * 0.08
+        else:
+            if (dx, dy) != (self.last_dx, self.last_dy) and (self.last_dx, self.last_dy) != (0, 0):
+                adjustment -= 0.35
+        return adjustment
