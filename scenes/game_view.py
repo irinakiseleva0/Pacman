@@ -9,6 +9,7 @@ from entities.ghost import Ghost
 from ui.hud import draw_game_hud
 from ui.mobile_controls import draw_mobile_controls
 from ui.ui import (
+    LIVE_CYAN,
     PANEL_ACCENT,
     TEXT_DIM,
     draw_glass_card,

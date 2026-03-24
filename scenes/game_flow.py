@@ -16,6 +16,12 @@ if TYPE_CHECKING:
     from scenes.game_scene import GameScene, SceneTransition
 
 
+def _transition(scene: "GameScene", kind: str, ticks: float, result: str = ""):
+    from scenes.game_scene import SceneTransition
+
+    return SceneTransition(kind, ticks, result)
+
+
 def enter_tree(scene: "GameScene") -> None:
     scene.logic_accumulator = 0.0
     scene.transition = None
@@ -37,7 +43,7 @@ def enter_tree(scene: "GameScene") -> None:
     scene.ctx.reset_ghost_mode_cycle()
     scene.ctx.game_map = Map(scene.ctx, path=map_path)
     scene.ctx.should_resume_game = False
-    scene.transition = scene.SceneTransition("ready", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.ready_duration_ticks))
+    scene.transition = _transition(scene, "ready", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.ready_duration_ticks))
 
 
 def update(scene: "GameScene", dt: float) -> None:
@@ -147,10 +153,10 @@ def start_death_transition(scene: "GameScene") -> None:
     scene.ctx.lives -= 1
 
     if scene.ctx.lives <= 0:
-        scene.transition = scene.SceneTransition("death", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.game_over_pause_ticks), "lose")
+        scene.transition = _transition(scene, "death", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.game_over_pause_ticks), "lose")
         return
 
-    scene.transition = scene.SceneTransition("death", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.death_pause_ticks), "reload")
+    scene.transition = _transition(scene, "death", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.death_pause_ticks), "reload")
 
 
 def start_timeout_transition(scene: "GameScene") -> None:
@@ -158,7 +164,7 @@ def start_timeout_transition(scene: "GameScene") -> None:
     scene.ctx.play_sfx("death")
     scene.ctx.reset_ghost_combo()
     scene.ctx.play_transition_effect(colors.ORANGE, 0.34, 0.22, 9.0, 0.45)
-    scene.transition = scene.SceneTransition("death", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.game_over_pause_ticks), "lose")
+    scene.transition = _transition(scene, "death", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.game_over_pause_ticks), "lose")
 
 
 def finish_transition(scene: "GameScene") -> None:
@@ -181,7 +187,7 @@ def finish_transition(scene: "GameScene") -> None:
         scene.ctx.reset_ghost_mode_cycle()
         scene.ctx.game_map = Map(scene.ctx, path=map_path)
         scene.logic_accumulator = 0.0
-        scene.transition = scene.SceneTransition("ready", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.ready_duration_ticks))
+        scene.transition = _transition(scene, "ready", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.ready_duration_ticks))
         return
 
     if scene.transition.kind == "level_complete":
@@ -234,7 +240,8 @@ def start_level_complete_transition(scene: "GameScene") -> None:
     scene.ctx.record_level_cleared()
     scene.ctx.reset_ghost_combo()
     scene.ctx.play_transition_effect(scene.ctx.effect_palette()["win_flash"], 0.25, 0.2, 3.0, 0.2)
-    scene.transition = scene.SceneTransition(
+    scene.transition = _transition(
+        scene,
         "level_complete",
         scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.level_complete_duration_ticks),
         transition_result,

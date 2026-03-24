@@ -193,8 +193,6 @@ The repository was cleaned so scene files no longer sprawl across the root. The 
 The project also uses a local wrapper around `raylib` at `core/raylib_api.py`, so the dependency boundary is explicit and does not conflict with the external package name.
 Important tuning values now live in `data/config/` instead of only inside Python files, so runtime balance, layout sizing, and difficulty presets are easier to iterate on without touching gameplay code.
 
-There is still a legacy `src/` path in the repo that looks like an older duplicate structure. It is not part of the current runtime entry flow and should be treated as historical/cleanup debt unless you intentionally migrate the project to a package-first layout later.
-
 ## Dependencies
 
 See [requirements.txt](./requirements.txt).
