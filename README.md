@@ -146,6 +146,11 @@ docs/
     pressure-loop.gif
 ```
 
+A ready-to-use GitHub publishing checklist and media template live in:
+
+- `docs/github-publishing-checklist.md`
+- `docs/README-media-template.md`
+
 ## Screens and Modes
 
 ### Main Screens
