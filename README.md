@@ -14,20 +14,30 @@ Arcade maze-chasing reimagined as a neon district survival run.
 
 ## Screenshots
 
-Add project media here once screenshots are exported:
+Drop exported media into:
 
-```text
-docs/
-  screenshots/
-    menu.png
-    gameplay.png
-    challenge-board.png
-    career.png
-  gifs/
-    pressure-loop.gif
+- `docs/screenshots/menu.png`
+- `docs/screenshots/gameplay.png`
+- `docs/screenshots/challenge-board.png`
+- `docs/screenshots/career.png`
+- `docs/gifs/pressure-loop.gif`
+
+Then replace this section with:
+
+```md
+## Screenshots
+
+![Main Menu](docs/screenshots/menu.png)
+![Gameplay](docs/screenshots/gameplay.png)
+![Challenge Board](docs/screenshots/challenge-board.png)
+![Career](docs/screenshots/career.png)
+
+## GIF
+
+![Pressure Loop](docs/gifs/pressure-loop.gif)
 ```
 
-Ready-made media markdown:
+Media helper:
 
 See [docs/README-media-template.md](docs/README-media-template.md)
 
