@@ -5,3 +5,5 @@ __pycache__/
 .vscode/
 profile.json
 scores.json
+data/saves/*.json
+!data/saves/.gitkeep

@@ -1,6 +1,62 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
+
+
+_CONFIG_DIR = Path(__file__).resolve().parent.parent / "data" / "config"
+
+_LAYOUT_FALLBACK = {
+    "default_layout": "desktop",
+    "profiles": {
+        "desktop": {
+            "name": "desktop",
+            "tile_size": 36,
+            "hud_mode": "side",
+            "hud_extent": 520,
+            "menu_button_width": 340,
+            "menu_button_height": 80,
+            "menu_title_size": 118,
+            "menu_heading_size": 38,
+            "menu_body_size": 28,
+            "menu_footer_size": 22,
+            "hud_font_size": 28,
+            "hud_line_height": 36,
+            "hud_columns": 1,
+        },
+        "mobile": {
+            "name": "mobile",
+            "tile_size": 18,
+            "hud_mode": "bottom",
+            "hud_extent": 190,
+            "menu_button_width": 240,
+            "menu_button_height": 60,
+            "menu_title_size": 58,
+            "menu_heading_size": 24,
+            "menu_body_size": 18,
+            "menu_footer_size": 16,
+            "hud_font_size": 18,
+            "hud_line_height": 24,
+            "hud_columns": 2,
+        },
+    },
+}
+
+
+def _load_layout_data() -> dict:
+    path = _CONFIG_DIR / "layouts.json"
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        if isinstance(data, dict) and isinstance(data.get("profiles"), dict):
+            return data
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    return _LAYOUT_FALLBACK
+
+
+_LAYOUT_DATA = _load_layout_data()
 
 
 @dataclass(frozen=True)
@@ -20,38 +76,27 @@ class LayoutProfile:
     hud_columns: int
 
 
-LAYOUT_PROFILES: dict[str, LayoutProfile] = {
-    "desktop": LayoutProfile(
-        name="desktop",
-        tile_size=36,
-        hud_mode="side",
-        hud_extent=520,
-        menu_button_width=340,
-        menu_button_height=80,
-        menu_title_size=118,
-        menu_heading_size=38,
-        menu_body_size=28,
-        menu_footer_size=22,
-        hud_font_size=28,
-        hud_line_height=36,
-        hud_columns=1,
-    ),
-    "mobile": LayoutProfile(
-        name="mobile",
-        tile_size=18,
-        hud_mode="bottom",
-        hud_extent=190,
-        menu_button_width=240,
-        menu_button_height=60,
-        menu_title_size=58,
-        menu_heading_size=24,
-        menu_body_size=18,
-        menu_footer_size=16,
-        hud_font_size=18,
-        hud_line_height=24,
-        hud_columns=2,
-    ),
-}
+def _build_layout_profiles() -> dict[str, LayoutProfile]:
+    profiles: dict[str, LayoutProfile] = {}
+    raw_profiles = _LAYOUT_DATA.get("profiles", {})
+    for name, values in raw_profiles.items():
+        profiles[name] = LayoutProfile(
+            name=values["name"],
+            tile_size=values["tile_size"],
+            hud_mode=values["hud_mode"],
+            hud_extent=values["hud_extent"],
+            menu_button_width=values["menu_button_width"],
+            menu_button_height=values["menu_button_height"],
+            menu_title_size=values["menu_title_size"],
+            menu_heading_size=values["menu_heading_size"],
+            menu_body_size=values["menu_body_size"],
+            menu_footer_size=values["menu_footer_size"],
+            hud_font_size=values["hud_font_size"],
+            hud_line_height=values["hud_line_height"],
+            hud_columns=values["hud_columns"],
+        )
+    return profiles
 
 
-DEFAULT_LAYOUT = "desktop"
+LAYOUT_PROFILES: dict[str, LayoutProfile] = _build_layout_profiles()
+DEFAULT_LAYOUT = _LAYOUT_DATA.get("default_layout", "desktop")

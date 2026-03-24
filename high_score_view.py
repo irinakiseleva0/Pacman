@@ -17,7 +17,7 @@ class HighscoreTableDraw:
         if SCORE_FILE.exists():
             data = f"High score\n\n{high_score}"
         else:
-            data = "No scores yet.\nPlay the game to create scores.json"
+            data = "No scores yet.\nPlay the game to create data/saves/scores.json"
 
         while not pyray.window_should_close():
             x, y = 50, 100

@@ -1,0 +1,35 @@
+{
+  "default_layout": "desktop",
+  "profiles": {
+    "desktop": {
+      "name": "desktop",
+      "tile_size": 36,
+      "hud_mode": "side",
+      "hud_extent": 520,
+      "menu_button_width": 340,
+      "menu_button_height": 80,
+      "menu_title_size": 118,
+      "menu_heading_size": 38,
+      "menu_body_size": 28,
+      "menu_footer_size": 22,
+      "hud_font_size": 28,
+      "hud_line_height": 36,
+      "hud_columns": 1
+    },
+    "mobile": {
+      "name": "mobile",
+      "tile_size": 18,
+      "hud_mode": "bottom",
+      "hud_extent": 190,
+      "menu_button_width": 240,
+      "menu_button_height": 60,
+      "menu_title_size": 58,
+      "menu_heading_size": 24,
+      "menu_body_size": 18,
+      "menu_footer_size": 16,
+      "hud_font_size": 18,
+      "hud_line_height": 24,
+      "hud_columns": 2
+    }
+  }
+}

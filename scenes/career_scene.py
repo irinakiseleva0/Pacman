@@ -3,7 +3,7 @@ from __future__ import annotations
 import core.raylib_api as pyray
 from raylib import colors
 
-from core.context import CHALLENGE_PRESETS, HUD_PACK_PRESETS
+from core.game_data import CHALLENGE_PRESETS, HUD_PACK_PRESETS
 from core.scene import Scene
 from core.scene_ids import ACHIEVEMENTS_SCENE, OPTIONS_SCENE, RUN_HISTORY_SCENE
 from ui import gamepad

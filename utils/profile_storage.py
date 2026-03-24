@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-
-PROFILE_FILE = Path("profile.json")
+from utils.storage_paths import PROFILE_FILE
 
 
 DEFAULT_PROFILE = {
@@ -114,5 +112,6 @@ def load_profile() -> dict:
 
 
 def save_profile(profile: dict) -> None:
+    PROFILE_FILE.parent.mkdir(parents=True, exist_ok=True)
     with PROFILE_FILE.open("w", encoding="utf-8") as file:
         json.dump(profile, file, ensure_ascii=False, indent=2)

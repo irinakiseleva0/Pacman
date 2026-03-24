@@ -208,6 +208,55 @@ class Ghost(Actor):
 
         return max_depth + abs(start_x - target_x) + abs(start_y - target_y)
 
+    def _shortest_path_options(
+        self,
+        game_map,
+        target_x: int,
+        target_y: int,
+        *,
+        max_depth: int | None = None,
+    ) -> dict[tuple[int, int], int]:
+        if (self.x, self.y) == (target_x, target_y):
+            return {(0, 0): 0}
+
+        depth_limit = max_depth if max_depth is not None else max(12, game_map.width * game_map.height)
+        options: dict[tuple[int, int], int] = {}
+        visited = {(self.x, self.y)}
+        queue = deque()
+
+        for dx, dy in self._valid_moves(game_map):
+            nx = self.x + dx
+            ny = self.y + dy
+            visited.add((nx, ny))
+            queue.append((nx, ny, 1, (dx, dy)))
+
+        while queue:
+            x, y, depth, first_move = queue.popleft()
+            if depth > depth_limit:
+                continue
+
+            if (x, y) == (target_x, target_y):
+                current_best = options.get(first_move)
+                if current_best is None or depth < current_best:
+                    options[first_move] = depth
+                continue
+
+            next_depth = depth + 1
+            for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+                nx = x + dx
+                ny = y + dy
+                if (nx, ny) in visited or not game_map.in_bounds(nx, ny):
+                    continue
+
+                cell = game_map.get_cell(nx, ny)
+                if cell is None or cell.is_blocking(self):
+                    continue
+
+                visited.add((nx, ny))
+                queue.append((nx, ny, next_depth, first_move))
+
+        return options
+
     def _future_path_score(self, game_map, new_x: int, new_y: int, *, max_depth: int = 10) -> int:
         best = None
         for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
@@ -224,7 +273,7 @@ class Ghost(Actor):
         return best if best is not None else max_depth + 6
 
     def get_best_move(self, game_map) -> Tuple[int, int]:
-        """Find the best move towards the target using lookahead grid path scoring."""
+        """Find the best move using shortest-path routing plus personality tie-breakers."""
         directions = self._valid_moves(game_map)
         if not directions:
             return 0, 0
@@ -237,18 +286,26 @@ class Ghost(Actor):
         reverse_move = (0, 0)
         reverse_score = float('inf')
         pacman = self.ctx.pacman
+        shortest_paths = self._shortest_path_options(game_map, self.target_x, self.target_y)
+        frightened_paths = None
+        if self.mode == "frightened" and pacman is not None:
+            frightened_paths = self._shortest_path_options(game_map, pacman.x, pacman.y, max_depth=14)
 
         for dx, dy in directions:
             new_x = self.x + dx
             new_y = self.y + dy
-            path_distance = self._path_distance(game_map, new_x, new_y, self.target_x, self.target_y)
+            path_distance = shortest_paths.get((dx, dy))
+            if path_distance is None:
+                path_distance = self._path_distance(game_map, new_x, new_y, self.target_x, self.target_y)
             future_distance = self._future_path_score(game_map, new_x, new_y)
             distance = abs(new_x - self.target_x) + abs(new_y - self.target_y)
             if self.mode == "frightened":
-                path_away = self._path_distance(game_map, new_x, new_y, pacman.x, pacman.y, max_depth=12)
-                score = -(path_away * 1.15) - distance * 0.15
+                path_away = frightened_paths.get((dx, dy)) if frightened_paths is not None else None
+                if path_away is None:
+                    path_away = self._path_distance(game_map, new_x, new_y, pacman.x, pacman.y, max_depth=12)
+                score = -(path_away * 1.25) - distance * 0.15 + future_distance * 0.08
             else:
-                score = path_distance * 1.1 + future_distance * 0.35 + distance * 0.15
+                score = path_distance * 1.2 + future_distance * 0.28 + distance * 0.12
 
             if (dx, dy) == (self.last_dx, self.last_dy):
                 score -= 0.55

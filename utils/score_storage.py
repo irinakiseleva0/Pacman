@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-
-SCORE_FILE = Path("scores.json")
+from utils.storage_paths import SCORE_FILE
 
 
 def load_high_score() -> int:
@@ -21,6 +19,7 @@ def load_high_score() -> int:
 
 def save_high_score(score: int) -> None:
     data = {"high_score": score}
+    SCORE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     with open(SCORE_FILE, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=2)

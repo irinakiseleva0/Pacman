@@ -59,8 +59,8 @@ The intended feeling is:
 
 ### Meta / Product Layer
 
-- persistent profile saved in `profile.json`
-- persistent score data in `scores.json`
+- persistent profile saved in `data/saves/profile.json`
+- persistent score data in `data/saves/scores.json`
 - career overview and long-term goals
 - achievements screen
 - run history screen
@@ -178,6 +178,7 @@ docs/
 ```text
 assets/      textures and runtime-loaded art
 core/        game context, scene base classes, progression logic
+data/config/ JSON-backed runtime, difficulty, and layout tuning
 entities/    pacman, ghosts, pellets, cherry, walls, teleports
 maps/        map definitions and board loading
 scenes/      menu flow, gameplay scene, pause/result, meta screens
@@ -190,6 +191,7 @@ main.py      app entry point and scene loop
 
 The repository was cleaned so scene files no longer sprawl across the root. The main interactive screens now live under `scenes/`, while shared logic remains in `core/`, `entities/`, `ui/`, and `utils/`.
 The project also uses a local wrapper around `raylib` at `core/raylib_api.py`, so the dependency boundary is explicit and does not conflict with the external package name.
+Important tuning values now live in `data/config/` instead of only inside Python files, so runtime balance, layout sizing, and difficulty presets are easier to iterate on without touching gameplay code.
 
 There is still a legacy `src/` path in the repo that looks like an older duplicate structure. It is not part of the current runtime entry flow and should be treated as historical/cleanup debt unless you intentionally migrate the project to a package-first layout later.
 
@@ -205,8 +207,8 @@ Current runtime dependency:
 
 Generated local files:
 
-- `profile.json`
-- `scores.json`
+- `data/saves/profile.json`
+- `data/saves/scores.json`
 
 These are part of the local runtime state and will change as you play.
 The project now uses JSON-backed runtime save files consistently. Older text-file score storage was removed to avoid parallel save formats and repository confusion.

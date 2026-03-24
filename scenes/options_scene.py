@@ -3,8 +3,8 @@ from __future__ import annotations
 import core.raylib_api as pyray
 from raylib import colors
 
+from core.game_data import HUD_PACK_PRESETS
 from core.scene import Scene
-from core.context import HUD_PACK_PRESETS
 from core.scene_ids import CAREER_SCENE, JOURNAL_SCENE, MENU_SCENE, THEMES_SCENE
 from ui import gamepad
 from ui.navigation import ButtonNavigator

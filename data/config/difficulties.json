@@ -1,0 +1,56 @@
+{
+  "Easy": {
+    "logic_tick_rate": 2,
+    "rage_duration_ticks": 450,
+    "cherry_respawn_ticks": 200,
+    "ghost_chase_ticks": 90,
+    "ghost_scatter_ticks": 70,
+    "ghost_release_tick_interval": 24,
+    "initial_lives": 5,
+    "seed_score": 15,
+    "large_seed_score": 75,
+    "cherry_score": 750,
+    "ghost_score": 300,
+    "summary_lines": [
+      "Lives: 5  Rage: long",
+      "Ghosts: lighter pressure, slower release",
+      "Score: generous rewards"
+    ]
+  },
+  "Normal": {
+    "logic_tick_rate": 3,
+    "rage_duration_ticks": 300,
+    "cherry_respawn_ticks": 150,
+    "ghost_chase_ticks": 120,
+    "ghost_scatter_ticks": 40,
+    "ghost_release_tick_interval": 18,
+    "initial_lives": 3,
+    "seed_score": 10,
+    "large_seed_score": 50,
+    "cherry_score": 500,
+    "ghost_score": 200,
+    "summary_lines": [
+      "Lives: 3  Rage: standard",
+      "Ghosts: balanced pressure",
+      "Score: standard rewards"
+    ]
+  },
+  "Hard": {
+    "logic_tick_rate": 4,
+    "rage_duration_ticks": 200,
+    "cherry_respawn_ticks": 100,
+    "ghost_chase_ticks": 150,
+    "ghost_scatter_ticks": 25,
+    "ghost_release_tick_interval": 12,
+    "initial_lives": 2,
+    "seed_score": 5,
+    "large_seed_score": 25,
+    "cherry_score": 250,
+    "ghost_score": 100,
+    "summary_lines": [
+      "Lives: 2  Rage: short",
+      "Ghosts: aggressive pressure, fast release",
+      "Score: reduced rewards"
+    ]
+  }
+}

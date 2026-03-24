@@ -3,9 +3,9 @@ from __future__ import annotations
 import core.raylib_api as pyray
 from raylib import colors
 
+from core.game_data import GAME_MODE_PRESETS
 from core.scene import Scene
 from core.scene_ids import CHALLENGE_SCENE, MENU_SCENE
-from core.context import GAME_MODE_PRESETS
 from ui import gamepad
 from ui.navigation import ButtonNavigator
 from ui.ui import (
