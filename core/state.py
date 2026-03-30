@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from utils.score_storage import load_high_score
-from utils.visual_effects import FloatingTextSystem, ParticleSystem, ScreenFlash, ScreenShake
+from utils.visual_effects import FloatingTextSystem, LightBurstSystem, ParticleSystem, ScreenFlash, ScreenShake
 
 
 @dataclass
@@ -40,6 +40,9 @@ class RunState:
     power_chain_window: int = 0
     route_chain_count: int = 0
     route_chain_window: int = 0
+    line_chain_count: int = 0
+    line_chain_dx: int = 0
+    line_chain_dy: int = 0
     pressure_stage: int = 0
     time_attack_seconds: float = 0.0
 
@@ -54,6 +57,7 @@ class RuntimeRefs:
 @dataclass
 class VisualSystems:
     particles: ParticleSystem = field(default_factory=ParticleSystem)
+    light_bursts: LightBurstSystem = field(default_factory=LightBurstSystem)
     screen_shake: ScreenShake = field(default_factory=ScreenShake)
     floating_text: FloatingTextSystem = field(default_factory=FloatingTextSystem)
     screen_flash: ScreenFlash = field(default_factory=ScreenFlash)

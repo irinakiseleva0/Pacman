@@ -26,9 +26,14 @@ class Seed(Cell):
             self.ctx.record_dot_eaten()
             self.ctx.play_sfx("dot")
             route_chain_count, route_bonus = self.ctx.register_route_chain_dot()
+            line_count, line_bonus = self.ctx.register_line_bonus_dot(
+                getattr(actor, "last_dx", 0),
+                getattr(actor, "last_dy", 0),
+            )
 
             # Add visual effects
             self.ctx.particles.create_dot_eat_effect(self.x, self.y, palette["dot"])
+            self.ctx.visual.light_bursts.add_grid_burst(self.x, self.y, palette["dot"], 14, 0.75, 0.14)
             self.ctx.floating_text.add_score_text(
                 score_value, self.x, self.y)
             dot_count = self.ctx.run_stats.dots_eaten
@@ -59,6 +64,17 @@ class Seed(Cell):
                 )
                 self.ctx.trigger_screen_shake(1.8, 0.07)
                 self.ctx.trigger_screen_flash(palette["dot"], 0.055, 0.05)
+            if line_bonus > 0:
+                self.ctx.score += line_bonus
+                self.ctx.floating_text.add_text(
+                    f"LINE {line_count} +{line_bonus}",
+                    self.x * 16 - 20,
+                    self.y * 16 - 52,
+                    colors.SKYBLUE,
+                    0.82,
+                    11,
+                )
+                self.ctx.trigger_screen_flash(colors.SKYBLUE, 0.04, 0.04)
             if dot_count % 6 == 0:
                 self.ctx.trigger_screen_shake(1.4, 0.05)
                 self.ctx.trigger_screen_flash(palette["dot"], 0.035, 0.045)
@@ -108,6 +124,7 @@ class LargeSeed(Cell):
 
             # Add visual effects
             self.ctx.particles.create_large_seed_eat_effect(self.x, self.y, (palette["power"], colors.WHITE))
+            self.ctx.visual.light_bursts.add_grid_burst(self.x, self.y, palette["power_flash"], 28, 1.35, 0.24)
             self.ctx.floating_text.add_score_text(
                 score_value, self.x, self.y)
             if chain_bonus > 0:

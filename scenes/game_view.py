@@ -11,6 +11,7 @@ from ui.hud import draw_game_hud
 from ui.mobile_controls import draw_mobile_controls
 from ui.ui import (
     LIVE_CYAN,
+    LIVE_PINK,
     PANEL_ACCENT,
     TEXT_DIM,
     draw_glass_card,
@@ -26,12 +27,14 @@ from utils.visual_effects import with_alpha
 
 
 def draw_scene(game_scene) -> None:
-    game_map = game_scene.ctx.game_map
+    runtime = game_scene.ctx.runtime
+    visual = game_scene.ctx.visual
+    game_map = runtime.game_map
     if game_map is None:
         return
     cfg = game_scene.ctx.cfg
 
-    shake_x, shake_y = game_scene.ctx.screen_shake.get_offset()
+    shake_x, shake_y = visual.screen_shake.get_offset()
     board_rect = pyray.Rectangle(cfg.board_offset_x, cfg.board_offset_y, cfg.board_width, cfg.board_height)
 
     draw_live_game_background(cfg.window_width, cfg.window_height, game_scene.visual_time)
@@ -41,8 +44,9 @@ def draw_scene(game_scene) -> None:
     game_map.draw()
 
     effect_scale = cfg.tile_size / 16
-    game_scene.ctx.particles.draw(cfg.board_offset_x + shake_x, cfg.board_offset_y + shake_y, effect_scale)
-    game_scene.ctx.floating_text.draw(cfg.board_offset_x + shake_x, cfg.board_offset_y + shake_y, effect_scale)
+    visual.light_bursts.draw(cfg.board_offset_x + shake_x, cfg.board_offset_y + shake_y, effect_scale)
+    visual.particles.draw(cfg.board_offset_x + shake_x, cfg.board_offset_y + shake_y, effect_scale)
+    visual.floating_text.draw(cfg.board_offset_x + shake_x, cfg.board_offset_y + shake_y, effect_scale)
 
     if not game_scene.ctx.capture_mode_enabled():
         draw_hud(game_scene)
@@ -60,12 +64,14 @@ def draw_scene(game_scene) -> None:
     if game_scene.tutorial_stage > 0 and not game_scene.ctx.capture_mode_enabled():
         draw_tutorial_overlay(game_scene)
 
-    game_scene.ctx.screen_flash.draw()
+    visual.screen_flash.draw()
     draw_presentation_bars(cfg.window_width, cfg.window_height)
 
 
 def draw_hud(game_scene) -> None:
-    game_map = game_scene.ctx.game_map
+    runtime = game_scene.ctx.runtime
+    run = game_scene.ctx.run
+    game_map = runtime.game_map
     if game_map is None:
         return
 
@@ -73,9 +79,9 @@ def draw_hud(game_scene) -> None:
     compact_height = 408
     if cfg.layout_name == "mobile":
         compact_height = cfg.hud_height
-    elif game_scene.ctx.game_mode == "Time Attack":
+    elif run.game_mode == "Time Attack":
         compact_height = 430
-    elif getattr(game_scene.ctx.pacman, "rage", False) or game_scene.ctx.power_chain_window > 0:
+    elif getattr(runtime.pacman, "rage", False) or run.power_chain_window > 0:
         compact_height = 438
 
     panel_height = min(cfg.hud_height, compact_height)
@@ -182,7 +188,7 @@ def _draw_hud_terminal_backdrop(game_scene, hud_rect) -> None:
 
 
 def draw_live_feedback(game_scene) -> None:
-    game_map = game_scene.ctx.game_map
+    game_map = game_scene.ctx.runtime.game_map
     if game_map is None:
         return
 
@@ -192,8 +198,8 @@ def draw_live_feedback(game_scene) -> None:
     center_x = game_scene.ctx.cfg.window_width // 2
     top_y = 24
 
-    pressure_stage = getattr(game_scene.ctx, "pressure_stage", 0)
-    rage_active = bool(getattr(game_scene.ctx.pacman, "rage", False))
+    pressure_stage = game_scene.ctx.run.pressure_stage
+    rage_active = bool(getattr(game_scene.ctx.runtime.pacman, "rage", False))
 
     if feedback.pressure_card is not None:
         accent = feedback.pressure_card.accent
@@ -261,13 +267,25 @@ def draw_live_feedback(game_scene) -> None:
 
 def draw_pressure_overlay(game_scene, board_rect) -> None:
     pressure_stage = getattr(game_scene.ctx, "pressure_stage", 0)
-    if pressure_stage <= 0 or game_scene.transition is not None:
+    runtime = game_scene.ctx.runtime
+    game_map = runtime.game_map
+    if pressure_stage <= 0 or game_scene.transition is not None or game_map is None:
         return
 
     pulse = 0.5 + 0.5 * math.sin(game_scene.visual_time * (4.5 + pressure_stage * 1.2))
     base_color = game_scene.ctx.effect_palette()["ghost"]
     if pressure_stage >= 3:
         base_color = colors.RED
+
+    remaining = max(0, game_map.remaining_pickups())
+    total = max(1, getattr(game_map, "total_pickups", 1))
+    scarcity = 1.0 - (remaining / total)
+    shift_alpha = int((8 + pressure_stage * 6) * scarcity + pulse * 8)
+
+    pyray.draw_rectangle_rec(
+        board_rect,
+        with_alpha(base_color, shift_alpha),
+    )
 
     glow_pad = 18 + pressure_stage * 6
     glow_alpha = int(16 + pressure_stage * 8 + pulse * 18)
@@ -302,6 +320,12 @@ def draw_pressure_overlay(game_scene, board_rect) -> None:
                 pyray.Rectangle(board_rect.x - 10, band_y, board_rect.width + 20, 2),
                 with_alpha(base_color, inner_alpha - index * 2),
             )
+
+        floor_reflect_h = max(40, int(board_rect.height * 0.18))
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(board_rect.x + 12, board_rect.y + board_rect.height - floor_reflect_h, board_rect.width - 24, floor_reflect_h),
+            with_alpha(base_color, int(10 + scarcity * 14 + pulse * 6)),
+        )
 
     if game_scene.ctx.elite_pressure_active():
         scan_x = int(board_rect.x + (math.sin(game_scene.visual_time * 1.7) * 0.5 + 0.5) * max(1, board_rect.width - 36))

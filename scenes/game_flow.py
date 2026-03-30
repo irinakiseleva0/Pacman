@@ -23,17 +23,20 @@ def _transition(scene: "GameScene", kind: str, ticks: float, result: str = ""):
 
 
 def enter_tree(scene: "GameScene") -> None:
+    visual = scene.ctx.visual
+    runtime = scene.ctx.runtime
+    run = scene.ctx.run
     scene.logic_accumulator = 0.0
     scene.transition = None
     scene.visual_time = 0.0
-    scene.ctx.visual_time = 0.0
+    visual.visual_time = 0.0
     scene.tutorial_stage = 1 if tutorial_active(scene) else 0
     scene.failure_reason = ""
     scene.near_miss_timer = 0.0
     scene.near_miss_cooldown = 0.0
 
-    if scene.ctx.should_resume_game and scene.ctx.game_map is not None:
-        scene.ctx.should_resume_game = False
+    if run.should_resume_game and runtime.game_map is not None:
+        run.should_resume_game = False
         return
 
     scene.ctx.play_transition_effect(scene.ctx.effect_palette()["ready_flash"], 0.2, 0.6)
@@ -41,13 +44,16 @@ def enter_tree(scene: "GameScene") -> None:
 
     map_path = scene.ctx.get_map_path()
     scene.ctx.reset_ghost_mode_cycle()
-    scene.ctx.game_map = Map(scene.ctx, path=map_path)
-    scene.ctx.should_resume_game = False
+    runtime.game_map = Map(scene.ctx, path=map_path)
+    run.should_resume_game = False
     scene.transition = _transition(scene, "ready", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.ready_duration_ticks))
 
 
 def update(scene: "GameScene", dt: float) -> None:
-    game_map = scene.ctx.game_map
+    run = scene.ctx.run
+    visual = scene.ctx.visual
+    runtime = scene.ctx.runtime
+    game_map = runtime.game_map
     if game_map is None:
         return
 
@@ -65,7 +71,7 @@ def update(scene: "GameScene", dt: float) -> None:
         return
 
     scene.visual_time += dt
-    scene.ctx.visual_time = scene.visual_time
+    visual.visual_time = scene.visual_time
     scene.ctx.tick_power_chain_window()
     scene.ctx.tick_route_chain_window()
     scene.near_miss_timer = max(0.0, scene.near_miss_timer - dt)
@@ -81,9 +87,9 @@ def update(scene: "GameScene", dt: float) -> None:
             finish_transition(scene)
         return
 
-    if scene.ctx.game_mode == "Time Attack":
-        scene.ctx.time_attack_seconds = max(0.0, scene.ctx.time_attack_seconds - dt)
-        if scene.ctx.time_attack_seconds <= 0:
+    if run.game_mode == "Time Attack":
+        run.time_attack_seconds = max(0.0, run.time_attack_seconds - dt)
+        if run.time_attack_seconds <= 0:
             start_timeout_transition(scene)
             return
 
@@ -97,20 +103,21 @@ def update(scene: "GameScene", dt: float) -> None:
             game_map.remaining_pickups(),
             getattr(game_map, "total_pickups", 0),
         )
-        if pressure_changed and scene.ctx.pressure_stage > 0:
+        if pressure_changed and run.pressure_stage > 0:
             _handle_pressure_escalation(scene, game_map)
         game_map.process()
 
     frame_dt = pyray.get_frame_time()
-    scene.ctx.particles.update(frame_dt)
-    scene.ctx.screen_shake.update(frame_dt)
-    scene.ctx.floating_text.update(frame_dt)
-    scene.ctx.screen_flash.update(frame_dt)
+    visual.particles.update(frame_dt)
+    visual.light_bursts.update(frame_dt)
+    visual.screen_shake.update(frame_dt)
+    visual.floating_text.update(frame_dt)
+    visual.screen_flash.update(frame_dt)
 
-    if scene.ctx.score > scene.ctx.high_score:
-        scene.ctx.high_score = scene.ctx.score
+    if run.score > run.high_score:
+        run.high_score = run.score
 
-    pacman = scene.ctx.pacman
+    pacman = runtime.pacman
     if pacman is not None and scene.transition is None:
         check_near_miss(scene)
     if pacman is not None and pacman.state == State.NONE and scene.transition is None:
@@ -122,9 +129,11 @@ def update(scene: "GameScene", dt: float) -> None:
 
 
 def _handle_pressure_escalation(scene: "GameScene", game_map) -> None:
+    run = scene.ctx.run
+    visual = scene.ctx.visual
     palette = scene.ctx.effect_palette()
-    flash_strength = 0.04 + scene.ctx.pressure_stage * 0.02
-    shake_strength = 1.8 + scene.ctx.pressure_stage * 0.7
+    flash_strength = 0.04 + run.pressure_stage * 0.02
+    shake_strength = 1.8 + run.pressure_stage * 0.7
     if scene.ctx.elite_pressure_active():
         flash_strength += 0.04
         shake_strength += 1.2
@@ -135,7 +144,7 @@ def _handle_pressure_escalation(scene: "GameScene", game_map) -> None:
         surge += 2
     if surge > 0:
         game_map.nudge_pending_ghosts(surge)
-        scene.ctx.floating_text.add_text(
+        visual.floating_text.add_text(
             "ELITE SURGE" if scene.ctx.elite_pressure_active() else "SURGE",
             int(scene.ctx.cfg.board_width * 0.48),
             24,
@@ -146,13 +155,14 @@ def _handle_pressure_escalation(scene: "GameScene", game_map) -> None:
 
 
 def start_death_transition(scene: "GameScene") -> None:
+    run = scene.ctx.run
     scene.failure_reason = ""
     scene.ctx.play_sfx("death")
     scene.ctx.play_transition_effect(scene.ctx.effect_palette()["death_flash"], 0.3, 0.2, 8.0, 0.5)
 
-    scene.ctx.lives -= 1
+    run.lives -= 1
 
-    if scene.ctx.lives <= 0:
+    if run.lives <= 0:
         scene.transition = _transition(scene, "death", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.game_over_pause_ticks), "lose")
         return
 
@@ -185,7 +195,7 @@ def finish_transition(scene: "GameScene") -> None:
     if scene.transition.kind == "death":
         map_path = scene.ctx.get_map_path()
         scene.ctx.reset_ghost_mode_cycle()
-        scene.ctx.game_map = Map(scene.ctx, path=map_path)
+        scene.ctx.runtime.game_map = Map(scene.ctx, path=map_path)
         scene.logic_accumulator = 0.0
         scene.transition = _transition(scene, "ready", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.ready_duration_ticks))
         return
@@ -197,41 +207,44 @@ def finish_transition(scene: "GameScene") -> None:
 
 
 def start_level_complete_transition(scene: "GameScene") -> None:
+    run = scene.ctx.run
+    runtime = scene.ctx.runtime
+    visual = scene.ctx.visual
     transition_result = "level_complete"
-    if scene.ctx.game_mode == "Challenge":
+    if run.game_mode == "Challenge":
         transition_result = scene.ctx.challenge_result_on_clear()
     elif scene.ctx.run_won_on_level_clear():
         transition_result = "game_won"
     clear_bonus = scene.ctx.mode_clear_bonus()
     directive_bonus = scene.ctx.directive_clear_bonus()
     if clear_bonus > 0:
-        scene.ctx.score += clear_bonus
-        if scene.ctx.game_map is not None and scene.ctx.pacman is not None:
-            scene.ctx.floating_text.add_text(
+        run.score += clear_bonus
+        if runtime.game_map is not None and runtime.pacman is not None:
+            visual.floating_text.add_text(
                 f"CLEAR +{clear_bonus}",
-                scene.ctx.pacman.x * 16 - 10,
-                scene.ctx.pacman.y * 16 - 26,
+                runtime.pacman.x * 16 - 10,
+                runtime.pacman.y * 16 - 26,
                 colors.GOLD,
                 1.1,
                 14,
             )
-    if directive_bonus > 0 and scene.ctx.game_map is not None and scene.ctx.pacman is not None:
-        scene.ctx.score += directive_bonus
+    if directive_bonus > 0 and runtime.game_map is not None and runtime.pacman is not None:
+        run.score += directive_bonus
         directive = scene.ctx.current_run_directive()
-        scene.ctx.floating_text.add_text(
+        visual.floating_text.add_text(
             f"{directive.title} +{directive_bonus}",
-            scene.ctx.pacman.x * 16 - 18,
-            scene.ctx.pacman.y * 16 - 44,
+            runtime.pacman.x * 16 - 18,
+            runtime.pacman.y * 16 - 44,
             directive.accent,
             1.2,
             14,
         )
-    if scene.ctx.game_mode == "Time Attack" and scene.ctx.game_map is not None and scene.ctx.pacman is not None:
+    if run.game_mode == "Time Attack" and runtime.game_map is not None and runtime.pacman is not None:
         bonus_seconds = math.ceil(scene.ctx.time_attack_clear_bonus_seconds())
-        scene.ctx.floating_text.add_text(
+        visual.floating_text.add_text(
             f"+{bonus_seconds}S",
-            scene.ctx.pacman.x * 16 + 18,
-            scene.ctx.pacman.y * 16 - 62,
+            runtime.pacman.x * 16 + 18,
+            runtime.pacman.y * 16 - 62,
             colors.ORANGE,
             1.1,
             14,
@@ -240,6 +253,15 @@ def start_level_complete_transition(scene: "GameScene") -> None:
     scene.ctx.record_level_cleared()
     scene.ctx.reset_ghost_combo()
     scene.ctx.play_transition_effect(scene.ctx.effect_palette()["win_flash"], 0.25, 0.2, 3.0, 0.2)
+    if runtime.pacman is not None:
+        visual.light_bursts.add_grid_burst(
+            runtime.pacman.x,
+            runtime.pacman.y,
+            scene.ctx.effect_palette()["win_flash"],
+            42,
+            1.6,
+            0.34,
+        )
     scene.transition = _transition(
         scene,
         "level_complete",
@@ -252,8 +274,8 @@ def check_near_miss(scene: "GameScene") -> None:
     if scene.near_miss_cooldown > 0:
         return
 
-    game_map = scene.ctx.game_map
-    pacman = scene.ctx.pacman
+    game_map = scene.ctx.runtime.game_map
+    pacman = scene.ctx.runtime.pacman
     if game_map is None or pacman is None or getattr(pacman, "rage", False):
         return
 
@@ -271,11 +293,20 @@ def check_near_miss(scene: "GameScene") -> None:
         return
 
     palette = scene.ctx.effect_palette()
+    risk_turn = getattr(pacman, "turn_feedback_timer", 0.0) > 0.03
     scene.near_miss_timer = 0.55
     scene.near_miss_cooldown = 1.1
-    scene.ctx.trigger_screen_flash(palette["ghost"], 0.05, 0.06)
-    scene.ctx.trigger_screen_shake(1.4, 0.08)
-    scene.ctx.floating_text.add_text(
+    scene.ctx.trigger_screen_flash(palette["ghost"], 0.06 if risk_turn else 0.05, 0.07 if risk_turn else 0.06)
+    scene.ctx.trigger_screen_shake(2.1 if risk_turn else 1.4, 0.1 if risk_turn else 0.08)
+    scene.ctx.visual.light_bursts.add_grid_burst(
+        pacman.x,
+        pacman.y,
+        palette["ghost"],
+        22 if risk_turn else 18,
+        1.05 if risk_turn else 0.85,
+        0.14 if risk_turn else 0.11,
+    )
+    scene.ctx.visual.floating_text.add_text(
         "CLOSE CALL",
         pacman.x * 16 - 18,
         pacman.y * 16 - 20,
@@ -283,6 +314,17 @@ def check_near_miss(scene: "GameScene") -> None:
         0.48,
         12,
     )
+    if risk_turn:
+        bonus = scene.ctx.risk_turn_bonus_value()
+        scene.ctx.run.score += bonus
+        scene.ctx.visual.floating_text.add_text(
+            f"THREAD +{bonus}",
+            pacman.x * 16 - 22,
+            pacman.y * 16 - 38,
+            colors.GOLD,
+            0.72,
+            12,
+        )
 
 
 def tutorial_active(scene: "GameScene") -> bool:

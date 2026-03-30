@@ -7,7 +7,7 @@ from raylib import colors
 from typing import Tuple
 
 from entities.cell import Actor
-from utils.visual_effects import with_alpha
+from utils.visual_effects import Particle, with_alpha
 
 
 class Ghost(Actor):
@@ -29,6 +29,53 @@ class Ghost(Actor):
 
     def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
         return 0.0
+
+    def _pacman_heading(self, pacman) -> tuple[int, int]:
+        dx = getattr(pacman, "last_dx", 0)
+        dy = getattr(pacman, "last_dy", 0)
+        if (dx, dy) == (0, 0):
+            state = getattr(pacman, "state", "")
+            if state == "LEFT":
+                return -1, 0
+            if state == "RIGHT":
+                return 1, 0
+            if state == "UP":
+                return 0, -1
+            if state == "DOWN":
+                return 0, 1
+        return dx, dy
+
+    def _is_ahead_of_pacman(self, pacman, x: int, y: int) -> bool:
+        heading_dx, heading_dy = self._pacman_heading(pacman)
+        if heading_dx == 0 and heading_dy == 0:
+            return False
+        rel_x = x - pacman.x
+        rel_y = y - pacman.y
+        return rel_x * heading_dx + rel_y * heading_dy > 0
+
+    def _same_axis_as_pacman(self, pacman, x: int, y: int) -> bool:
+        return x == pacman.x or y == pacman.y
+
+    def _side_lane_bias(self, pacman, x: int, y: int) -> float:
+        heading_dx, heading_dy = self._pacman_heading(pacman)
+        if heading_dx != 0:
+            return 0.0 if x == pacman.x else -0.5
+        if heading_dy != 0:
+            return 0.0 if y == pacman.y else -0.5
+        return -0.15 if x != pacman.x and y != pacman.y else 0.0
+
+    def _behind_pacman_score(self, pacman, x: int, y: int) -> float:
+        heading_dx, heading_dy = self._pacman_heading(pacman)
+        if heading_dx == 0 and heading_dy == 0:
+            return 0.0
+        rel_x = x - pacman.x
+        rel_y = y - pacman.y
+        dot = rel_x * heading_dx + rel_y * heading_dy
+        if dot < 0:
+            return -0.75
+        if dot == 0:
+            return -0.2
+        return 0.2
 
     def _get_draw_color(self):
         if self.returning_home:
@@ -388,6 +435,16 @@ class Ghost(Actor):
         if result.moved:
             self.last_dx = dx
             self.last_dy = dy
+            if dx != 0 or dy != 0:
+                trail_color = colors.WHITE if self.returning_home else self._get_draw_color()
+                intensity = 0.5 + self.ctx.run.pressure_stage * 0.12
+                center_x = self.x * 16 + 8 - dx * 4
+                center_y = self.y * 16 + 8 - dy * 4
+                self.ctx.visual.light_bursts.add_burst(center_x, center_y, 8, trail_color, intensity * 0.42, 0.08)
+                if self.ctx.run.pressure_stage >= 2 or self.returning_home:
+                    self.ctx.visual.particles.add_particle(
+                        Particle(center_x, center_y, -dx * 8, -dy * 8, 0.12, trail_color, 1.3)
+                    )
             if self.returning_home and self.x == self.spawn_x and self.y == self.spawn_y:
                 self.returning_home = False
                 self.respawn_lock_ticks = self.EATEN_RESPAWN_TICKS
@@ -406,19 +463,31 @@ class Blinky(Ghost):
         self.scatter_target = (self.ctx.cfg.map_width - 2, 1)
 
     def update_target(self) -> None:
-        """Always target Pacman's current position"""
+        """Pressure from behind and punish retreat lanes."""
         pacman = self.ctx.pacman
         if pacman:
-            self.target_x = pacman.x
-            self.target_y = pacman.y
+            heading_dx, heading_dy = self._pacman_heading(pacman)
+            if heading_dx == 0 and heading_dy == 0:
+                self.target_x = pacman.x
+                self.target_y = pacman.y
+                return
+
+            # Sit just behind Pac-Man's route so backing up feels dangerous.
+            self.target_x = pacman.x - heading_dx * 2
+            self.target_y = pacman.y - heading_dy * 2
 
     def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
-        # Blinky is relentless: heavily favors direct approach and keeping pace.
+        # Blinky is the enforcer: he trails the route and punishes hesitation.
         adjustment = 0.0
         if dx == pacman.last_dx and dy == pacman.last_dy:
-            adjustment -= 0.9
+            adjustment -= 0.35
+        adjustment += self._behind_pacman_score(pacman, new_x, new_y)
+        if self._same_axis_as_pacman(pacman, new_x, new_y):
+            adjustment -= 0.45
         if abs(new_x - pacman.x) + abs(new_y - pacman.y) <= 3:
             adjustment -= 0.8
+        if self._is_ahead_of_pacman(pacman, new_x, new_y):
+            adjustment += 0.3
         adjustment += self.ctx.map_blinky_bias()
         return adjustment
 
@@ -434,20 +503,27 @@ class Pinky(Ghost):
         self.scatter_target = (1, 1)
 
     def update_target(self) -> None:
-        """Target 4 tiles ahead of Pacman's direction"""
+        """Target well ahead of Pac-Man so Pinky reads as a cutter."""
         pacman = self.ctx.pacman
         if pacman:
-            self.target_x = pacman.x + pacman.last_dx * 4
-            self.target_y = pacman.y + pacman.last_dy * 4
+            heading_dx, heading_dy = self._pacman_heading(pacman)
+            lookahead = 5
+            self.target_x = pacman.x + heading_dx * lookahead
+            self.target_y = pacman.y + heading_dy * lookahead
 
     def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
-        # Pinky prefers turns and front-cuts over raw shortest pursuit.
+        # Pinky should be felt as the route-cutter living ahead of the player.
         adjustment = 0.0
         if (dx, dy) != (self.last_dx, self.last_dy) and (self.last_dx, self.last_dy) != (0, 0):
             adjustment -= 0.65
-        ahead_x = pacman.x + pacman.last_dx * 2
-        ahead_y = pacman.y + pacman.last_dy * 2
+        ahead_dx, ahead_dy = self._pacman_heading(pacman)
+        ahead_x = pacman.x + ahead_dx * 3
+        ahead_y = pacman.y + ahead_dy * 3
         adjustment += (abs(new_x - ahead_x) + abs(new_y - ahead_y)) * 0.12
+        if self._is_ahead_of_pacman(pacman, new_x, new_y):
+            adjustment -= 0.7
+        if self._same_axis_as_pacman(pacman, new_x, new_y):
+            adjustment -= 0.35
         if self.ctx.current_map_number() in {1, 4} and (dx, dy) != (pacman.last_dx, pacman.last_dy):
             adjustment -= 0.22
         adjustment += self.ctx.map_pinky_bias()
@@ -465,10 +541,9 @@ class Inky(Ghost):
         self.scatter_target = (self.ctx.cfg.map_width - 2, self.ctx.cfg.map_height - 2)
 
     def update_target(self) -> None:
-        """Target based on Pacman's position and Blinky's position"""
+        """Target a dirty flank vector rather than a clean direct chase."""
         pacman = self.ctx.pacman
         if pacman:
-            # Find Blinky (first red ghost)
             blinky = None
             for actor in self.ctx.game_map.dynamic_actors:
                 if isinstance(actor, Blinky):
@@ -476,25 +551,28 @@ class Inky(Ghost):
                     break
 
             if blinky:
-                # Target is Pacman's position + (Pacman to Blinky vector)
                 vector_x = pacman.x - blinky.x
                 vector_y = pacman.y - blinky.y
-                self.target_x = pacman.x + vector_x
-                self.target_y = pacman.y + vector_y
+                heading_dx, heading_dy = self._pacman_heading(pacman)
+                side_x, side_y = -heading_dy, heading_dx
+                self.target_x = pacman.x + vector_x + side_x * 2
+                self.target_y = pacman.y + vector_y + side_y * 2
             else:
-                # Fallback to simple chase
-                self.target_x = pacman.x
-                self.target_y = pacman.y
+                heading_dx, heading_dy = self._pacman_heading(pacman)
+                side_x, side_y = -heading_dy, heading_dx
+                self.target_x = pacman.x + side_x * 3
+                self.target_y = pacman.y + side_y * 3
 
     def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
-        # Inky is less predictable: slight sideways bias and looser pursuit.
+        # Inky should feel messy: he drifts wide, then appears from a bad flank.
         adjustment = 0.0
-        if pacman.last_dx != 0 and dy != 0:
-            adjustment -= 0.45
-        if pacman.last_dy != 0 and dx != 0:
-            adjustment -= 0.45
+        adjustment += self._side_lane_bias(pacman, new_x, new_y)
+        if self._same_axis_as_pacman(pacman, new_x, new_y):
+            adjustment += 0.3
         if (new_x + new_y + self.ctx.ghost_mode_timer) % 3 == 0:
-            adjustment -= 0.18
+            adjustment -= 0.35
+        if abs(new_x - pacman.x) + abs(new_y - pacman.y) <= 2:
+            adjustment += 0.45
         if self.ctx.current_map_number() == 1 and abs(new_x - pacman.x) + abs(new_y - pacman.y) >= 4:
             adjustment -= 0.22
         adjustment += self.ctx.map_inky_bias()
@@ -512,23 +590,44 @@ class Clyde(Ghost):
         self.scatter_target = (1, self.ctx.cfg.map_height - 2)
 
     def update_target(self) -> None:
-        """Chase when far from Pacman, scatter when close"""
+        """React to Pac-Man's power state instead of following one static mood."""
         pacman = self.ctx.pacman
         if pacman:
             distance = abs(pacman.x - self.x) + abs(pacman.y - self.y)
+            rage_timer = getattr(pacman, "rage_timer", 0)
 
-            if distance > 8:  # Far from Pacman - chase
+            if getattr(pacman, "rage", False) and rage_timer > 45:
+                # Early power state: Clyde backs off hard and protects exits.
+                self.target_x = self.scatter_target[0]
+                self.target_y = self.scatter_target[1]
+            elif getattr(pacman, "rage", False):
+                # Late power state: he starts leaning back in before the window fully closes.
                 self.target_x = pacman.x
                 self.target_y = pacman.y
-            else:  # Close to Pacman - scatter to corner
+            elif distance > 8:
+                self.target_x = pacman.x
+                self.target_y = pacman.y
+            else:
                 self.target_x = self.scatter_target[0]
                 self.target_y = self.scatter_target[1]
 
     def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
-        # Clyde is skittish and drifty, preferring exits when he's too close.
+        # Clyde changes personality with the power cycle: timid, then opportunistic.
         distance = abs(pacman.x - self.x) + abs(pacman.y - self.y)
         adjustment = 0.0
-        if distance <= 6:
+        rage_timer = getattr(pacman, "rage_timer", 0)
+
+        if getattr(pacman, "rage", False) and rage_timer > 45:
+            adjustment -= abs(new_x - self.scatter_target[0]) * 0.12
+            adjustment -= abs(new_y - self.scatter_target[1]) * 0.12
+            if self._same_axis_as_pacman(pacman, new_x, new_y):
+                adjustment += 0.3
+        elif getattr(pacman, "rage", False):
+            adjustment -= abs(new_x - pacman.x) * 0.1
+            adjustment -= abs(new_y - pacman.y) * 0.1
+            if self._is_ahead_of_pacman(pacman, new_x, new_y):
+                adjustment -= 0.4
+        elif distance <= 6:
             adjustment -= abs(new_x - self.scatter_target[0]) * 0.08
             adjustment -= abs(new_y - self.scatter_target[1]) * 0.08
         else:

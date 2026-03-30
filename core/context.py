@@ -1038,6 +1038,9 @@ class GameContext:
     def reset_route_chain(self) -> None:
         self.route_chain_count = 0
         self.route_chain_window = 0
+        self.run.line_chain_count = 0
+        self.run.line_chain_dx = 0
+        self.run.line_chain_dy = 0
 
     def route_chain_grace_ticks(self) -> int:
         if self.game_mode == "Time Attack":
@@ -1065,6 +1068,38 @@ class GameContext:
             bonus = 40 + max(0, self.route_chain_count - 4) * 12
             bonus = int(bonus * self.mode_score_multiplier())
         return self.route_chain_count, bonus
+
+    def register_line_bonus_dot(self, dx: int, dy: int) -> tuple[int, int]:
+        if dx == 0 and dy == 0:
+            self.run.line_chain_count = 0
+            self.run.line_chain_dx = 0
+            self.run.line_chain_dy = 0
+            return 0, 0
+
+        if (self.run.line_chain_dx, self.run.line_chain_dy) == (dx, dy):
+            self.run.line_chain_count += 1
+        else:
+            self.run.line_chain_dx = dx
+            self.run.line_chain_dy = dy
+            self.run.line_chain_count = 1
+
+        bonus = 0
+        if self.run.line_chain_count >= 8 and self.run.line_chain_count % 4 == 0:
+            bonus = 28 + max(0, self.run.line_chain_count - 8) * 10
+            bonus = int(bonus * self.mode_score_multiplier())
+        return self.run.line_chain_count, bonus
+
+    def risk_turn_bonus_value(self) -> int:
+        base = 70
+        if self.game_mode == "Challenge":
+            base = 95
+        elif self.game_mode == "Time Attack":
+            base = 85
+        elif self.game_mode == "Endless":
+            base = 78
+        if self.pressure_stage >= 2:
+            base += 18
+        return int(base * self.mode_score_multiplier())
 
     def power_chain_grace_ticks(self) -> int:
         if self.game_mode == "Challenge":

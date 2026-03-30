@@ -134,7 +134,7 @@ class Pacman(Actor):
         return 0, 0
 
     def _can_move_in_direction(self, state: str) -> bool:
-        game_map = self.ctx.game_map
+        game_map = self.ctx.runtime.game_map
         if game_map is None:
             return False
 
@@ -172,6 +172,7 @@ class Pacman(Actor):
             vx = (dx + (dy * spread)) * speed
             vy = (dy - (dx * spread)) * speed
             self.ctx.particles.add_particle(
+                # Compatibility facade still works, but route effects are owned by visual systems.
                 Particle(
                     center_x,
                     center_y,
@@ -195,7 +196,7 @@ class Pacman(Actor):
         if self.state in (State.NONE, State.DEAD):
             return
 
-        game_map = self.ctx.game_map
+        game_map = self.ctx.runtime.game_map
         if game_map is None:
             return
 
@@ -208,6 +209,15 @@ class Pacman(Actor):
             self.last_dx = dx
             self.last_dy = dy
             self.pacman_sprite.move_forward()
+            if dx != 0 or dy != 0:
+                trail_color = colors.GOLD if self.rage else with_alpha((255, 222, 96, 255), 220)
+                center_x = self.x * 16 + 8 - dx * 5
+                center_y = self.y * 16 + 8 - dy * 5
+                intensity = 1.15 if self.rage else 0.72
+                self.ctx.visual.light_bursts.add_burst(center_x, center_y, 10, trail_color, intensity * 0.75, 0.09)
+                self.ctx.visual.particles.add_particle(
+                    Particle(center_x, center_y, -dx * 10, -dy * 10, 0.14, trail_color, 2.0 if self.rage else 1.4)
+                )
 
     def frame(self, x: int, y: int) -> None:
         super().frame(x, y)

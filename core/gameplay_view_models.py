@@ -38,18 +38,20 @@ class LiveFeedbackModel:
 
 
 def build_hud_model(ctx, game_map) -> GameplayHudModel:
+    run = ctx.run
+    runtime = ctx.runtime
     seeds_left = game_map.remaining_seeds()
     cherry_status = game_map.cherry_status()
     ghost_release_status = game_map.ghost_release_status()
     ghost_return_status = game_map.ghost_return_status()
-    rage_active = bool(getattr(ctx.pacman, "rage", False))
+    rage_active = bool(getattr(runtime.pacman, "rage", False))
     hud_pack = getattr(ctx, "hud_pack_name", lambda: "Standard")()
     difficulty_color = (
-        colors.GREEN if ctx.difficulty == "Easy"
-        else colors.RED if ctx.difficulty == "Hard"
+        colors.GREEN if run.difficulty == "Easy"
+        else colors.RED if run.difficulty == "Hard"
         else colors.YELLOW
     )
-    ghost_color = colors.SKYBLUE if ctx.ghost_mode == "scatter" else colors.RED
+    ghost_color = colors.SKYBLUE if run.ghost_mode == "scatter" else colors.RED
 
     cherry_text = None
     cherry_color = colors.WHITE
@@ -62,28 +64,28 @@ def build_hud_model(ctx, game_map) -> GameplayHudModel:
             cherry_color = colors.GOLD
 
     core_lines = [
-        (f"Score: {ctx.score}", colors.WHITE),
-        (f"Lives: {ctx.lives}", colors.WHITE),
-        (f"Level: {ctx.current_level}", colors.SKYBLUE),
+        (f"Score: {run.score}", colors.WHITE),
+        (f"Lives: {run.lives}", colors.WHITE),
+        (f"Level: {run.current_level}", colors.SKYBLUE),
     ]
-    if ctx.game_mode == "Time Attack":
-        seconds_left = max(0, math.ceil(ctx.time_attack_seconds))
+    if run.game_mode == "Time Attack":
+        seconds_left = max(0, math.ceil(run.time_attack_seconds))
         timer_color = colors.ORANGE if ctx.time_attack_warning_active() else LIVE_GOLD
         core_lines.insert(1, (f"Time: {seconds_left}", timer_color))
-    elif ctx.high_score > 0:
-        core_lines.append((f"Best: {ctx.high_score}", colors.WHITE))
+    elif run.high_score > 0:
+        core_lines.append((f"Best: {run.high_score}", colors.WHITE))
 
     map_trait = ctx.current_map_trait()
     field_lines = [(f"Seeds: {seeds_left}", colors.WHITE), (map_trait.title, map_trait.accent)]
-    if ctx.game_mode == "Endless":
+    if run.game_mode == "Endless":
         tier = ctx.endless_tier()
         field_lines.append((f"Tier: {tier.title}", tier.accent))
-    elif ctx.game_mode == "Time Attack":
+    elif run.game_mode == "Time Attack":
         field_lines.append(("Clock pressure live", colors.ORANGE))
-    elif ctx.game_mode != "Arcade":
+    elif run.game_mode != "Arcade":
         field_lines.append((ctx.mode_label().upper(), difficulty_color))
-    if getattr(ctx, "pressure_stage", 0) > 0 or ctx.ghost_mode != "chase":
-        field_lines.append((f"Ghosts: {ctx.ghost_mode.upper()}", ghost_color))
+    if run.pressure_stage > 0 or run.ghost_mode != "chase":
+        field_lines.append((f"Ghosts: {run.ghost_mode.upper()}", ghost_color))
 
     bonus_lines: list[tuple[str, object]] = []
     directive = ctx.current_run_directive()
@@ -100,17 +102,17 @@ def build_hud_model(ctx, game_map) -> GameplayHudModel:
 
     if rage_active:
         bonus_lines.append(("Rage: ON", colors.YELLOW))
-        bonus_lines.append((f"Combo: x{ctx.ghost_combo + 1}", colors.GOLD))
-        if ctx.power_chain_level > 1:
-            bonus_lines.append((f"Chain: {ctx.power_chain_level}", colors.WHITE))
-        rage_timer = getattr(ctx.pacman, "rage_timer", 0)
+        bonus_lines.append((f"Combo: x{run.ghost_combo + 1}", colors.GOLD))
+        if run.power_chain_level > 1:
+            bonus_lines.append((f"Chain: {run.power_chain_level}", colors.WHITE))
+        rage_timer = getattr(runtime.pacman, "rage_timer", 0)
         if 0 < rage_timer <= Ghost.FRIGHTENED_BLINK_TICKS:
             bonus_lines.append(("Rage ending soon!", colors.ORANGE))
-    elif ctx.power_chain_window > 0:
-        bonus_lines.append((f"Chain window: {ctx.power_chain_window}", colors.GOLD))
+    elif run.power_chain_window > 0:
+        bonus_lines.append((f"Chain window: {run.power_chain_window}", colors.GOLD))
 
     if ctx.route_chain_active():
-        bonus_lines.append((f"Route: x{ctx.route_chain_count}", ctx.effect_palette()["dot"]))
+        bonus_lines.append((f"Route: x{run.route_chain_count}", ctx.effect_palette()["dot"]))
 
     sections = [
         HudSection("RUN", tuple(core_lines), LIVE_CYAN),
@@ -156,9 +158,11 @@ def build_hud_model(ctx, game_map) -> GameplayHudModel:
 
 
 def build_live_feedback_model(scene) -> LiveFeedbackModel:
+    run = scene.ctx.run
+    runtime = scene.ctx.runtime
     palette = scene.ctx.effect_palette()
-    pressure_stage = getattr(scene.ctx, "pressure_stage", 0)
-    rage_active = bool(getattr(scene.ctx.pacman, "rage", False))
+    pressure_stage = run.pressure_stage
+    rage_active = bool(getattr(runtime.pacman, "rage", False))
 
     pressure_card = None
     if pressure_stage > 0:
@@ -177,15 +181,15 @@ def build_live_feedback_model(scene) -> LiveFeedbackModel:
 
     rage_card = None
     if rage_active:
-        rage_timer = getattr(scene.ctx.pacman, "rage_timer", 0)
-        combo_text = f"combo x{scene.ctx.ghost_combo + 1}" if scene.ctx.ghost_combo > 0 else "ghosts vulnerable"
+        rage_timer = getattr(runtime.pacman, "rage_timer", 0)
+        combo_text = f"combo x{run.ghost_combo + 1}" if run.ghost_combo > 0 else "ghosts vulnerable"
         if 0 < rage_timer <= 45:
             combo_text = "window collapsing"
         rage_card = FeedbackCard("RAGE ACTIVE", combo_text.upper(), palette["power_flash"], 248)
-    elif scene.ctx.power_chain_window > 0:
+    elif run.power_chain_window > 0:
         rage_card = FeedbackCard(
-            f"CHAIN WINDOW {scene.ctx.power_chain_level}",
-            f"next seed keeps combo  {scene.ctx.power_chain_window}",
+            f"CHAIN WINDOW {run.power_chain_level}",
+            f"next seed keeps combo  {run.power_chain_window}",
             palette["power_flash"],
             248,
         )
@@ -193,8 +197,8 @@ def build_live_feedback_model(scene) -> LiveFeedbackModel:
     route_card = None
     if scene.ctx.route_chain_active():
         route_card = FeedbackCard(
-            f"ROUTE CHAIN {scene.ctx.route_chain_count}",
-            f"keep sweeping dots  {scene.ctx.route_chain_window}",
+            f"ROUTE CHAIN {run.route_chain_count}",
+            f"keep sweeping dots  {run.route_chain_window}",
             palette["dot"],
             236,
         )

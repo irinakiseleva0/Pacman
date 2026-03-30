@@ -98,29 +98,32 @@ class Map:
 
         if getattr(pacman, "rage", False):
             palette = self.ctx.effect_palette()
+            run = self.ctx.run
+            visual = self.ctx.visual
             # Pacman eats ghost
             score_value = self.ctx.next_ghost_combo_score()
-            self.ctx.ghost_combo += 1
+            run.ghost_combo += 1
             self.ctx.record_ghost_eaten()
             self.ctx.play_sfx("ghost")
-            combo_step = self.ctx.ghost_combo
+            combo_step = run.ghost_combo
             if isinstance(ghost, Ghost):
                 ghost.on_eaten()
             else:
                 ghost.reset_to_spawn()
-            self.ctx.score += score_value
+            run.score += score_value
             rage_extension = self.ctx.map_ghost_rage_extension()
             if rage_extension > 0 and getattr(pacman, "rage", False):
                 pacman.rage_timer += rage_extension
 
             # Add visual effects
-            self.ctx.particles.create_ghost_eat_effect(ghost.x, ghost.y, palette["ghost"])
-            self.ctx.floating_text.add_score_text(
+            visual.particles.create_ghost_eat_effect(ghost.x, ghost.y, palette["ghost"])
+            visual.light_bursts.add_grid_burst(ghost.x, ghost.y, palette["ghost"], 26, 1.4, 0.22)
+            visual.floating_text.add_score_text(
                 score_value, ghost.x, ghost.y)
-            self.ctx.floating_text.add_ghost_combo_text(
+            visual.floating_text.add_ghost_combo_text(
                 combo_step, score_value, ghost.x, ghost.y)
             if rage_extension > 0:
-                self.ctx.floating_text.add_text(
+                visual.floating_text.add_text(
                     "OVERCLOCK",
                     ghost.x * 16 - 16,
                     ghost.y * 16 - 40,
@@ -258,7 +261,7 @@ class Map:
 
         self.static_layer.clear()
         self.dynamic_actors.clear()
-        self.ctx.pacman = None
+        self.ctx.runtime.pacman = None
 
         for y, line in enumerate(lines):
             row: List[Cell] = []
@@ -274,7 +277,7 @@ class Map:
                     self.add_actor(actor)
 
                     if isinstance(actor, Pacman):
-                        self.ctx.pacman = actor
+                        self.ctx.runtime.pacman = actor
 
             self.static_layer.append(row)
 

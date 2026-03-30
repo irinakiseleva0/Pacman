@@ -375,3 +375,48 @@ class ScreenFlash:
                 pyray.Rectangle(0, 0, self.width, self.height),
                 flash_color,
             )
+
+
+class LightBurst:
+    def __init__(self, x: float, y: float, radius: float, color, intensity: float = 1.0, lifetime: float = 0.22):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.color = color
+        self.intensity = intensity
+        self.lifetime = lifetime
+        self.max_lifetime = lifetime
+
+    def update(self, dt: float) -> bool:
+        self.lifetime -= dt
+        return self.lifetime > 0
+
+    def draw_with_offset(self, offset_x: float, offset_y: float, scale: float = 1.0) -> None:
+        if self.lifetime <= 0:
+            return
+        t = self.lifetime / max(0.001, self.max_lifetime)
+        pulse = 1.0 - t
+        radius = self.radius * (0.7 + pulse * 0.7) * scale
+        alpha = int(255 * self.intensity * t * 0.12)
+        cx = int(self.x * scale + offset_x)
+        cy = int(self.y * scale + offset_y)
+        pyray.draw_circle(cx, cy, radius * 1.4, with_alpha(self.color, alpha))
+        pyray.draw_circle(cx, cy, radius * 0.8, with_alpha(self.color, int(alpha * 1.3)))
+
+
+class LightBurstSystem:
+    def __init__(self):
+        self.bursts: List[LightBurst] = []
+
+    def add_burst(self, x: float, y: float, radius: float, color, intensity: float = 1.0, lifetime: float = 0.22) -> None:
+        self.bursts.append(LightBurst(x, y, radius, color, intensity, lifetime))
+
+    def add_grid_burst(self, x: int, y: int, color, radius: float = 18.0, intensity: float = 1.0, lifetime: float = 0.22) -> None:
+        self.add_burst(x * 16 + 8, y * 16 + 8, radius, color, intensity, lifetime)
+
+    def update(self, dt: float) -> None:
+        self.bursts = [burst for burst in self.bursts if burst.update(dt)]
+
+    def draw(self, offset_x: float = 0, offset_y: float = 0, scale: float = 1.0) -> None:
+        for burst in self.bursts:
+            burst.draw_with_offset(offset_x, offset_y, scale)
