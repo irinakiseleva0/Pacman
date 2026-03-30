@@ -551,7 +551,7 @@ class GameContext:
         return (preview[0], preview[1], preview[2])
 
     def theme_name(self) -> str:
-        name = str(self.profile["settings"].get("theme_name", "Neon District"))
+        name = self.settings.get_string("theme_name", "Neon District")
         if name not in THEME_PRESETS:
             return "Neon District"
         return name
@@ -559,11 +559,10 @@ class GameContext:
     def set_theme_name(self, name: str) -> None:
         if name not in THEME_PRESETS or not self.theme_unlocked(name):
             return
-        self.profile["settings"]["theme_name"] = name
-        self.save_profile()
+        self.settings.set_string("theme_name", name)
 
     def hud_pack_name(self) -> str:
-        name = str(self.profile["settings"].get("hud_pack_name", "Standard"))
+        name = self.settings.get_string("hud_pack_name", "Standard")
         if name not in HUD_PACK_PRESETS:
             return "Standard"
         if not self.hud_pack_unlocked(name):
@@ -573,8 +572,7 @@ class GameContext:
     def set_hud_pack_name(self, name: str) -> None:
         if name not in HUD_PACK_PRESETS or not self.hud_pack_unlocked(name):
             return
-        self.profile["settings"]["hud_pack_name"] = name
-        self.save_profile()
+        self.settings.set_string("hud_pack_name", name)
 
     def hud_pack_unlocked(self, name: str) -> bool:
         if name == "Standard":
@@ -636,7 +634,7 @@ class GameContext:
         return (lines[0], lines[1], lines[2])
 
     def title_variant_name(self) -> str:
-        name = str(self.profile["settings"].get("title_variant_name", "Standard"))
+        name = self.settings.get_string("title_variant_name", "Standard")
         if name not in TITLE_VARIANT_PRESETS or not self.title_variant_unlocked(name):
             return "Standard"
         return name
@@ -644,8 +642,7 @@ class GameContext:
     def set_title_variant_name(self, name: str) -> None:
         if name not in TITLE_VARIANT_PRESETS or not self.title_variant_unlocked(name):
             return
-        self.profile["settings"]["title_variant_name"] = name
-        self.save_profile()
+        self.settings.set_string("title_variant_name", name)
 
     def title_variant_unlocked(self, name: str) -> bool:
         if name == "Standard":
@@ -1411,7 +1408,7 @@ class GameContext:
         self.save_profile()
 
     def save_profile(self) -> None:
-        save_profile(self.profile)
+        self.profile_service.save()
 
     def unlock_snapshot(self) -> dict:
         return {
@@ -1529,48 +1526,42 @@ class GameContext:
         return (reward_lines[0], reward_lines[1], reward_lines[2])
 
     def fx_intensity(self) -> str:
-        return str(self.profile["settings"].get("fx_intensity", "High"))
+        return self.settings.get_string("fx_intensity", "High")
 
     def set_fx_intensity(self, value: str) -> None:
         if value not in {"Low", "Medium", "High"}:
             return
-        self.profile["settings"]["fx_intensity"] = value
-        self.save_profile()
+        self.settings.set_string("fx_intensity", value)
 
     def screen_flash_enabled(self) -> bool:
-        return bool(self.profile["settings"].get("screen_flash", 1))
+        return self.settings.get_bool("screen_flash", True)
 
     def set_screen_flash_enabled(self, enabled: bool) -> None:
-        self.profile["settings"]["screen_flash"] = 1 if enabled else 0
-        self.save_profile()
+        self.settings.set_bool("screen_flash", enabled)
 
     def screen_shake_enabled(self) -> bool:
-        return bool(self.profile["settings"].get("screen_shake", 1))
+        return self.settings.get_bool("screen_shake", True)
 
     def set_screen_shake_enabled(self, enabled: bool) -> None:
-        self.profile["settings"]["screen_shake"] = 1 if enabled else 0
-        self.save_profile()
+        self.settings.set_bool("screen_shake", enabled)
 
     def music_enabled(self) -> bool:
-        return bool(self.profile["settings"].get("music_enabled", 1))
+        return self.settings.get_bool("music_enabled", True)
 
     def set_music_enabled(self, enabled: bool) -> None:
-        self.profile["settings"]["music_enabled"] = 1 if enabled else 0
-        self.save_profile()
+        self.settings.set_bool("music_enabled", enabled)
 
     def sfx_enabled(self) -> bool:
-        return bool(self.profile["settings"].get("sfx_enabled", 1))
+        return self.settings.get_bool("sfx_enabled", True)
 
     def set_sfx_enabled(self, enabled: bool) -> None:
-        self.profile["settings"]["sfx_enabled"] = 1 if enabled else 0
-        self.save_profile()
+        self.settings.set_bool("sfx_enabled", enabled)
 
     def tutorial_enabled(self) -> bool:
-        return bool(self.profile["settings"].get("tutorial_enabled", 1))
+        return self.settings.get_bool("tutorial_enabled", True)
 
     def set_tutorial_enabled(self, enabled: bool) -> None:
-        self.profile["settings"]["tutorial_enabled"] = 1 if enabled else 0
-        self.save_profile()
+        self.settings.set_bool("tutorial_enabled", enabled)
 
     def tutorial_seen(self) -> bool:
         return bool(self.profile.get("tutorial_seen", 0))
@@ -1584,10 +1575,10 @@ class GameContext:
         self.save_profile()
 
     def capture_mode_enabled(self) -> bool:
-        return bool(self.profile["settings"].get("capture_mode", 0))
+        return self.settings.get_bool("capture_mode", False)
 
     def set_capture_mode_enabled(self, enabled: bool, *, save: bool = True) -> None:
-        self.profile["settings"]["capture_mode"] = 1 if enabled else 0
+        self.settings.set_bool("capture_mode", enabled, save=False)
         from ui import ui as ui_theme
         ui_theme.set_presentation_mode(enabled)
         if save:

@@ -5,6 +5,7 @@ import math
 import core.raylib_api as pyray
 from raylib import colors
 
+from core.gameplay_view_models import build_hud_model, build_live_feedback_model
 from entities.ghost import Ghost
 from ui.hud import draw_game_hud
 from ui.mobile_controls import draw_mobile_controls
@@ -113,12 +114,9 @@ def draw_hud(game_scene) -> None:
         hud_width = max(150, cfg.hud_width - controls_width - 28)
         hud_columns = 1
 
+    hud_model = build_hud_model(game_scene.ctx, game_map)
     draw_game_hud(
-        game_scene.ctx,
-        game_map.remaining_seeds(),
-        game_map.cherry_status(),
-        game_map.ghost_release_status(),
-        game_map.ghost_return_status(),
+        hud_model,
         x=hud_x,
         y=hud_y,
         width=hud_width,
@@ -188,6 +186,7 @@ def draw_live_feedback(game_scene) -> None:
     if game_map is None:
         return
 
+    feedback = build_live_feedback_model(game_scene)
     palette = game_scene.ctx.effect_palette()
     pulse = 0.5 + 0.5 * math.sin(game_scene.visual_time * 4.2)
     center_x = game_scene.ctx.cfg.window_width // 2
@@ -196,19 +195,11 @@ def draw_live_feedback(game_scene) -> None:
     pressure_stage = getattr(game_scene.ctx, "pressure_stage", 0)
     rage_active = bool(getattr(game_scene.ctx.pacman, "rage", False))
 
-    if pressure_stage > 0:
-        widths = {1: 220, 2: 250, 3: 278}
-        labels = {
-            1: ("PRESSURE RISING", "ghost routes tightening"),
-            2: ("DANGER WINDOW", "late-board pressure live"),
-            3: ("OVERRUN", "district at peak threat"),
-        }
-        accent = palette["ghost"]
-        if game_scene.ctx.elite_pressure_active():
-            labels[3] = ("ELITE PRESSURE", "scatter windows collapsing")
-            widths[3] = 300
-        width = widths.get(pressure_stage, 278)
-        headline, detail = labels.get(pressure_stage, labels[3])
+    if feedback.pressure_card is not None:
+        accent = feedback.pressure_card.accent
+        width = feedback.pressure_card.width
+        headline = feedback.pressure_card.headline
+        detail = feedback.pressure_card.detail
         panel = pyray.Rectangle(center_x - width // 2, top_y, width, 54)
         draw_glass_card(panel, accent_color=accent, glow_alpha=int(12 + pulse * 16), fill_alpha=150)
         draw_text_centered(headline, center_x, int(panel.y + 10), 16, colors.WHITE)
@@ -236,45 +227,36 @@ def draw_live_feedback(game_scene) -> None:
                     with_alpha(danger_color, side_alpha),
                 )
 
-    if rage_active:
-        rage_timer = getattr(game_scene.ctx.pacman, "rage_timer", 0)
-        accent = palette["power_flash"]
-        width = 248
+    if feedback.rage_card is not None:
+        accent = feedback.rage_card.accent
+        width = feedback.rage_card.width
         panel = pyray.Rectangle(center_x - width // 2, top_y + (66 if pressure_stage > 0 else 0), width, 54)
-        draw_glass_card(panel, accent_color=accent, glow_alpha=int(16 + pulse * 14), fill_alpha=162)
-        draw_text_centered("RAGE ACTIVE", center_x, int(panel.y + 10), 16, colors.WHITE)
-        combo_text = f"combo x{game_scene.ctx.ghost_combo + 1}" if game_scene.ctx.ghost_combo > 0 else "ghosts vulnerable"
-        if 0 < rage_timer <= 45:
-            combo_text = "window collapsing"
-        draw_text_centered(combo_text.upper(), center_x, int(panel.y + 30), 12, colors.GOLD)
-    elif game_scene.ctx.power_chain_window > 0:
-        accent = palette["power_flash"]
-        width = 248
-        panel = pyray.Rectangle(center_x - width // 2, top_y + (66 if pressure_stage > 0 else 0), width, 54)
-        draw_glass_card(panel, accent_color=accent, glow_alpha=int(12 + pulse * 10), fill_alpha=150)
-        draw_text_centered(f"CHAIN WINDOW {game_scene.ctx.power_chain_level}", center_x, int(panel.y + 10), 16, colors.WHITE)
-        draw_text_centered(f"next seed keeps combo  {game_scene.ctx.power_chain_window}", center_x, int(panel.y + 30), 12, colors.GOLD)
+        fill_alpha = 162 if rage_active else 150
+        glow_alpha = int(16 + pulse * 14) if rage_active else int(12 + pulse * 10)
+        draw_glass_card(panel, accent_color=accent, glow_alpha=glow_alpha, fill_alpha=fill_alpha)
+        draw_text_centered(feedback.rage_card.headline, center_x, int(panel.y + 10), 16, colors.WHITE)
+        draw_text_centered(feedback.rage_card.detail.upper(), center_x, int(panel.y + 30), 12, colors.GOLD)
 
-    if game_scene.ctx.route_chain_active():
-        route_width = 236
+    if feedback.route_card is not None:
+        route_width = feedback.route_card.width
         top_offset = 66 if pressure_stage > 0 else 0
-        if rage_active or game_scene.ctx.power_chain_window > 0:
+        if feedback.rage_card is not None:
             top_offset += 66
         panel = pyray.Rectangle(center_x - route_width // 2, top_y + top_offset, route_width, 46)
-        draw_glass_card(panel, accent_color=palette["dot"], glow_alpha=int(10 + pulse * 10), fill_alpha=142)
-        draw_text_centered(f"ROUTE CHAIN {game_scene.ctx.route_chain_count}", center_x, int(panel.y + 10), 15, colors.WHITE)
-        draw_text_centered(f"keep sweeping dots  {game_scene.ctx.route_chain_window}", center_x, int(panel.y + 27), 11, palette["power"])
+        draw_glass_card(panel, accent_color=feedback.route_card.accent, glow_alpha=int(10 + pulse * 10), fill_alpha=142)
+        draw_text_centered(feedback.route_card.headline, center_x, int(panel.y + 10), 15, colors.WHITE)
+        draw_text_centered(feedback.route_card.detail, center_x, int(panel.y + 27), 11, palette["power"])
 
-    if game_scene.near_miss_timer > 0:
+    if feedback.near_miss_card is not None:
         alert_pulse = 0.5 + 0.5 * math.sin(game_scene.visual_time * 9.0)
-        width = 212
+        width = feedback.near_miss_card.width
         top_offset = 66 if pressure_stage > 0 else 0
-        if rage_active or game_scene.ctx.power_chain_window > 0:
+        if feedback.rage_card is not None:
             top_offset += 66
         panel = pyray.Rectangle(center_x - width // 2, top_y + top_offset, width, 46)
-        draw_glass_card(panel, accent_color=colors.WHITE, glow_alpha=int(10 + alert_pulse * 12), fill_alpha=146)
-        draw_text_centered("NEAR MISS", center_x, int(panel.y + 10), 15, colors.WHITE)
-        draw_text_centered("ghost almost clipped your line", center_x, int(panel.y + 27), 11, palette["ghost"])
+        draw_glass_card(panel, accent_color=feedback.near_miss_card.accent, glow_alpha=int(10 + alert_pulse * 12), fill_alpha=146)
+        draw_text_centered(feedback.near_miss_card.headline, center_x, int(panel.y + 10), 15, colors.WHITE)
+        draw_text_centered(feedback.near_miss_card.detail, center_x, int(panel.y + 27), 11, palette["ghost"])
 
 
 def draw_pressure_overlay(game_scene, board_rect) -> None:
