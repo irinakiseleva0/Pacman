@@ -119,7 +119,7 @@ GAME_MODE_PRESETS: dict[str, GameModePreset] = {
         summary_lines=(
             "Three curated districts in sequence",
             "Lives refresh between districts",
-            "Best mode for a full campaign-style run",
+            "Flagship campaign pacing with the strongest polish",
         ),
         accent=colors.SKYBLUE,
         max_levels=3,

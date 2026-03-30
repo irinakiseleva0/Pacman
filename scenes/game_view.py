@@ -22,6 +22,7 @@ from ui.ui import (
     draw_presentation_bars,
     draw_shadowed_text_centered,
     draw_text_centered,
+    _draw_glitch_reveal,
 )
 from utils.visual_effects import with_alpha
 
@@ -74,6 +75,16 @@ def draw_live_game_background(game_scene, width: int, height: int, time_s: float
     trait = game_scene.ctx.current_map_trait()
     pulse = 0.5 + 0.5 * math.sin(time_s * 2.1)
 
+    # Push the whole environment farther back so the board and HUD read as foreground layers.
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(0, 0, width, int(height * 0.62)),
+        with_alpha(colors.BLACK, 22),
+    )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(0, int(height * 0.62), width, int(height * 0.38)),
+        with_alpha(colors.BLACK, 10),
+    )
+
     if map_number == 1:
         # Transit Grid: longer speed streaks and route lanes.
         for index in range(6):
@@ -123,12 +134,32 @@ def draw_live_board_backdrop(game_scene, rect, time_s: float) -> None:
     trait = game_scene.ctx.current_map_trait()
     pulse = 0.5 + 0.5 * math.sin(time_s * 3.2)
 
+    # Subtle living stage shimmer so the board never feels fully static.
+    shimmer_x = int(rect.x + 20 + (math.sin(time_s * 1.1) * 0.5 + 0.5) * max(1, rect.width - 60))
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(shimmer_x, rect.y - 6, 18, rect.height + 12),
+        with_alpha(colors.WHITE, int(4 + pulse * 6)),
+    )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x - 8, rect.y - 8, rect.width + 16, rect.height + 16),
+        with_alpha(trait.accent, int(3 + pulse * 4)),
+    )
+
+    # Highlight important route directions per district so levels feel authored, not generic.
+    route_alpha = int(8 + pulse * 8)
+
     if map_number == 1:
         for index in range(4):
             x = rect.x + 42 + index * max(56, int(rect.width / 5))
             pyray.draw_rectangle_rec(
                 pyray.Rectangle(x, rect.y - 12, 2, rect.height + 24),
                 with_alpha(trait.accent, int(14 + pulse * 10)),
+            )
+        for index in range(2):
+            y = int(rect.y + rect.height * (0.28 + index * 0.36))
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(rect.x + 28, y, rect.width - 56, 2),
+                with_alpha(LIVE_CYAN, route_alpha),
             )
     elif map_number == 2:
         for index in range(3):
@@ -137,21 +168,42 @@ def draw_live_board_backdrop(game_scene, rect, time_s: float) -> None:
                 pyray.Rectangle(rect.x - 16, y, rect.width + 32, 3),
                 with_alpha(trait.accent, int(14 + pulse * 14)),
             )
+        for index in range(2):
+            x = int(rect.x + rect.width * (0.24 + index * 0.42))
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(x, rect.y + 24, 2, rect.height - 48),
+                with_alpha(LIVE_PINK, route_alpha + 4),
+            )
     elif map_number == 3:
         pyray.draw_rectangle_rec(
             pyray.Rectangle(rect.x - 18, rect.y - 18, rect.width + 36, rect.height + 36),
             with_alpha((12, 8, 28, 255), 16),
+        )
+        diag_x = int(rect.x + rect.width * (0.18 + (math.sin(time_s * 0.9) * 0.5 + 0.5) * 0.44))
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(diag_x, rect.y + 18, 2, rect.height - 36),
+            with_alpha(trait.accent, route_alpha + 2),
         )
     elif map_number == 4:
         # Telegraph teleport risk with side exit halos.
         for cx in (rect.x + 18, rect.x + rect.width - 18):
             pyray.draw_circle(int(cx), int(rect.y + rect.height * 0.43), 26, with_alpha(trait.accent, int(16 + pulse * 12)))
             pyray.draw_circle(int(cx), int(rect.y + rect.height * 0.57), 26, with_alpha(trait.accent, int(16 + pulse * 12)))
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(rect.x + 24, int(rect.y + rect.height * 0.50), rect.width - 48, 2),
+            with_alpha(LIVE_GOLD, route_alpha + 6),
+        )
     elif map_number == 5:
         pyray.draw_rectangle_rec(
             pyray.Rectangle(rect.x - 10, rect.y + rect.height - 44, rect.width + 20, 30),
             with_alpha(trait.accent, int(14 + pulse * 12)),
         )
+        for index in range(3):
+            y = int(rect.y + rect.height * (0.22 + index * 0.24))
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(rect.x + 18, y, rect.width - 36, 2),
+                with_alpha(LIVE_PINK, route_alpha + index * 2),
+            )
 
 
 def draw_hud(game_scene) -> None:
@@ -173,6 +225,10 @@ def draw_hud(game_scene) -> None:
     panel_height = min(cfg.hud_height, compact_height)
     ambient_rect = pyray.Rectangle(cfg.hud_x, cfg.hud_y, cfg.hud_width, panel_height)
     hud_rect = pyray.Rectangle(cfg.hud_x + 16, cfg.hud_y + 14, cfg.hud_width - 24, panel_height - 28)
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(ambient_rect.x - 20, ambient_rect.y - 16, ambient_rect.width + 32, ambient_rect.height + 28),
+        with_alpha(colors.BLACK, 54),
+    )
     draw_live_panel_accent(hud_rect, game_scene.visual_time)
     pyray.draw_rectangle_rec(
         pyray.Rectangle(ambient_rect.x - 10, ambient_rect.y, 2, ambient_rect.height),
@@ -238,6 +294,10 @@ def _draw_hud_terminal_backdrop(game_scene, hud_rect) -> None:
         lower_zone,
         with_alpha((10, 14, 28, 255), 108),
     )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(lower_zone.x - 8, lower_zone.y - 10, lower_zone.width + 16, lower_zone.height + 20),
+        with_alpha(colors.BLACK, 28),
+    )
     pyray.draw_rectangle_lines_ex(
         lower_zone,
         1,
@@ -293,7 +353,7 @@ def draw_live_feedback(game_scene) -> None:
         headline = feedback.pressure_card.headline
         detail = feedback.pressure_card.detail
         panel = pyray.Rectangle(center_x - width // 2, top_y, width, 54)
-        draw_glass_card(panel, accent_color=accent, glow_alpha=int(12 + pulse * 16), fill_alpha=150)
+        draw_glass_card(panel, accent_color=accent, glow_alpha=int(22 + pulse * 22), fill_alpha=150)
         draw_text_centered(headline, center_x, int(panel.y + 10), 16, colors.WHITE)
         draw_text_centered(detail.upper(), center_x, int(panel.y + 30), 12, accent)
 
@@ -324,7 +384,7 @@ def draw_live_feedback(game_scene) -> None:
         width = feedback.rage_card.width
         panel = pyray.Rectangle(center_x - width // 2, top_y + (66 if pressure_stage > 0 else 0), width, 54)
         fill_alpha = 162 if rage_active else 150
-        glow_alpha = int(16 + pulse * 14) if rage_active else int(12 + pulse * 10)
+        glow_alpha = int(24 + pulse * 18) if rage_active else int(16 + pulse * 12)
         draw_glass_card(panel, accent_color=accent, glow_alpha=glow_alpha, fill_alpha=fill_alpha)
         draw_text_centered(feedback.rage_card.headline, center_x, int(panel.y + 10), 16, colors.WHITE)
         draw_text_centered(feedback.rage_card.detail.upper(), center_x, int(panel.y + 30), 12, colors.GOLD)
@@ -335,7 +395,7 @@ def draw_live_feedback(game_scene) -> None:
         if feedback.rage_card is not None:
             top_offset += 66
         panel = pyray.Rectangle(center_x - route_width // 2, top_y + top_offset, route_width, 46)
-        draw_glass_card(panel, accent_color=feedback.route_card.accent, glow_alpha=int(10 + pulse * 10), fill_alpha=142)
+        draw_glass_card(panel, accent_color=feedback.route_card.accent, glow_alpha=int(16 + pulse * 12), fill_alpha=142)
         draw_text_centered(feedback.route_card.headline, center_x, int(panel.y + 10), 15, colors.WHITE)
         draw_text_centered(feedback.route_card.detail, center_x, int(panel.y + 27), 11, palette["power"])
 
@@ -346,7 +406,7 @@ def draw_live_feedback(game_scene) -> None:
         if feedback.rage_card is not None:
             top_offset += 66
         panel = pyray.Rectangle(center_x - width // 2, top_y + top_offset, width, 46)
-        draw_glass_card(panel, accent_color=feedback.near_miss_card.accent, glow_alpha=int(10 + alert_pulse * 12), fill_alpha=146)
+        draw_glass_card(panel, accent_color=feedback.near_miss_card.accent, glow_alpha=int(18 + alert_pulse * 16), fill_alpha=146)
         draw_text_centered(feedback.near_miss_card.headline, center_x, int(panel.y + 10), 15, colors.WHITE)
         draw_text_centered(feedback.near_miss_card.detail, center_x, int(panel.y + 27), 11, palette["ghost"])
 
@@ -374,15 +434,21 @@ def draw_pressure_overlay(game_scene, board_rect) -> None:
     total = max(1, getattr(game_map, "total_pickups", 1))
     scarcity = 1.0 - (remaining / total)
     shift_alpha = int((8 + pressure_stage * 6) * scarcity + pulse * 8)
+    heat_color = colors.ORANGE if scarcity >= 0.8 else colors.RED if pressure_stage >= 3 else base_color
 
     pyray.draw_rectangle_rec(
         board_rect,
         with_alpha(base_color, shift_alpha),
     )
+    if scarcity >= 0.7:
+        pyray.draw_rectangle_rec(
+            board_rect,
+            with_alpha(heat_color, int(6 + scarcity * 18 + pulse * 6)),
+        )
 
     glow_pad = 18 + pressure_stage * 6
-    glow_alpha = int(16 + pressure_stage * 8 + pulse * 18)
-    inner_alpha = int(8 + pressure_stage * 5 + pulse * 10)
+    glow_alpha = int(26 + pressure_stage * 12 + pulse * 22 + scarcity * 16)
+    inner_alpha = int(8 + pressure_stage * 5 + pulse * 10 + scarcity * 8)
 
     pyray.draw_rectangle_rec(
         pyray.Rectangle(
@@ -393,6 +459,17 @@ def draw_pressure_overlay(game_scene, board_rect) -> None:
         ),
         with_alpha(base_color, glow_alpha),
     )
+    if pressure_stage >= 2:
+        outer_pad = glow_pad + 14
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(
+                board_rect.x - outer_pad,
+                board_rect.y - outer_pad,
+                board_rect.width + outer_pad * 2,
+                board_rect.height + outer_pad * 2,
+            ),
+            with_alpha(base_color, int(glow_alpha * 0.55)),
+        )
 
     line_thickness = 3 if pressure_stage >= 2 else 2
     pyray.draw_rectangle_lines_ex(
@@ -418,6 +495,28 @@ def draw_pressure_overlay(game_scene, board_rect) -> None:
         pyray.draw_rectangle_rec(
             pyray.Rectangle(board_rect.x + 12, board_rect.y + board_rect.height - floor_reflect_h, board_rect.width - 24, floor_reflect_h),
             with_alpha(base_color, int(10 + scarcity * 14 + pulse * 6)),
+        )
+
+    if scarcity >= 0.75:
+        top_bar_alpha = int(10 + scarcity * 28 + pulse * 8)
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(board_rect.x, board_rect.y - 4, board_rect.width, 4),
+            with_alpha(heat_color, top_bar_alpha),
+        )
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(board_rect.x, board_rect.y + board_rect.height, board_rect.width, 4),
+            with_alpha(heat_color, max(0, top_bar_alpha - 6)),
+        )
+        pulse_pad = 10 + int(scarcity * 12)
+        pulse_alpha = int(8 + scarcity * 22 + pulse * 12)
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(
+                board_rect.x - pulse_pad,
+                board_rect.y - pulse_pad,
+                board_rect.width + pulse_pad * 2,
+                board_rect.height + pulse_pad * 2,
+            ),
+            with_alpha(heat_color, pulse_alpha),
         )
 
     if game_scene.ctx.elite_pressure_active():
@@ -452,6 +551,30 @@ def draw_transition_card(game_scene, headline: str, detail: str, accent_color, *
     draw_shadowed_text_centered(headline, center_x, int(rect.y + 24), 30, accent_color)
     if detail:
         draw_text_centered(detail, center_x, int(rect.y + 66), 15, colors.WHITE)
+    reveal_progress = _transition_reveal_progress(game_scene)
+    _draw_glitch_reveal(rect, reveal_progress, accent_color=accent_color, time_s=game_scene.visual_time)
+
+
+def _transition_reveal_progress(game_scene) -> float:
+    transition = game_scene.transition
+    if transition is None:
+        return 1.0
+
+    cfg = game_scene.ctx.cfg
+    if transition.kind == "ready":
+        total = cfg.legacy_frames_to_seconds(cfg.ready_duration_ticks)
+    elif transition.kind == "death":
+        total = cfg.legacy_frames_to_seconds(
+            cfg.game_over_pause_ticks if transition.result == "lose" else cfg.death_pause_ticks
+        )
+    elif transition.kind == "level_complete":
+        total = cfg.legacy_frames_to_seconds(cfg.level_clear_pause_ticks)
+    else:
+        total = 0.35
+
+    total = max(0.18, total)
+    elapsed = max(0.0, total - transition.ticks)
+    return min(1.0, elapsed / 0.26)
 
 
 def draw_ready_overlay(game_scene) -> None:
@@ -478,6 +601,21 @@ def draw_ready_overlay(game_scene) -> None:
 
 
 def draw_death_overlay(game_scene) -> None:
+    cfg = game_scene.ctx.cfg
+    pulse = 0.5 + 0.5 * math.sin(game_scene.visual_time * 10.0)
+    flash_color = game_scene.ctx.effect_palette()["death_flash"]
+    distortion_alpha = int(18 + pulse * 24)
+    for index in range(8):
+        y = int((cfg.window_height / 8) * index + math.sin(game_scene.visual_time * (7.5 + index)) * 4)
+        x_offset = math.sin(game_scene.visual_time * (11.0 + index * 0.7)) * (6 + index)
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(x_offset, y, cfg.window_width, 6),
+            with_alpha(flash_color if index % 2 == 0 else LIVE_PINK, max(6, distortion_alpha - index * 2)),
+        )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(0, 0, cfg.window_width, cfg.window_height),
+        with_alpha(colors.WHITE, int(6 + pulse * 12)),
+    )
     killer_map = {
         "Blinky": "BLINKY CUT THE ROUTE",
         "Pinky": "PINKY HELD THE FRONT",

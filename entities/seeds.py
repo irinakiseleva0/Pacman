@@ -33,7 +33,7 @@ class Seed(Cell):
 
             # Add visual effects
             self.ctx.particles.create_dot_eat_effect(self.x, self.y, palette["dot"])
-            self.ctx.visual.light_bursts.add_grid_burst(self.x, self.y, palette["dot"], 14, 0.75, 0.14)
+            self.ctx.visual.light_bursts.add_grid_burst(self.x, self.y, palette["dot"], 16, 0.9, 0.16)
             self.ctx.floating_text.add_score_text(
                 score_value, self.x, self.y)
             dot_count = self.ctx.run_stats.dots_eaten
@@ -78,8 +78,32 @@ class Seed(Cell):
             if dot_count % 6 == 0:
                 self.ctx.trigger_screen_shake(1.4, 0.05)
                 self.ctx.trigger_screen_flash(palette["dot"], 0.035, 0.045)
+                self.ctx.trigger_action_juice(slow_scale=0.94, slow_duration=0.025)
             elif dot_count % 3 == 0:
                 self.ctx.trigger_screen_flash(palette["dot"], 0.02, 0.03)
+            else:
+                self.ctx.trigger_action_juice(slow_scale=0.97, slow_duration=0.018)
+
+            pressure_step = self.ctx.map_pressure_spike_step()
+            if pressure_step > 0:
+                level_dots = self.ctx.level_progress_snapshot()["dots"]
+                if level_dots > 0 and level_dots % pressure_step == 0:
+                    game_map = self.ctx.game_map
+                    if game_map is not None:
+                        surge = self.ctx.map_release_surge_amount()
+                        if surge > 0:
+                            game_map.nudge_pending_ghosts(surge)
+                            label = "LANE SURGE" if self.ctx.current_map_number() == 2 else "OVERRUN"
+                            self.ctx.floating_text.add_text(
+                                label,
+                                self.x * 16 - 18,
+                                self.y * 16 - 24,
+                                palette["ghost"],
+                                0.9,
+                                12,
+                            )
+                            self.ctx.trigger_screen_flash(palette["ghost"], 0.06, 0.05)
+                            self.ctx.trigger_screen_shake(1.8, 0.08)
 
     def draw(self) -> None:
         if not self.enabled:
@@ -124,7 +148,7 @@ class LargeSeed(Cell):
 
             # Add visual effects
             self.ctx.particles.create_large_seed_eat_effect(self.x, self.y, (palette["power"], colors.WHITE))
-            self.ctx.visual.light_bursts.add_grid_burst(self.x, self.y, palette["power_flash"], 28, 1.35, 0.24)
+            self.ctx.visual.light_bursts.add_grid_burst(self.x, self.y, palette["power_flash"], 36, 1.65, 0.28)
             self.ctx.floating_text.add_score_text(
                 score_value, self.x, self.y)
             if chain_bonus > 0:
@@ -145,8 +169,9 @@ class LargeSeed(Cell):
                     0.9,
                     11,
                 )
-            self.ctx.trigger_screen_shake(6.0, 0.4)
-            self.ctx.trigger_screen_flash(palette["power_flash"], 0.2, 0.15)
+            self.ctx.trigger_screen_shake(7.0, 0.46)
+            self.ctx.trigger_screen_flash(palette["power_flash"], 0.28, 0.18)
+            self.ctx.trigger_action_juice(hitstop=0.034, slow_scale=0.64, slow_duration=0.095)
 
     def draw(self) -> None:
         if not self.enabled:

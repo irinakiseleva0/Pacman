@@ -953,6 +953,10 @@ class GameContext:
         return self.game_mode == "Time Attack" and self.time_attack_seconds <= 12.0
 
     def mode_score_multiplier(self) -> float:
+        if self.game_mode == "Arcade":
+            chapter_multipliers = (1.04, 1.08, 1.14)
+            chapter_index = min(max(1, self.current_level), len(chapter_multipliers)) - 1
+            return chapter_multipliers[chapter_index]
         if self.game_mode == "Challenge":
             return 1.4
         if self.game_mode == "Time Attack":
@@ -984,7 +988,9 @@ class GameContext:
             return 300 * self.current_level
         if self.game_mode == "Endless":
             return self.endless_tier().clear_bonus * self.current_level // max(1, min(self.current_level, 3))
-        return 400 * self.current_level
+        chapter_bonuses = (420, 620, 900)
+        chapter_index = min(max(1, self.current_level), len(chapter_bonuses)) - 1
+        return chapter_bonuses[chapter_index]
 
     def total_levels_for_mode(self, game_mode: Optional[str] = None) -> Optional[int]:
         return self.game_mode_preset(game_mode).max_levels
@@ -1094,10 +1100,10 @@ class GameContext:
 
     def route_chain_grace_ticks(self) -> int:
         if self.game_mode == "Time Attack":
-            return 46
+            return 46 + self.map_route_grace_bonus_ticks()
         if self.game_mode == "Endless":
-            return 52
-        return 58
+            return 52 + self.map_route_grace_bonus_ticks()
+        return 58 + self.map_route_grace_bonus_ticks()
 
     def tick_route_chain_window(self) -> None:
         if self.route_chain_window > 0:
@@ -1358,14 +1364,43 @@ class GameContext:
             chapter.briefing,
         )
 
+    def arcade_chapter_reward_line(self) -> str:
+        chapter = self.arcade_campaign_chapter()
+        if chapter is None:
+            return ""
+        chapter_rewards = (
+            "Tempo secure bonus +420",
+            "Market route bonus +620",
+            "Final district bonus +900",
+        )
+        chapter_index = min(max(1, self.current_level), len(chapter_rewards)) - 1
+        return chapter_rewards[chapter_index]
+
     def map_link_bonus_value(self) -> int:
         return 120 if self.current_map_number() == 1 else 0
 
     def map_link_bonus_step(self) -> int:
         return 60 if self.current_map_number() == 1 else 0
 
+    def map_route_grace_bonus_ticks(self) -> int:
+        if self.current_map_number() == 1:
+            return 8
+        if self.current_map_number() == 4:
+            return 5
+        return 0
+
     def map_cherry_bonus_value(self) -> int:
         return 200 if self.current_map_number() == 4 else 0
+
+    def map_teleport_bonus_value(self) -> int:
+        return 180 if self.current_map_number() == 4 else 0
+
+    def map_pressure_spike_step(self) -> int:
+        if self.current_map_number() == 2:
+            return 72
+        if self.current_map_number() == 5:
+            return 56
+        return 0
 
     def map_ghost_rage_extension(self) -> int:
         return 22 if self.current_map_number() == 3 else 0
@@ -1736,6 +1771,13 @@ class GameContext:
             return
         scale = self.fx_multiplier()
         self.screen_flash.flash(color, intensity * scale, duration)
+
+    def trigger_action_juice(self, *, hitstop: float = 0.0, slow_scale: float = 1.0, slow_duration: float = 0.0) -> None:
+        if hitstop > 0:
+            self.visual.action_hitstop = max(self.visual.action_hitstop, hitstop)
+        if slow_duration > 0 and slow_scale < 1.0:
+            self.visual.action_slowdown = max(self.visual.action_slowdown, slow_duration)
+            self.visual.action_slow_scale = min(self.visual.action_slow_scale, slow_scale)
 
     def play_sfx(self, name: str) -> None:
         if self.audio_manager is None:

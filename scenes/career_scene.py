@@ -9,6 +9,8 @@ from core.scene_ids import ACHIEVEMENTS_SCENE, OPTIONS_SCENE, RUN_HISTORY_SCENE
 from ui import gamepad
 from ui.navigation import ButtonNavigator
 from ui.ui import (
+    LIVE_CYAN,
+    LIVE_PINK,
     PANEL_ACCENT,
     TEXT_DIM,
     button_clicked,
@@ -17,6 +19,8 @@ from ui.ui import (
     draw_button,
     draw_cinematic_menu_background,
     draw_glass_card,
+    draw_dashboard_rail,
+    draw_mission_frame,
     draw_panel,
     draw_scene_footer,
     draw_scene_header,
@@ -94,6 +98,7 @@ class CareerScene(Scene):
         panel = self.panel
         draw_panel(panel, "CAREER FILE")
         draw_scene_header(panel, "CAREER FILE", "CAREER", "RANK, GOALS, TROPHIES")
+        draw_dashboard_rail(int(panel.x + panel.width / 2), int(panel.y + 110), 280, label="OPERATIONS", accent_color=LIVE_PINK, support_color=LIVE_CYAN, time_s=self.ctx.visual_time)
 
         if cfg.layout_name == "desktop":
             self._draw_desktop(panel)
@@ -117,11 +122,11 @@ class CareerScene(Scene):
         trophy_left = pyray.Rectangle(panel.x + 24, panel.y + 532, left_w, 118)
         right_card = pyray.Rectangle(right_x, panel.y + 130, right_w, 520)
 
-        draw_glass_card(top_left, accent_color=PANEL_ACCENT, glow_alpha=14)
-        draw_glass_card(mid_left, accent_color=colors.GOLD, glow_alpha=12)
-        draw_glass_card(bottom_left, accent_color=colors.MAGENTA, glow_alpha=12)
-        draw_glass_card(trophy_left, accent_color=colors.GREEN, glow_alpha=12)
-        draw_glass_card(right_card, accent_color=colors.WHITE, glow_alpha=10, fill_alpha=176)
+        draw_mission_frame(top_left, accent_color=LIVE_PINK, support_color=LIVE_CYAN, glow_alpha=14, fill_alpha=156)
+        draw_mission_frame(mid_left, accent_color=colors.GOLD, support_color=LIVE_CYAN, glow_alpha=12, fill_alpha=152)
+        draw_mission_frame(bottom_left, accent_color=colors.MAGENTA, support_color=LIVE_CYAN, glow_alpha=12, fill_alpha=152)
+        draw_mission_frame(trophy_left, accent_color=colors.GREEN, support_color=LIVE_CYAN, glow_alpha=12, fill_alpha=152)
+        draw_mission_frame(right_card, accent_color=LIVE_PINK, support_color=LIVE_CYAN, glow_alpha=12, fill_alpha=176)
 
         self._draw_labeled_lines(top_left, self.ctx.rank_title(), self.ctx.profile_summary_lines(), max_lines=1)
         self._draw_labeled_lines(mid_left, "MODE MASTERY", self.ctx.mode_mastery_summary_lines(), max_lines=1)
@@ -139,31 +144,32 @@ class CareerScene(Scene):
         )
 
         center_x = int(right_card.x + right_card.width / 2)
-        draw_text_centered("NEXT GOALS", center_x, int(right_card.y + 18), 20, TEXT_DIM)
+        draw_dashboard_rail(center_x, int(right_card.y + 10), int(right_card.width * 0.42), accent_color=LIVE_PINK, support_color=LIVE_CYAN, time_s=self.ctx.visual_time)
+        draw_text_centered("NEXT GOALS", center_x, int(right_card.y + 18), 20, LIVE_PINK)
 
         goal_y = int(right_card.y + 54)
         for line in self.ctx.career_goal_lines():
             item = pyray.Rectangle(right_card.x + 24, goal_y, right_card.width - 48, 52)
-            draw_glass_card(item, accent_color=PANEL_ACCENT, glow_alpha=8, fill_alpha=136)
+            draw_mission_frame(item, accent_color=LIVE_PINK, support_color=LIVE_CYAN, glow_alpha=8, fill_alpha=132)
             draw_text_centered(line, center_x, int(item.y + 17), 15, colors.WHITE)
             goal_y += 62
 
         preview = pyray.Rectangle(right_card.x + 24, goal_y + 6, right_card.width - 48, 62)
         save_card = pyray.Rectangle(right_card.x + 24, goal_y + 78, right_card.width - 48, 54)
-        draw_glass_card(preview, accent_color=colors.GOLD, glow_alpha=8, fill_alpha=132)
-        draw_glass_card(save_card, accent_color=PANEL_ACCENT, glow_alpha=8, fill_alpha=132)
-        draw_text_centered("REWARD PROGRESS", center_x, int(preview.y + 10), 14, TEXT_DIM)
+        draw_mission_frame(preview, accent_color=colors.GOLD, support_color=LIVE_CYAN, glow_alpha=8, fill_alpha=132)
+        draw_mission_frame(save_card, accent_color=LIVE_PINK, support_color=LIVE_CYAN, glow_alpha=8, fill_alpha=132)
+        draw_text_centered("REWARD PROGRESS", center_x, int(preview.y + 10), 14, LIVE_PINK)
         progress_y = int(preview.y + 30)
         for line in self.ctx.reward_progress_lines()[:2]:
             draw_text_centered(line, center_x, progress_y, 13, colors.WHITE)
             progress_y += 16
-        draw_text_centered("PROFILE SAVE", center_x, int(save_card.y + 10), 14, TEXT_DIM)
+        draw_text_centered("PROFILE SAVE", center_x, int(save_card.y + 10), 14, LIVE_PINK)
         save_y = int(save_card.y + 28)
         for line in self.ctx.profile_save_summary_lines()[:2]:
             draw_text_centered(line, center_x, save_y, 12, colors.WHITE)
             save_y += 14
 
-        draw_text_centered("RECENT MILESTONES", center_x, goal_y + 146, 16, PANEL_ACCENT)
+        draw_text_centered("RECENT MILESTONES", center_x, goal_y + 146, 16, LIVE_PINK)
         milestone_y = goal_y + 174
         milestones = self.ctx.unlocked_milestones()
         if not milestones:
@@ -173,7 +179,7 @@ class CareerScene(Scene):
 
         for title, detail in milestones[-3:]:
             item = pyray.Rectangle(right_card.x + 24, milestone_y, right_card.width - 48, 44)
-            draw_glass_card(item, accent_color=colors.MAGENTA, glow_alpha=8, fill_alpha=132)
+            draw_mission_frame(item, accent_color=colors.MAGENTA, support_color=LIVE_CYAN, glow_alpha=8, fill_alpha=132)
             pyray.draw_text(title, int(item.x + 14), int(item.y + 8), 18, colors.WHITE)
             pyray.draw_text(detail, int(item.x + 14), int(item.y + 24), 14, TEXT_DIM)
             milestone_y += 54
@@ -199,6 +205,7 @@ class CareerScene(Scene):
         for rect, accent, title, lines in zip(cards, accents, titles, linesets):
             draw_glass_card(rect, accent_color=accent, glow_alpha=12)
             center_x = int(rect.x + rect.width / 2)
+            draw_dashboard_rail(center_x, int(rect.y + 8), int(rect.width * 0.42), accent_color=LIVE_PINK if accent == PANEL_ACCENT else accent, support_color=LIVE_CYAN, time_s=self.ctx.visual_time)
             draw_text_centered(title if title != "RANK" else self.ctx.rank_title(), center_x, int(rect.y + 14), 18, colors.WHITE)
             if lines is not None:
                 line_y = int(rect.y + 48)

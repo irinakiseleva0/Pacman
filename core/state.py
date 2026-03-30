@@ -65,4 +65,7 @@ class VisualSystems:
     screen_shake: ScreenShake = field(default_factory=ScreenShake)
     floating_text: FloatingTextSystem = field(default_factory=FloatingTextSystem)
     screen_flash: ScreenFlash = field(default_factory=ScreenFlash)
+    action_hitstop: float = 0.0
+    action_slowdown: float = 0.0
+    action_slow_scale: float = 1.0
     visual_time: float = 0.0

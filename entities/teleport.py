@@ -33,9 +33,32 @@ class Teleport(Cell):
         if getattr(actor, "kind", None) != "pacman":
             return
 
+        risk_ghosts = 0
+        for other in game_map.dynamic_actors:
+            if getattr(other, "kind", None) != "ghost":
+                continue
+            if getattr(other, "is_harmless", lambda: False)():
+                continue
+            if abs(other.x - actor.x) + abs(other.y - actor.y) <= 4:
+                risk_ghosts += 1
+
         if actor.x == 0:
             actor.x = game_map.width - 2
         elif actor.x == game_map.width - 1:
             actor.x = 1
 
         self.ctx.visual.light_bursts.add_grid_burst(self.x, self.y, self.ctx.current_map_trait().accent, 20, 1.0, 0.16)
+        if self.ctx.map_has_teleport_pressure() and risk_ghosts > 0:
+            bonus = self.ctx.map_teleport_bonus_value() + (risk_ghosts - 1) * 40
+            self.ctx.score += bonus
+            self.ctx.visual.floating_text.add_text(
+                f"SLIP EXIT +{bonus}",
+                actor.x * 16 - 22,
+                actor.y * 16 - 24,
+                self.ctx.current_map_trait().accent,
+                0.92,
+                12,
+            )
+            self.ctx.trigger_screen_flash(self.ctx.current_map_trait().accent, 0.08, 0.06)
+            self.ctx.trigger_screen_shake(2.2, 0.08)
+            self.ctx.trigger_action_juice(slow_scale=0.86, slow_duration=0.04)

@@ -131,10 +131,15 @@ class Map:
                     0.9,
                     12,
                 )
-            flash_strength = 0.12 if combo_step <= 1 else min(0.22, 0.12 + combo_step * 0.025)
-            shake_strength = 4.5 if combo_step <= 1 else min(8.0, 4.5 + combo_step * 0.9)
+            flash_strength = 0.16 if combo_step <= 1 else min(0.28, 0.16 + combo_step * 0.03)
+            shake_strength = 5.2 if combo_step <= 1 else min(9.0, 5.2 + combo_step * 1.0)
             self.ctx.trigger_screen_flash(palette["ghost"], flash_strength, 0.08)
             self.ctx.trigger_screen_shake(shake_strength, 0.24)
+            self.ctx.trigger_action_juice(
+                hitstop=0.05 if combo_step <= 1 else min(0.075, 0.05 + combo_step * 0.007),
+                slow_scale=0.52 if combo_step <= 1 else 0.46,
+                slow_duration=0.075 if combo_step <= 1 else 0.095,
+            )
         else:
             # Ghost eats Pacman
             self.ctx.reset_ghost_combo()

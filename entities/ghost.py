@@ -7,6 +7,7 @@ from raylib import colors
 from typing import Tuple
 
 from entities.cell import Actor
+from ui.ui import LIVE_CYAN, LIVE_PINK
 from utils.visual_effects import Particle, with_alpha
 
 
@@ -29,6 +30,18 @@ class Ghost(Actor):
 
     def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
         return 0.0
+
+    def _trail_signature(self) -> tuple[object, float]:
+        class_name = type(self).__name__
+        if class_name == "Blinky":
+            return colors.RED, 1.2
+        if class_name == "Pinky":
+            return LIVE_PINK, 1.0
+        if class_name == "Inky":
+            return LIVE_CYAN, 0.9
+        if class_name == "Clyde":
+            return colors.ORANGE, 1.1
+        return self.color, 1.0
 
     def _pacman_heading(self, pacman) -> tuple[int, int]:
         dx = getattr(pacman, "last_dx", 0)
@@ -63,6 +76,15 @@ class Ghost(Actor):
         if heading_dy != 0:
             return 0.0 if y == pacman.y else -0.5
         return -0.15 if x != pacman.x and y != pacman.y else 0.0
+
+    def _flank_distance_score(self, pacman, x: int, y: int) -> float:
+        heading_dx, heading_dy = self._pacman_heading(pacman)
+        if heading_dx == 0 and heading_dy == 0:
+            return 0.0
+        side_x, side_y = -heading_dy, heading_dx
+        side_target_x = pacman.x + side_x * 2
+        side_target_y = pacman.y + side_y * 2
+        return (abs(x - side_target_x) + abs(y - side_target_y)) * 0.14
 
     def _behind_pacman_score(self, pacman, x: int, y: int) -> float:
         heading_dx, heading_dy = self._pacman_heading(pacman)
@@ -126,8 +148,8 @@ class Ghost(Actor):
         elif self.last_dy > 0:
             trail_dy = -2
 
-        pyray.draw_circle(px + trail_dx * 2, py + trail_dy * 2, trail_radius, colors.LIGHTGRAY)
-        pyray.draw_circle(px + trail_dx * 4, py + trail_dy * 4, trail_radius, colors.GRAY)
+        pyray.draw_circle(px + trail_dx * 2, py + trail_dy * 2, trail_radius + 1, with_alpha(LIVE_CYAN, 32))
+        pyray.draw_circle(px + trail_dx * 4, py + trail_dy * 4, trail_radius + 1, with_alpha(colors.WHITE, 42))
 
         pyray.draw_circle(left_eye_x, eye_y, eye_radius, colors.WHITE)
         pyray.draw_circle(right_eye_x, eye_y, eye_radius, colors.WHITE)
@@ -162,27 +184,91 @@ class Ghost(Actor):
         pulse = 0.5 + 0.5 * math.sin(time_s * 5.0 + self.x + self.y)
         body_radius = max(6, tile // 2 - 2)
         glow_radius = body_radius + 5 + int(pulse * 3)
+        dir_dx = max(-1, min(1, self.last_dx))
+        dir_dy = max(-1, min(1, self.last_dy))
+        trail_color, trail_scale = self._trail_signature()
+        frightened = self.mode == "frightened"
+        respawning = self.respawn_lock_ticks > 0 or self.release_delay_ticks > 0
 
-        pyray.draw_circle(px, py, glow_radius + 8, with_alpha(base_color, 12))
-        pyray.draw_circle(px, py, glow_radius + 2, with_alpha(base_color, 24))
+        accent_glow = LIVE_CYAN if self.returning_home else LIVE_PINK if base_color == colors.RED else LIVE_CYAN
+        if frightened:
+            accent_glow = colors.WHITE
+        elif respawning:
+            accent_glow = colors.SKYBLUE
+        for index in range(4, 0, -1):
+            spread = 2 if type(self).__name__ in {"Blinky", "Clyde"} else 3
+            trail_x = px - dir_dx * index * spread
+            trail_y = py - dir_dy * index * spread
+            trail_alpha = 10 + index * 5
+            if frightened:
+                trail_alpha += 6 if index % 2 == 0 else -2
+            if respawning:
+                trail_alpha += 10 if index % 2 == 0 else 0
+            pyray.draw_circle(
+                trail_x,
+                trail_y,
+                glow_radius + 4 - index + int(trail_scale),
+                with_alpha(trail_color if not frightened else colors.WHITE, trail_alpha),
+            )
+
+        outer_alpha = 12
+        mid_alpha = 26
+        inner_alpha = 38
+        if frightened:
+            flicker = 0.5 + 0.5 * math.sin(time_s * 16.0 + self.x * 0.7)
+            outer_alpha = int(8 + flicker * 16)
+            mid_alpha = int(16 + flicker * 20)
+            inner_alpha = int(24 + flicker * 22)
+        elif respawning:
+            flicker = 0.5 + 0.5 * math.sin(time_s * 20.0 + self.y * 0.9)
+            outer_alpha = int(10 + flicker * 20)
+            mid_alpha = int(20 + flicker * 20)
+            inner_alpha = int(20 + flicker * 26)
+
+        pyray.draw_circle(px, py, glow_radius + 22, with_alpha(accent_glow, outer_alpha))
+        pyray.draw_circle(px, py, glow_radius + 14, with_alpha(base_color, mid_alpha))
+        pyray.draw_circle(px, py, glow_radius + 7, with_alpha(base_color, inner_alpha))
         pyray.draw_circle(px, py, body_radius, with_alpha(base_color, 228))
-        pyray.draw_circle(px, py - max(1, tile // 10), max(4, body_radius - 4), with_alpha(colors.WHITE, 10))
+        if frightened:
+            # Slight distortion band makes frightened state feel unstable.
+            band_y = py + int(math.sin(time_s * 18.0 + self.x) * 2)
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(px - body_radius + 2, band_y, body_radius * 2 - 4, 3),
+                with_alpha(colors.WHITE, 18),
+            )
+        elif respawning:
+            glitch_x = int(math.sin(time_s * 22.0 + self.x * 0.4) * 2)
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(px - body_radius + glitch_x, py - 2, body_radius * 2 - 2, 2),
+                with_alpha(colors.WHITE, 22),
+            )
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(px - body_radius - glitch_x, py + 4, body_radius * 2 - 4, 2),
+                with_alpha(colors.SKYBLUE, 18),
+            )
+
+        eye_glow = 20 if not frightened else 34
+        pyray.draw_circle(px, py - max(1, tile // 10), max(4, body_radius - 4), with_alpha(colors.WHITE, 16))
 
         # Give ghosts a cleaner, more readable face and lower edge against the dark maze.
         eye_radius = max(2, tile // 7)
         pupil_radius = max(1, eye_radius // 2)
         eye_offset_x = max(3, tile // 6)
         eye_y = py - max(1, tile // 10)
-        dir_dx = max(-1, min(1, self.last_dx))
-        dir_dy = max(-1, min(1, self.last_dy))
-
         for eye_x in (px - eye_offset_x, px + eye_offset_x):
+            pyray.draw_circle(eye_x, eye_y, eye_radius + 2, with_alpha(colors.WHITE, eye_glow))
             pyray.draw_circle(eye_x, eye_y, eye_radius, colors.WHITE)
             pyray.draw_circle(eye_x + dir_dx, eye_y + dir_dy, pupil_radius, colors.BLACK)
 
+        crown_y = py - body_radius + 4
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(px - body_radius + 4, crown_y, body_radius * 2 - 8, 2),
+            with_alpha(colors.WHITE, 26),
+        )
+
         pyray.draw_rectangle_rec(
             pyray.Rectangle(px - body_radius + 3, py + body_radius - 4, max(4, body_radius * 2 - 6), 2),
-            with_alpha(base_color, 88),
+            with_alpha(base_color, 124),
         )
 
     def update_target(self) -> None:
@@ -472,22 +558,22 @@ class Blinky(Ghost):
                 self.target_y = pacman.y
                 return
 
-            # Sit just behind Pac-Man's route so backing up feels dangerous.
-            self.target_x = pacman.x - heading_dx * 2
-            self.target_y = pacman.y - heading_dy * 2
+            # Sit deeper behind Pac-Man's route so backing up feels dangerous.
+            self.target_x = pacman.x - heading_dx * 3
+            self.target_y = pacman.y - heading_dy * 3
 
     def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
         # Blinky is the enforcer: he trails the route and punishes hesitation.
         adjustment = 0.0
         if dx == pacman.last_dx and dy == pacman.last_dy:
-            adjustment -= 0.35
+            adjustment -= 0.55
         adjustment += self._behind_pacman_score(pacman, new_x, new_y)
         if self._same_axis_as_pacman(pacman, new_x, new_y):
-            adjustment -= 0.45
+            adjustment -= 0.6
         if abs(new_x - pacman.x) + abs(new_y - pacman.y) <= 3:
-            adjustment -= 0.8
+            adjustment -= 1.0
         if self._is_ahead_of_pacman(pacman, new_x, new_y):
-            adjustment += 0.3
+            adjustment += 0.45
         adjustment += self.ctx.map_blinky_bias()
         return adjustment
 
@@ -507,7 +593,7 @@ class Pinky(Ghost):
         pacman = self.ctx.pacman
         if pacman:
             heading_dx, heading_dy = self._pacman_heading(pacman)
-            lookahead = 5
+            lookahead = 6
             self.target_x = pacman.x + heading_dx * lookahead
             self.target_y = pacman.y + heading_dy * lookahead
 
@@ -515,17 +601,17 @@ class Pinky(Ghost):
         # Pinky should be felt as the route-cutter living ahead of the player.
         adjustment = 0.0
         if (dx, dy) != (self.last_dx, self.last_dy) and (self.last_dx, self.last_dy) != (0, 0):
-            adjustment -= 0.65
+            adjustment -= 0.85
         ahead_dx, ahead_dy = self._pacman_heading(pacman)
-        ahead_x = pacman.x + ahead_dx * 3
-        ahead_y = pacman.y + ahead_dy * 3
+        ahead_x = pacman.x + ahead_dx * 4
+        ahead_y = pacman.y + ahead_dy * 4
         adjustment += (abs(new_x - ahead_x) + abs(new_y - ahead_y)) * 0.12
         if self._is_ahead_of_pacman(pacman, new_x, new_y):
-            adjustment -= 0.7
+            adjustment -= 0.95
         if self._same_axis_as_pacman(pacman, new_x, new_y):
-            adjustment -= 0.35
+            adjustment -= 0.5
         if self.ctx.current_map_number() in {1, 4} and (dx, dy) != (pacman.last_dx, pacman.last_dy):
-            adjustment -= 0.22
+            adjustment -= 0.35
         adjustment += self.ctx.map_pinky_bias()
         return adjustment
 
@@ -555,26 +641,27 @@ class Inky(Ghost):
                 vector_y = pacman.y - blinky.y
                 heading_dx, heading_dy = self._pacman_heading(pacman)
                 side_x, side_y = -heading_dy, heading_dx
-                self.target_x = pacman.x + vector_x + side_x * 2
-                self.target_y = pacman.y + vector_y + side_y * 2
+                self.target_x = pacman.x + vector_x + side_x * 3
+                self.target_y = pacman.y + vector_y + side_y * 3
             else:
                 heading_dx, heading_dy = self._pacman_heading(pacman)
                 side_x, side_y = -heading_dy, heading_dx
-                self.target_x = pacman.x + side_x * 3
-                self.target_y = pacman.y + side_y * 3
+                self.target_x = pacman.x + side_x * 4
+                self.target_y = pacman.y + side_y * 4
 
     def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
         # Inky should feel messy: he drifts wide, then appears from a bad flank.
         adjustment = 0.0
         adjustment += self._side_lane_bias(pacman, new_x, new_y)
+        adjustment += self._flank_distance_score(pacman, new_x, new_y)
         if self._same_axis_as_pacman(pacman, new_x, new_y):
-            adjustment += 0.3
-        if (new_x + new_y + self.ctx.ghost_mode_timer) % 3 == 0:
-            adjustment -= 0.35
-        if abs(new_x - pacman.x) + abs(new_y - pacman.y) <= 2:
             adjustment += 0.45
+        if (new_x + new_y + self.ctx.ghost_mode_timer) % 3 == 0:
+            adjustment -= 0.5
+        if abs(new_x - pacman.x) + abs(new_y - pacman.y) <= 2:
+            adjustment += 0.65
         if self.ctx.current_map_number() == 1 and abs(new_x - pacman.x) + abs(new_y - pacman.y) >= 4:
-            adjustment -= 0.22
+            adjustment -= 0.35
         adjustment += self.ctx.map_inky_bias()
         return adjustment
 
@@ -602,8 +689,9 @@ class Clyde(Ghost):
                 self.target_y = self.scatter_target[1]
             elif getattr(pacman, "rage", False):
                 # Late power state: he starts leaning back in before the window fully closes.
-                self.target_x = pacman.x
-                self.target_y = pacman.y
+                heading_dx, heading_dy = self._pacman_heading(pacman)
+                self.target_x = pacman.x + heading_dx * 2
+                self.target_y = pacman.y + heading_dy * 2
             elif distance > 8:
                 self.target_x = pacman.x
                 self.target_y = pacman.y
@@ -623,16 +711,16 @@ class Clyde(Ghost):
             if self._same_axis_as_pacman(pacman, new_x, new_y):
                 adjustment += 0.3
         elif getattr(pacman, "rage", False):
-            adjustment -= abs(new_x - pacman.x) * 0.1
-            adjustment -= abs(new_y - pacman.y) * 0.1
+            adjustment -= abs(new_x - pacman.x) * 0.14
+            adjustment -= abs(new_y - pacman.y) * 0.14
             if self._is_ahead_of_pacman(pacman, new_x, new_y):
-                adjustment -= 0.4
+                adjustment -= 0.65
         elif distance <= 6:
             adjustment -= abs(new_x - self.scatter_target[0]) * 0.08
             adjustment -= abs(new_y - self.scatter_target[1]) * 0.08
         else:
             if (dx, dy) != (self.last_dx, self.last_dy) and (self.last_dx, self.last_dy) != (0, 0):
-                adjustment -= 0.35
+                adjustment -= 0.5
         if self.ctx.current_map_number() == 3 and distance <= 8:
             adjustment -= 0.3
         adjustment += self.ctx.map_clyde_bias()

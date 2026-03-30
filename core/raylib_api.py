@@ -77,6 +77,7 @@ def init_window(width: int, height: int, title):
 
 set_target_fps = rl.SetTargetFPS
 get_frame_time = rl.GetFrameTime
+get_time = rl.GetTime
 
 window_should_close = rl.WindowShouldClose
 close_window = rl.CloseWindow
@@ -184,6 +185,7 @@ unload_texture = rl.UnloadTexture
 # Input
 # -------------------------
 is_key_pressed = rl.IsKeyPressed
+is_key_down = rl.IsKeyDown
 is_gamepad_available = rl.IsGamepadAvailable
 is_gamepad_button_pressed = rl.IsGamepadButtonPressed
 is_gamepad_button_down = rl.IsGamepadButtonDown

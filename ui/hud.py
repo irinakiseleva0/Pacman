@@ -13,7 +13,11 @@ def _card_height(line_count: int, line_height: int) -> int:
 
 
 def _draw_card(title: str, lines: list[tuple[str, object]], rect, font_size: int, line_height: int, accent_color) -> None:
-    draw_glass_card(rect, accent_color=accent_color, glow_alpha=10, fill_alpha=132)
+    draw_glass_card(rect, accent_color=accent_color, glow_alpha=16, fill_alpha=132)
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x - 8, rect.y - 8, rect.width + 16, rect.height + 16),
+        with_alpha(accent_color, 8),
+    )
     pyray.draw_text(title, int(rect.x + 18), int(rect.y + 8), max(12, font_size - 10), TEXT_DIM)
     pyray.draw_rectangle_rec(
         pyray.Rectangle(rect.x + 18, rect.y + 24, max(42, rect.width * 0.18), 2),
@@ -37,9 +41,15 @@ def _draw_card(title: str, lines: list[tuple[str, object]], rect, font_size: int
             elif key in {"best", "seeds"}:
                 value_boost = 2
             value_size = max(16, font_size + value_boost)
-            pyray.draw_text(f"{label}:", int(rect.x + 22), content_y + 1, label_size, label_color)
             label_width = pyray.measure_text(f"{label}:", label_size)
-            pyray.draw_text(value.strip(), int(rect.x + 22 + label_width + 10), content_y - 1, value_size, color)
+            value_text = value.strip()
+            value_width = pyray.measure_text(value_text, value_size)
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(rect.x + 18 + label_width + 4, content_y - 5, value_width + 12, value_size + 8),
+                with_alpha(accent_color, 7 if key not in {"score", "time", "lives", "level"} else 12),
+            )
+            pyray.draw_text(f"{label}:", int(rect.x + 22), content_y + 1, label_size, label_color)
+            pyray.draw_text(value_text, int(rect.x + 22 + label_width + 10), content_y - 1, value_size, color)
         else:
             draw_size = max(14, font_size + 2)
             pyray.draw_text(text, int(rect.x + 22), content_y, draw_size, color)

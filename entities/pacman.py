@@ -9,6 +9,7 @@ from entities.cell import Actor
 from ui import gamepad
 from utils.animated_sprite import Sprite
 from assets.assets import Assets
+from ui.ui import LIVE_CYAN, LIVE_GOLD
 from utils.visual_effects import Particle, with_alpha
 
 
@@ -23,6 +24,7 @@ class State:
 
 class Pacman(Actor):
     _images_cache = None
+    TURN_BUFFER_SECONDS = 0.22
 
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
@@ -36,6 +38,7 @@ class Pacman(Actor):
         self.death_timer = 0
         self.turn_feedback_timer = 0.0
         self.turn_feedback_dir = (0, -1)
+        self.turn_buffer_timer = 0.0
 
         # Track last movement direction for ghost AI
         self.last_dx = 0
@@ -93,10 +96,18 @@ class Pacman(Actor):
         px = base_x + cfg.tile_size // 2
         py = base_y + cfg.tile_size // 2
         pulse = 0.5 + 0.5 * math.sin(time_s * 6.0)
-        glow_radius = max(10, cfg.tile_size // 2 + int(pulse * 6))
-        pyray.draw_circle(px, py, glow_radius + 12, with_alpha((255, 220, 80, 255), 24))
-        pyray.draw_circle(px, py, glow_radius + 5, with_alpha((255, 220, 80, 255), 36))
-        pyray.draw_circle(px, py, max(7, cfg.tile_size // 3), with_alpha(colors.WHITE, 18))
+        glow_radius = max(10, cfg.tile_size // 2 + int(pulse * 7))
+        outer_glow = LIVE_GOLD if self.rage else (255, 220, 80, 255)
+        dir_dx, dir_dy = self._direction_to_delta(self.state)
+        for index in range(4, 0, -1):
+            trail_x = px - dir_dx * index * 2
+            trail_y = py - dir_dy * index * 2
+            pyray.draw_circle(trail_x, trail_y, glow_radius + 6 - index, with_alpha(outer_glow, 14 + index * 6))
+        # Breathing aura makes Pac-Man feel like a living neon object, not a flat sprite.
+        pyray.draw_circle(px, py, glow_radius + 32, with_alpha(outer_glow, 18))
+        pyray.draw_circle(px, py, glow_radius + 24, with_alpha(outer_glow, 34))
+        pyray.draw_circle(px, py, glow_radius + 14, with_alpha(outer_glow, 62))
+        pyray.draw_circle(px, py, max(8, cfg.tile_size // 3 + 3), with_alpha(colors.WHITE, 42))
         if self.turn_feedback_timer > 0:
             turn_alpha = min(1.0, self.turn_feedback_timer / 0.14)
             ring_color = colors.ORANGE if not self.rage else colors.GOLD
@@ -116,10 +127,15 @@ class Pacman(Actor):
             (base_x, base_y),
             scale=scale,
         )
+        highlight_x = px - dir_dx * 2 - dir_dy
+        highlight_y = py - dir_dy * 2 + dir_dx
+        pyray.draw_circle(highlight_x, highlight_y, max(4, cfg.tile_size // 4), with_alpha(colors.WHITE, 36))
+        pyray.draw_circle(px + dir_dx * 4, py + dir_dy * 4, max(2, cfg.tile_size // 6), with_alpha(LIVE_CYAN, 20 if self.rage else 10))
+        pyray.draw_circle(px, py, max(3, cfg.tile_size // 5), with_alpha(colors.WHITE, 18 + int(pulse * 14)))
         # Crisp lower rim helps the sprite sit on the darker stage.
         pyray.draw_rectangle_rec(
             pyray.Rectangle(base_x + 4, base_y + cfg.tile_size - 4, max(4, cfg.tile_size - 8), 2),
-            with_alpha((255, 208, 92, 255), 76),
+            with_alpha((255, 208, 92, 255), 116),
         )
 
     def _direction_to_delta(self, state: str) -> tuple[int, int]:
@@ -149,7 +165,7 @@ class Pacman(Actor):
         return not next_cell.is_blocking(self)
 
     def _apply_buffered_turn(self) -> None:
-        if self.next_state in (State.NONE, State.DEAD):
+        if self.next_state in (State.NONE, State.DEAD) or self.turn_buffer_timer <= 0:
             return
 
         if self._can_move_in_direction(self.next_state):
@@ -157,6 +173,19 @@ class Pacman(Actor):
                 self.state = self.next_state
                 self.pacman_sprite.set_key(self.state, False)
                 self._trigger_turn_feedback()
+            self.turn_buffer_timer = 0.0
+
+    def _post_move_turn_snap(self) -> None:
+        if self.next_state in (State.NONE, State.DEAD) or self.turn_buffer_timer <= 0:
+            return
+        if self.state == self.next_state:
+            self.turn_buffer_timer = 0.0
+            return
+        if self._can_move_in_direction(self.next_state):
+            self.state = self.next_state
+            self.pacman_sprite.set_key(self.state, False)
+            self._trigger_turn_feedback()
+            self.turn_buffer_timer = 0.0
 
     def _trigger_turn_feedback(self) -> None:
         dx, dy = self._direction_to_delta(self.state)
@@ -191,6 +220,7 @@ class Pacman(Actor):
         if self.state in (State.NONE, State.DEAD):
             return
         self.next_state = state
+        self.turn_buffer_timer = self.TURN_BUFFER_SECONDS
 
     def process(self) -> None:
         if self.state in (State.NONE, State.DEAD):
@@ -208,6 +238,7 @@ class Pacman(Actor):
         if result.moved:
             self.last_dx = dx
             self.last_dy = dy
+            self._post_move_turn_snap()
             self.pacman_sprite.move_forward()
             if dx != 0 or dy != 0:
                 trail_color = colors.GOLD if self.rage else with_alpha((255, 222, 96, 255), 220)
@@ -238,6 +269,10 @@ class Pacman(Actor):
 
         if self.turn_feedback_timer > 0:
             self.turn_feedback_timer = max(0.0, self.turn_feedback_timer - pyray.get_frame_time())
+        if self.turn_buffer_timer > 0:
+            self.turn_buffer_timer = max(0.0, self.turn_buffer_timer - pyray.get_frame_time())
+            if self.turn_buffer_timer == 0 and self.next_state != self.state:
+                self.next_state = self.state
 
         if self.rage_timer > 0:
             self.rage_timer -= 1
@@ -260,6 +295,15 @@ class Pacman(Actor):
             if pyray.is_key_pressed(key):
                 self.queue_direction(state)
                 return
+
+        held_states = {
+            state
+            for key, state in keys.items()
+            if pyray.is_key_down(key)
+        }
+        if len(held_states) == 1:
+            self.queue_direction(next(iter(held_states)))
+            return
 
         controller_direction = gamepad.movement_direction()
         if controller_direction == "up":

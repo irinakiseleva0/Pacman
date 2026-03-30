@@ -36,6 +36,9 @@ def enter_tree(scene: "GameScene") -> None:
     scene.near_miss_cooldown = 0.0
     scene.overtime_banner_timer = 0.0
     scene.overtime_announced = False
+    visual.action_hitstop = 0.0
+    visual.action_slowdown = 0.0
+    visual.action_slow_scale = 1.0
 
     if run.should_resume_game and runtime.game_map is not None:
         run.should_resume_game = False
@@ -72,10 +75,21 @@ def update(scene: "GameScene", dt: float) -> None:
         scene.request_switch(PAUSE_SCENE)
         return
 
-    scene.visual_time += dt
+    effective_dt = dt
+    if visual.action_hitstop > 0:
+        visual.action_hitstop = max(0.0, visual.action_hitstop - dt)
+        effective_dt = 0.0
+    elif visual.action_slowdown > 0:
+        visual.action_slowdown = max(0.0, visual.action_slowdown - dt)
+        effective_dt *= visual.action_slow_scale
+        if visual.action_slowdown == 0:
+            visual.action_slow_scale = 1.0
+
+    scene.visual_time += effective_dt
     visual.visual_time = scene.visual_time
-    scene.ctx.tick_power_chain_window()
-    scene.ctx.tick_route_chain_window()
+    if effective_dt > 0:
+        scene.ctx.tick_power_chain_window()
+        scene.ctx.tick_route_chain_window()
     scene.near_miss_timer = max(0.0, scene.near_miss_timer - dt)
     scene.near_miss_cooldown = max(0.0, scene.near_miss_cooldown - dt)
     scene.overtime_banner_timer = max(0.0, scene.overtime_banner_timer - dt)
@@ -85,13 +99,13 @@ def update(scene: "GameScene", dt: float) -> None:
     update_tutorial_state(scene, mobile_action)
 
     if scene.transition is not None:
-        scene.transition.ticks -= dt
+        scene.transition.ticks -= effective_dt
         if scene.transition.ticks <= 0:
             finish_transition(scene)
         return
 
     if run.game_mode == "Time Attack":
-        run.time_attack_seconds = max(0.0, run.time_attack_seconds - dt)
+        run.time_attack_seconds = max(0.0, run.time_attack_seconds - effective_dt)
         if run.time_attack_seconds <= 10.0 and not scene.overtime_announced:
             scene.overtime_announced = True
             scene.overtime_banner_timer = 1.35
@@ -110,7 +124,7 @@ def update(scene: "GameScene", dt: float) -> None:
             start_timeout_transition(scene)
             return
 
-    scene.logic_accumulator += dt
+    scene.logic_accumulator += effective_dt
     logic_step = scene.ctx.cfg.logic_step_seconds()
     processed_steps = 0
     while scene.logic_accumulator >= logic_step and processed_steps < 4:
@@ -316,6 +330,11 @@ def check_near_miss(scene: "GameScene") -> None:
     scene.ctx.run_stats.near_misses += 1
     scene.ctx.trigger_screen_flash(palette["ghost"], 0.06 if risk_turn else 0.05, 0.07 if risk_turn else 0.06)
     scene.ctx.trigger_screen_shake(2.1 if risk_turn else 1.4, 0.1 if risk_turn else 0.08)
+    scene.ctx.trigger_action_juice(
+        hitstop=0.022 if risk_turn else 0.014,
+        slow_scale=0.66 if risk_turn else 0.78,
+        slow_duration=0.06 if risk_turn else 0.045,
+    )
     scene.ctx.visual.light_bursts.add_grid_burst(
         pacman.x,
         pacman.y,

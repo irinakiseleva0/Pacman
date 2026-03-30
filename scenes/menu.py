@@ -7,7 +7,7 @@ from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE, MODES_SCENE, OPTIONS_SCENE
 from ui.layout import LAYOUT_PROFILES
 from ui.navigation import ButtonNavigator
-from ui.ui import LIVE_GOLD, PANEL_ACCENT, TEXT_DIM, draw_arcade_background, draw_cinematic_menu_background, draw_cinematic_title_stack, draw_panel, draw_presentation_bars, draw_scene_footer, draw_street_terminal, button_clicked, centered_rect, draw_button, draw_shadowed_text_centered, draw_text_centered
+from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, PANEL_ACCENT, TEXT_DIM, draw_arcade_background, draw_cinematic_menu_background, draw_cinematic_title_stack, draw_dashboard_rail, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_scan_intro, draw_street_terminal, draw_title_glitch_pass, button_clicked, centered_rect, draw_button, draw_shadowed_text_centered, draw_text_centered
 
 
 class Menu(Scene):
@@ -30,8 +30,10 @@ class Menu(Scene):
         self.btn_exit = None
         self.main_panel = None
         self.desktop_layout = False
+        self.intro_timer = 0.0
 
     def enter_tree(self) -> None:
+        self.intro_timer = 0.9
         cfg = self.ctx.cfg
         cx = cfg.window_width // 2
         self.desktop_layout = cfg.layout_name == "desktop"
@@ -94,6 +96,7 @@ class Menu(Scene):
 
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
+        self.intro_timer = max(0.0, self.intro_timer - dt)
         self._handle_keyboard_navigation()
 
         if button_clicked(self.btn_desktop):
@@ -115,7 +118,7 @@ class Menu(Scene):
             self.navigator.focus_index = 5
             self._apply_difficulty()
             self.ctx.play_sfx("start_run")
-            self.ctx.play_transition_effect(colors.YELLOW, 0.3, 0.4)
+            self.ctx.play_transition_effect(LIVE_GOLD, 0.3, 0.4)
             self.request_switch(GAME_SCENE)
         if button_clicked(self.btn_modes):
             self.navigator.focus_index = 6
@@ -148,7 +151,7 @@ class Menu(Scene):
             elif self.navigator.focus_index == 5:
                 self._apply_difficulty()
                 self.ctx.play_sfx("start_run")
-                self.ctx.play_transition_effect(colors.YELLOW, 0.3, 0.4)
+                self.ctx.play_transition_effect(LIVE_GOLD, 0.3, 0.4)
                 self.request_switch(GAME_SCENE)
             elif self.navigator.focus_index == 6:
                 self.ctx.play_sfx("ui_confirm")
@@ -193,19 +196,26 @@ class Menu(Scene):
         if self.desktop_layout:
             self._draw_desktop_menu(main_panel)
         else:
-            draw_panel(main_panel)
+            draw_panel(main_panel, time_s=self.ctx.visual_time)
             title_size = 44
             draw_shadowed_text_centered("PAC-MAN", center_x, int(main_panel.y + 40), title_size, colors.WHITE)
             draw_text_centered("NEON DISTRICT", center_x, int(main_panel.y + 140), 18, colors.WHITE)
+            if self.intro_timer > 0.0:
+                intro_progress = min(1.0, 1.0 - self.intro_timer / 0.9)
+                draw_title_glitch_pass(center_x, int(main_panel.y + 58), 360, intro_progress, time_s=self.ctx.visual_time)
             self._draw_mobile_menu(main_panel)
+        if self.intro_timer > 0.0:
+            intro_progress = min(1.0, 1.0 - self.intro_timer / 0.9)
+            draw_scene_scan_intro(cfg.window_width, cfg.window_height, intro_progress, accent_color=LIVE_PINK, time_s=self.ctx.visual_time)
         draw_presentation_bars(cfg.window_width, cfg.window_height)
 
     def _draw_desktop_menu(self, main_panel) -> None:
         cfg = self.ctx.cfg
-        draw_panel(main_panel)
+        draw_panel(main_panel, time_s=self.ctx.visual_time)
 
         title_center_x = int(cfg.window_width * 0.24)
         title_y = int(cfg.window_height * 0.18)
+        draw_dashboard_rail(title_center_x, title_y - 32, 260, label="DISTRICT FEED", accent_color=LIVE_PINK, time_s=self.ctx.visual_time)
         draw_cinematic_title_stack(
             title_center_x,
             title_y,
@@ -215,6 +225,9 @@ class Menu(Scene):
             self.ctx.visual_time,
             variant=self.ctx.title_variant_name(),
         )
+        if self.intro_timer > 0.0:
+            intro_progress = min(1.0, 1.0 - self.intro_timer / 0.9)
+            draw_title_glitch_pass(title_center_x, title_y + 12, 420, intro_progress, time_s=self.ctx.visual_time)
         draw_text_centered(
             "Navigate the neon-soaked corridors of the digital underworld.",
             title_center_x,
@@ -234,19 +247,19 @@ class Menu(Scene):
             )
 
         draw_text_centered("DISPLAY", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 18), 14, TEXT_DIM)
-        draw_button(self.btn_desktop, "DESKTOP", focused=self.navigator.focus_index == 0)
-        draw_button(self.btn_mobile, "MOBILE", focused=self.navigator.focus_index == 1)
+        draw_button(self.btn_desktop, "DESKTOP", focused=self.navigator.focus_index == 0, time_s=self.ctx.visual_time)
+        draw_button(self.btn_mobile, "MOBILE", focused=self.navigator.focus_index == 1, time_s=self.ctx.visual_time)
 
         draw_text_centered("DIFFICULTY", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 150), 14, TEXT_DIM)
-        draw_button(self.btn_easy, "EASY", focused=self.navigator.focus_index == 2)
-        draw_button(self.btn_normal, "NORMAL", focused=self.navigator.focus_index == 3)
-        draw_button(self.btn_hard, "HARD", focused=self.navigator.focus_index == 4)
+        draw_button(self.btn_easy, "EASY", focused=self.navigator.focus_index == 2, time_s=self.ctx.visual_time)
+        draw_button(self.btn_normal, "NORMAL", focused=self.navigator.focus_index == 3, time_s=self.ctx.visual_time)
+        draw_button(self.btn_hard, "HARD", focused=self.navigator.focus_index == 4, time_s=self.ctx.visual_time)
 
         draw_text_centered("PLAY", int(main_panel.x + main_panel.width / 2), int(self.btn_start.y - 28), 14, TEXT_DIM)
-        draw_button(self.btn_start, "START RUN", focused=self.navigator.focus_index == 5)
-        draw_button(self.btn_modes, "MODES", focused=self.navigator.focus_index == 6)
-        draw_button(self.btn_options, "OPTIONS", focused=self.navigator.focus_index == 7)
-        draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 8)
+        draw_button(self.btn_start, "START RUN", focused=self.navigator.focus_index == 5, time_s=self.ctx.visual_time)
+        draw_button(self.btn_modes, "MODES", focused=self.navigator.focus_index == 6, time_s=self.ctx.visual_time)
+        draw_button(self.btn_options, "OPTIONS", focused=self.navigator.focus_index == 7, time_s=self.ctx.visual_time)
+        draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 8, time_s=self.ctx.visual_time)
         draw_scene_footer(main_panel)
 
     def _draw_mobile_menu(self, main_panel) -> None:
@@ -256,23 +269,23 @@ class Menu(Scene):
         draw_shadowed_text_centered("PAC-MAN", center_x, int(main_panel.y + 44), 42, colors.WHITE)
         draw_text_centered("NEON DISTRICT", center_x, int(main_panel.y + 92), 16, TEXT_DIM)
         draw_text_centered("LAYOUT", center_x, int(main_panel.y + 134), 20, TEXT_DIM)
-        draw_button(self.btn_desktop, "DESKTOP", focused=self.navigator.focus_index == 0)
-        draw_button(self.btn_mobile, "MOBILE", focused=self.navigator.focus_index == 1)
+        draw_button(self.btn_desktop, "DESKTOP", focused=self.navigator.focus_index == 0, time_s=self.ctx.visual_time)
+        draw_button(self.btn_mobile, "MOBILE", focused=self.navigator.focus_index == 1, time_s=self.ctx.visual_time)
         draw_text_centered(f"ACTIVE: {self.layout_name.upper()}", center_x, int(main_panel.y + 238), 20, TEXT_DIM)
         draw_text_centered("DIFFICULTY", center_x, int(main_panel.y + 270), 20, TEXT_DIM)
-        draw_button(self.btn_easy, "EASY", focused=self.navigator.focus_index == 2)
-        draw_button(self.btn_normal, "NORMAL", focused=self.navigator.focus_index == 3)
-        draw_button(self.btn_hard, "HARD", focused=self.navigator.focus_index == 4)
+        draw_button(self.btn_easy, "EASY", focused=self.navigator.focus_index == 2, time_s=self.ctx.visual_time)
+        draw_button(self.btn_normal, "NORMAL", focused=self.navigator.focus_index == 3, time_s=self.ctx.visual_time)
+        draw_button(self.btn_hard, "HARD", focused=self.navigator.focus_index == 4, time_s=self.ctx.visual_time)
 
-        selected_color = colors.GREEN if self.difficulty == "Easy" else colors.YELLOW if self.difficulty == "Normal" else colors.RED
+        selected_color = LIVE_CYAN if self.difficulty == "Easy" else LIVE_GOLD if self.difficulty == "Normal" else LIVE_PINK
         draw_text_centered(f"Selected: {self.difficulty}", center_x, int(main_panel.y + 468), 22, selected_color)
         draw_text_centered(f"Mode: {self.ctx.mode_label()}", center_x, int(main_panel.y + 498), 20, PANEL_ACCENT)
         summary_y = int(main_panel.y + 532)
         for line in self._difficulty_summary_lines():
             draw_text_centered(line, center_x, summary_y, 18, TEXT_DIM)
             summary_y += 24
-        draw_button(self.btn_start, "START GAME", focused=self.navigator.focus_index == 5)
-        draw_button(self.btn_modes, "MODES", focused=self.navigator.focus_index == 6)
-        draw_button(self.btn_options, "OPTIONS", focused=self.navigator.focus_index == 7)
-        draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 8)
+        draw_button(self.btn_start, "START GAME", focused=self.navigator.focus_index == 5, time_s=self.ctx.visual_time)
+        draw_button(self.btn_modes, "MODES", focused=self.navigator.focus_index == 6, time_s=self.ctx.visual_time)
+        draw_button(self.btn_options, "OPTIONS", focused=self.navigator.focus_index == 7, time_s=self.ctx.visual_time)
+        draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 8, time_s=self.ctx.visual_time)
         draw_scene_footer(main_panel)

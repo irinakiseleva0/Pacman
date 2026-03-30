@@ -87,10 +87,18 @@ class Wall(Cell):
         tile = cfg.tile_size
         pulse = 0.5 + 0.5 * math.sin(time_s * 2.6 + self.x * 0.37 + self.y * 0.21)
 
-        # Soft underglow makes the maze feel like a lit district arena, not a flat sprite sheet.
+        # Stronger layered underglow pushes the maze closer to a true neon object.
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(px - 12, py - 12, tile + 24, tile + 24),
+            with_alpha(LIVE_CYAN, int(10 + pulse * 10)),
+        )
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(px - 7, py - 7, tile + 14, tile + 14),
+            with_alpha(LIVE_PINK, int(8 + pulse * 8)),
+        )
         pyray.draw_rectangle_rec(
             pyray.Rectangle(px - 2, py - 2, tile + 4, tile + 4),
-            with_alpha(LIVE_CYAN, int(8 + pulse * 6)),
+            with_alpha(LIVE_CYAN, int(30 + pulse * 18)),
         )
         pyray.draw_rectangle_rec(
             pyray.Rectangle(px + 2, py + 2, tile - 4, tile - 4),
@@ -111,15 +119,20 @@ class Wall(Cell):
         s_open = "1" not in self.cardinal_mask[2:3]
         w_open = "1" not in self.cardinal_mask[3:4]
 
-        edge_main = with_alpha(LIVE_CYAN, int(76 + pulse * 24))
-        edge_soft = with_alpha(LIVE_CYAN, int(18 + pulse * 10))
+        edge_glow = with_alpha(LIVE_CYAN, int(44 + pulse * 28))
+        edge_main = with_alpha(LIVE_CYAN, int(168 + pulse * 56))
+        edge_soft = with_alpha(LIVE_CYAN, int(66 + pulse * 22))
 
         if n_open:
+            pyray.draw_rectangle_rec(pyray.Rectangle(px - 1, py - 2, tile + 2, 7), edge_glow)
             pyray.draw_rectangle_rec(pyray.Rectangle(px + 2, py + 1, tile - 4, 2), edge_main)
             pyray.draw_rectangle_rec(pyray.Rectangle(px + 4, py + 3, tile - 8, 1), edge_soft)
         if s_open:
+            pyray.draw_rectangle_rec(pyray.Rectangle(px - 1, py + tile - 5, tile + 2, 7), edge_glow)
             pyray.draw_rectangle_rec(pyray.Rectangle(px + 2, py + tile - 3, tile - 4, 2), edge_main)
         if w_open:
+            pyray.draw_rectangle_rec(pyray.Rectangle(px - 2, py - 1, 7, tile + 2), edge_glow)
             pyray.draw_rectangle_rec(pyray.Rectangle(px + 1, py + 2, 2, tile - 4), edge_main)
         if e_open:
+            pyray.draw_rectangle_rec(pyray.Rectangle(px + tile - 5, py - 1, 7, tile + 2), edge_glow)
             pyray.draw_rectangle_rec(pyray.Rectangle(px + tile - 3, py + 2, 2, tile - 4), edge_main)
