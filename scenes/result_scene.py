@@ -26,7 +26,7 @@ class ResultScene(Scene):
     def enter_tree(self) -> None:
         # Save high score when entering result screen
         save_high_score(self.ctx.high_score)
-        if self.ctx.last_result in {"game_won", "lose", "challenge_failed"}:
+        if self.ctx.last_result in {"game_won", "lose", "challenge_failed", "abandon"}:
             self.ctx.finalize_run_result(self.ctx.last_result)
         self.intro_timer = 1.0
 
@@ -137,6 +137,13 @@ class ResultScene(Scene):
                 "Return to menu to try again.",
             ]
 
+        if self.ctx.last_result == "abandon":
+            return [
+                "Run closed by operator input.",
+                "Score and progression up to this point were recorded.",
+                "Return to menu to queue the next district.",
+            ]
+
         if self.ctx.game_mode == "Time Attack":
             return [
                 "The district clock hit zero.",
@@ -168,6 +175,8 @@ class ResultScene(Scene):
 
         if self.ctx.last_result == "challenge_failed":
             return ("TRIAL FAILED", LIVE_PINK, "BACK TO MENU")
+        if self.ctx.last_result == "abandon":
+            return ("RUN ABORTED", LIVE_PINK, "BACK TO MENU")
 
         if self.ctx.game_mode == "Time Attack":
             return ("TIME OUT", LIVE_GOLD, "BACK TO MENU")
@@ -180,10 +189,12 @@ class ResultScene(Scene):
             return "RUN STATUS"
         if self.ctx.last_result == "challenge_failed":
             return "TRIAL STATUS"
+        if self.ctx.last_result == "abandon":
+            return "RUN STATUS"
         return "FAIL STATUS"
 
     def _progression_accent(self):
-        if self.ctx.last_result in {"lose", "challenge_failed"}:
+        if self.ctx.last_result in {"lose", "challenge_failed", "abandon"}:
             return LIVE_GOLD if self.ctx.game_mode == "Time Attack" else LIVE_PINK
         if self.ctx.game_mode == "Challenge":
             return LIVE_PINK
@@ -212,6 +223,12 @@ class ResultScene(Scene):
             return (
                 f"Trial Missed  |  {self.ctx.challenge_preset().title}",
                 f"Ghosts {stats.ghosts_eaten}  Dots {stats.dots_eaten}",
+                medal_line,
+            )
+        if self.ctx.last_result == "abandon":
+            return (
+                f"Run Aborted  |  {self.ctx.mode_label()}",
+                f"Level {self.ctx.current_level}  Score {self.ctx.score}",
                 medal_line,
             )
         killer_map = {

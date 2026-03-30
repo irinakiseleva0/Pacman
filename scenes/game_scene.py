@@ -28,6 +28,10 @@ class GameScene(Scene):
         self.near_miss_cooldown = 0.0
         self.overtime_banner_timer = 0.0
         self.overtime_announced = False
+        self.btn_pause = None
+        self.btn_menu = None
+        self.btn_end_run = None
+        self.btn_exit = None
 
     def _tutorial_step_total(self) -> int:
         return 4

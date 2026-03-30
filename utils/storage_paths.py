@@ -30,16 +30,17 @@ PROFILE_FILE = SAVE_DIR / "profile.json"
 SCORE_FILE = SAVE_DIR / "scores.json"
 
 
-def ensure_save_dir() -> Path:
-    SAVE_DIR.mkdir(parents=True, exist_ok=True)
-    return SAVE_DIR
+def ensure_save_dir(directory: Path | None = None) -> Path:
+    target_dir = SAVE_DIR if directory is None else Path(directory)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    return target_dir
 
 
 def migrate_legacy_file(target_file: Path, legacy_file: Path) -> None:
     if target_file.exists() or not legacy_file.exists():
         return
 
-    ensure_save_dir()
+    ensure_save_dir(target_file.parent)
     try:
         target_file.write_text(legacy_file.read_text(encoding="utf-8"), encoding="utf-8")
     except OSError:
@@ -47,7 +48,7 @@ def migrate_legacy_file(target_file: Path, legacy_file: Path) -> None:
 
 
 def atomic_write_json(target_file: Path, payload: object) -> None:
-    ensure_save_dir()
+    ensure_save_dir(target_file.parent)
     fd, temp_path = tempfile.mkstemp(prefix=f"{target_file.stem}-", suffix=".tmp", dir=str(target_file.parent))
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as file:

@@ -1,18 +1,35 @@
 from __future__ import annotations
 
 import json
-import tempfile
 import unittest
 from copy import deepcopy
 from pathlib import Path
+from shutil import rmtree
 from unittest.mock import patch
+from uuid import uuid4
 
 from utils import profile_storage, score_storage
 
 
+def _workspace_temp_root() -> Path:
+    root = Path("data") / "saves" / ".test_tmp"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+class WorkspaceTempDir:
+    def __enter__(self) -> str:
+        self.path = _workspace_temp_root() / f"tmp-{uuid4().hex}"
+        self.path.mkdir(parents=True, exist_ok=True)
+        return str(self.path)
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        rmtree(self.path, ignore_errors=True)
+
+
 class ProfileStorageTests(unittest.TestCase):
     def test_profile_save_and_load_roundtrip(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
+        with WorkspaceTempDir() as tmp:
             root = Path(tmp)
             profile_file = root / "profile.json"
             legacy_file = root / "legacy_profile.json"
@@ -32,7 +49,7 @@ class ProfileStorageTests(unittest.TestCase):
             self.assertTrue(profile_file.exists())
 
     def test_profile_load_migrates_legacy_file(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
+        with WorkspaceTempDir() as tmp:
             root = Path(tmp)
             profile_file = root / "profile.json"
             legacy_file = root / "legacy_profile.json"
@@ -52,7 +69,7 @@ class ProfileStorageTests(unittest.TestCase):
 
 class ScoreStorageTests(unittest.TestCase):
     def test_high_score_save_and_load_roundtrip(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
+        with WorkspaceTempDir() as tmp:
             root = Path(tmp)
             score_file = root / "scores.json"
             legacy_file = root / "legacy_scores.json"
@@ -68,7 +85,7 @@ class ScoreStorageTests(unittest.TestCase):
             self.assertTrue(score_file.exists())
 
     def test_high_score_load_migrates_legacy_file(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
+        with WorkspaceTempDir() as tmp:
             root = Path(tmp)
             score_file = root / "scores.json"
             legacy_file = root / "legacy_scores.json"

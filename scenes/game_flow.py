@@ -6,11 +6,12 @@ from typing import TYPE_CHECKING
 import core.raylib_api as pyray
 from raylib import colors
 
-from core.scene_ids import MENU_SCENE, PAUSE_SCENE, RESULT_SCENE
+from core.scene_ids import EXIT_SCENE, MENU_SCENE, PAUSE_SCENE, RESULT_SCENE
 from entities.pacman import State
 from maps.class_map import Map
 from ui import gamepad
 from ui.mobile_controls import handle_mobile_controls
+from ui.ui import button_clicked
 
 if TYPE_CHECKING:
     from scenes.game_scene import GameScene, SceneTransition
@@ -68,6 +69,22 @@ def update(scene: "GameScene", dt: float) -> None:
 
     if pyray.is_key_pressed(pyray.KEY_P) or gamepad.pause_pressed():
         scene.request_switch(PAUSE_SCENE)
+        return
+
+    if scene.btn_pause is not None and button_clicked(scene.btn_pause):
+        scene.request_switch(PAUSE_SCENE)
+        return
+    if scene.btn_menu is not None and button_clicked(scene.btn_menu):
+        scene.ctx.reset_run_state()
+        scene.request_switch(MENU_SCENE)
+        return
+    if scene.btn_end_run is not None and button_clicked(scene.btn_end_run):
+        scene.failure_reason = "abort"
+        scene.ctx.last_result = "abandon"
+        scene.request_switch(RESULT_SCENE)
+        return
+    if scene.btn_exit is not None and button_clicked(scene.btn_exit):
+        scene.request_switch(EXIT_SCENE)
         return
 
     mobile_action = handle_mobile_controls(scene.ctx)

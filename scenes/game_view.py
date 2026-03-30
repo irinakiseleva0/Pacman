@@ -11,9 +11,11 @@ from ui.hud import draw_game_hud
 from ui.mobile_controls import draw_mobile_controls
 from ui.ui import (
     LIVE_CYAN,
+    LIVE_GOLD,
     LIVE_PINK,
     PANEL_ACCENT,
     TEXT_DIM,
+    draw_button,
     draw_glass_card,
     draw_live_board_backdrop as ui_draw_live_board_backdrop,
     draw_live_game_background as ui_draw_live_game_background,
@@ -289,6 +291,7 @@ def _draw_hud_terminal_backdrop(game_scene, hud_rect) -> None:
 
     pulse = 0.5 + 0.5 * math.sin(game_scene.visual_time * 2.4)
     accent = game_scene.ctx.effect_palette()["ghost"]
+    center_x = int(lower_zone.x + lower_zone.width / 2)
 
     pyray.draw_rectangle_rec(
         lower_zone,
@@ -331,6 +334,27 @@ def _draw_hud_terminal_backdrop(game_scene, hud_rect) -> None:
         pyray.Rectangle(lower_zone.x + 12, lower_zone.y + lower_zone.height - 18, lower_zone.width - 24, 1),
         with_alpha(LIVE_PINK, 20),
     )
+
+    header_y = int(lower_zone.y + 10)
+    draw_text_centered("CONTROL DOCK", center_x, header_y, 14, LIVE_CYAN)
+    draw_text_centered("P PAUSE  |  ESC MENU  |  MOUSE READY", center_x, header_y + 18, 11, TEXT_DIM)
+
+    button_y = int(lower_zone.y + lower_zone.height - 56)
+    gap = 8
+    btn_w = int((lower_zone.width - gap * 2) / 3)
+    btn_h = 34
+    btn_x = int(lower_zone.x)
+    game_scene.btn_pause = pyray.Rectangle(btn_x, button_y, btn_w, btn_h)
+    game_scene.btn_menu = pyray.Rectangle(btn_x + btn_w + gap, button_y, btn_w, btn_h)
+    game_scene.btn_end_run = pyray.Rectangle(btn_x + (btn_w + gap) * 2, button_y, btn_w, btn_h)
+
+    draw_button(game_scene.btn_pause, "PAUSE", time_s=game_scene.visual_time)
+    draw_button(game_scene.btn_menu, "MENU", time_s=game_scene.visual_time)
+    draw_button(game_scene.btn_end_run, "END RUN", time_s=game_scene.visual_time)
+
+    hint_y = int(lower_zone.y + 46)
+    draw_text_centered("PAUSE keeps the run. MENU leaves now. END RUN writes a report.", center_x, hint_y, 11, with_alpha(colors.WHITE, 190))
+    draw_text_centered("DISTRICT FLOW: PLAY -> PAUSE/END -> REPORT/MENU", center_x, hint_y + 16, 10, LIVE_GOLD)
 
 
 def draw_live_feedback(game_scene) -> None:

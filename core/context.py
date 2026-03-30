@@ -1498,7 +1498,7 @@ class GameContext:
         before_snapshot = self.pre_run_unlock_snapshot or self.unlock_snapshot()
         if result == "game_won":
             self.profile["total_wins"] += 1
-        elif result in {"lose", "challenge_failed"}:
+        elif result in {"lose", "challenge_failed", "abandon"}:
             self.profile["total_losses"] += 1
 
         self.profile["best_score"] = max(self.profile["best_score"], self.score)
