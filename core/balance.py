@@ -204,15 +204,15 @@ class Config:
 
     @property
     def board_gap(self) -> int:
-        return 56 if self.layout_name == "desktop" and self.hud_mode == "side" else 0
+        return 28 if self.layout_name == "desktop" and self.hud_mode == "side" else 0
 
     @property
     def board_offset_x(self) -> int:
-        return 72 if self.layout_name == "desktop" and self.hud_mode == "side" else 0
+        return 40 if self.layout_name == "desktop" and self.hud_mode == "side" else 0
 
     @property
     def board_offset_y(self) -> int:
-        return 60 if self.layout_name == "desktop" else 0
+        return 30 if self.layout_name == "desktop" else 0
 
     @property
     def window_width(self) -> int:

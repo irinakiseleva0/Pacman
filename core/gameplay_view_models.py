@@ -88,8 +88,6 @@ def build_hud_model(ctx, game_map) -> GameplayHudModel:
         field_lines.append((f"Ghosts: {run.ghost_mode.upper()}", ghost_color))
 
     bonus_lines: list[tuple[str, object]] = []
-    directive = ctx.current_run_directive()
-    bonus_lines.append((f"{directive.title}: {ctx.directive_progress_text()}", directive.accent))
 
     if cherry_text is not None:
         bonus_lines.append((cherry_text, cherry_color))

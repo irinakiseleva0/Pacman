@@ -5,19 +5,8 @@ import ui.ui as ui_theme
 
 from assets.assets import Assets
 from core.context import GameContext
-from core.scene_ids import ACHIEVEMENTS_SCENE, CAREER_SCENE, CHALLENGE_SCENE, EXIT_SCENE, GAME_SCENE, JOURNAL_SCENE, MENU_SCENE, MODES_SCENE, OPTIONS_SCENE, PAUSE_SCENE, RESULT_SCENE, RUN_HISTORY_SCENE, THEMES_SCENE
-from scenes.menu import Menu
-from scenes.game_scene import GameScene
-from scenes.result_scene import ResultScene
-from scenes.pause_scene import PauseScene
-from scenes.options_scene import OptionsScene
-from scenes.modes_scene import ModesScene
-from scenes.career_scene import CareerScene
-from scenes.achievements_scene import AchievementsScene
-from scenes.challenge_scene import ChallengeScene
-from scenes.run_history_scene import RunHistoryScene
-from scenes.themes_scene import ThemesScene
-from scenes.journal_scene import JournalScene
+from core.scene_ids import EXIT_SCENE, MENU_SCENE
+from scenes.registry import SCENE_MUSIC, build_scene_table
 from ui.layout import DEFAULT_LAYOUT
 from utils.audio_manager import AudioManager
 
@@ -30,20 +19,7 @@ class Game:
         self.ctx.audio_manager = self.audio
 
         self.current_scene_index = MENU_SCENE
-        self.scenes = [
-            Menu(self.ctx),
-            GameScene(self.ctx),
-            ResultScene(self.ctx),
-            PauseScene(self.ctx),
-            OptionsScene(self.ctx),
-            ModesScene(self.ctx),
-            CareerScene(self.ctx),
-            AchievementsScene(self.ctx),
-            ChallengeScene(self.ctx),
-            RunHistoryScene(self.ctx),
-            ThemesScene(self.ctx),
-            JournalScene(self.ctx),
-        ]
+        self.scenes = build_scene_table(self.ctx)
 
     @property
     def current_scene(self):
@@ -88,7 +64,7 @@ class Game:
             pyray.close_window()
 
     def switch_scene(self, index: int) -> None:
-        if index < 0 or index >= len(self.scenes):
+        if index not in self.scenes:
             raise IndexError(f"Scene index out of range: {index}")
 
         self.current_scene.exit_tree()
@@ -97,20 +73,7 @@ class Game:
         self._sync_scene_audio()
 
     def _sync_scene_audio(self) -> None:
-        scene_music = {
-            MENU_SCENE: "menu",
-            GAME_SCENE: "game",
-            RESULT_SCENE: "result",
-            PAUSE_SCENE: "pause",
-            OPTIONS_SCENE: "options",
-            MODES_SCENE: "menu",
-            CAREER_SCENE: "options",
-            ACHIEVEMENTS_SCENE: "options",
-            CHALLENGE_SCENE: "menu",
-            RUN_HISTORY_SCENE: "options",
-            THEMES_SCENE: "options",
-            JOURNAL_SCENE: "options",
-        }.get(self.current_scene_index, "menu")
+        scene_music = SCENE_MUSIC.get(self.current_scene_index, "menu")
         self.audio.set_scene_music(scene_music, self.ctx)
 
 
@@ -121,4 +84,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

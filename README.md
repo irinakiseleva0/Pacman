@@ -124,20 +124,79 @@ The strongest intended identity is:
 
 Requirements:
 
-- Python `3.12+` recommended
+- Python `3.12` is the target runtime for this repo
+- Python `3.13` may work, but is not the primary tested target
 - `raylib==5.5.0.4`
 
-Install:
+### Runtime Install
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+Windows PowerShell:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+Linux / macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+Install runtime dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Run:
+Run directly:
 
 ```bash
 python main.py
 ```
+
+Or run through the packaged console entrypoint:
+
+```bash
+pip install -e .
+cyberpunk-pacman
+```
+
+### Development Install
+
+Install runtime + local tooling:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+or:
+
+```bash
+pip install -e .[dev]
+```
+
+### OS Notes
+
+Windows:
+
+- this is the primary tested environment
+- `pip install -r requirements.txt` should be enough once Python `3.12` is installed
+
+Linux:
+
+- you may need system graphics/audio libraries for raylib-backed windows
+- if the app fails to open a window, install the usual X11 / OpenGL / ALSA packages for your distro first
+
+macOS:
+
+- not the primary tested target for this repo
+- expect to verify raylib/windowing support locally before relying on it
 
 ## Project Structure
 
@@ -151,6 +210,7 @@ scenes/      menu flow, gameplay scene, pause/result, meta screens
 ui/          layout, HUD, navigation, controls, theme drawing
 utils/       profile, score, audio, visual effects, sprites
 main.py      app entry point and scene loop
+pyproject.toml packaging metadata and console entrypoint
 ```
 
 ## Save Data

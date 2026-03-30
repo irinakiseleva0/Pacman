@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cyberpunk-pacman"
+version = "0.1.0"
+description = "A cyberpunk-styled Pac-Man reinterpretation built with Python and raylib."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "raylib==5.5.0.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[project.scripts]
+cyberpunk-pacman = "main:main"

@@ -12,9 +12,9 @@ _LAYOUT_FALLBACK = {
     "profiles": {
         "desktop": {
             "name": "desktop",
-            "tile_size": 36,
+            "tile_size": 38,
             "hud_mode": "side",
-            "hud_extent": 520,
+            "hud_extent": 430,
             "menu_button_width": 340,
             "menu_button_height": 80,
             "menu_title_size": 118,

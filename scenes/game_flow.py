@@ -63,45 +63,77 @@ def update(scene: "GameScene", dt: float) -> None:
     if game_map is None:
         return
 
+    mobile_action = _input_system(scene)
+    if mobile_action == "handled":
+        return
+
+    effective_dt = _feedback_system(scene, dt)
+    _timer_system(scene, dt, effective_dt)
+
+    game_map.frame()
+    _tutorial_system(scene, mobile_action)
+
+    if _transition_system(scene, effective_dt):
+        return
+
+    if _time_attack_system(scene, effective_dt):
+        return
+
+    _gameplay_step_system(scene, game_map, effective_dt)
+    _effects_update_system(scene)
+
+    if _combat_or_collision_system(scene, game_map):
+        return
+
+
+def _input_system(scene: "GameScene") -> str | None:
     if pyray.is_key_pressed(pyray.KEY_ESCAPE) or gamepad.back_pressed():
         scene.request_switch(MENU_SCENE)
-        return
+        return "handled"
 
     if pyray.is_key_pressed(pyray.KEY_P) or gamepad.pause_pressed():
         scene.request_switch(PAUSE_SCENE)
-        return
+        return "handled"
 
     if scene.btn_pause is not None and button_clicked(scene.btn_pause):
         scene.request_switch(PAUSE_SCENE)
-        return
+        return "handled"
     if scene.btn_menu is not None and button_clicked(scene.btn_menu):
         scene.ctx.reset_run_state()
         scene.request_switch(MENU_SCENE)
-        return
+        return "handled"
     if scene.btn_end_run is not None and button_clicked(scene.btn_end_run):
         scene.failure_reason = "abort"
         scene.ctx.last_result = "abandon"
         scene.request_switch(RESULT_SCENE)
-        return
+        return "handled"
     if scene.btn_exit is not None and button_clicked(scene.btn_exit):
         scene.request_switch(EXIT_SCENE)
-        return
+        return "handled"
 
     mobile_action = handle_mobile_controls(scene.ctx)
     if mobile_action == "pause":
         scene.request_switch(PAUSE_SCENE)
-        return
+        return "handled"
+    return mobile_action
 
+
+def _feedback_system(scene: "GameScene", dt: float) -> float:
+    visual = scene.ctx.visual
     effective_dt = dt
     if visual.action_hitstop > 0:
         visual.action_hitstop = max(0.0, visual.action_hitstop - dt)
-        effective_dt = 0.0
-    elif visual.action_slowdown > 0:
+        return 0.0
+    if visual.action_slowdown > 0:
         visual.action_slowdown = max(0.0, visual.action_slowdown - dt)
         effective_dt *= visual.action_slow_scale
         if visual.action_slowdown == 0:
             visual.action_slow_scale = 1.0
+    return effective_dt
 
+
+def _timer_system(scene: "GameScene", dt: float, effective_dt: float) -> None:
+    visual = scene.ctx.visual
     scene.visual_time += effective_dt
     visual.visual_time = scene.visual_time
     if effective_dt > 0:
@@ -111,36 +143,50 @@ def update(scene: "GameScene", dt: float) -> None:
     scene.near_miss_cooldown = max(0.0, scene.near_miss_cooldown - dt)
     scene.overtime_banner_timer = max(0.0, scene.overtime_banner_timer - dt)
 
-    game_map.frame()
 
+def _tutorial_system(scene: "GameScene", mobile_action: str | None) -> None:
     update_tutorial_state(scene, mobile_action)
 
-    if scene.transition is not None:
-        scene.transition.ticks -= effective_dt
-        if scene.transition.ticks <= 0:
-            finish_transition(scene)
-        return
 
-    if run.game_mode == "Time Attack":
-        run.time_attack_seconds = max(0.0, run.time_attack_seconds - effective_dt)
-        if run.time_attack_seconds <= 10.0 and not scene.overtime_announced:
-            scene.overtime_announced = True
-            scene.overtime_banner_timer = 1.35
-            scene.ctx.trigger_screen_flash(colors.ORANGE, 0.12, 0.12)
-            scene.ctx.trigger_screen_shake(2.8, 0.12)
-            if runtime.pacman is not None:
-                visual.floating_text.add_text(
-                    "OVERTIME WINDOW",
-                    runtime.pacman.x * 16 - 30,
-                    runtime.pacman.y * 16 - 28,
-                    colors.ORANGE,
-                    0.9,
-                    13,
-                )
-        if run.time_attack_seconds <= 0:
-            start_timeout_transition(scene)
-            return
+def _transition_system(scene: "GameScene", effective_dt: float) -> bool:
+    if scene.transition is None:
+        return False
+    scene.transition.ticks -= effective_dt
+    if scene.transition.ticks <= 0:
+        finish_transition(scene)
+    return True
 
+
+def _time_attack_system(scene: "GameScene", effective_dt: float) -> bool:
+    run = scene.ctx.run
+    runtime = scene.ctx.runtime
+    visual = scene.ctx.visual
+    if run.game_mode != "Time Attack":
+        return False
+
+    run.time_attack_seconds = max(0.0, run.time_attack_seconds - effective_dt)
+    if run.time_attack_seconds <= 10.0 and not scene.overtime_announced:
+        scene.overtime_announced = True
+        scene.overtime_banner_timer = 1.35
+        scene.ctx.trigger_screen_flash(colors.ORANGE, 0.12, 0.12)
+        scene.ctx.trigger_screen_shake(2.8, 0.12)
+        if runtime.pacman is not None:
+            visual.floating_text.add_text(
+                "OVERTIME WINDOW",
+                runtime.pacman.x * 16 - 30,
+                runtime.pacman.y * 16 - 28,
+                colors.ORANGE,
+                0.9,
+                13,
+            )
+    if run.time_attack_seconds <= 0:
+        start_timeout_transition(scene)
+        return True
+    return False
+
+
+def _gameplay_step_system(scene: "GameScene", game_map, effective_dt: float) -> None:
+    run = scene.ctx.run
     scene.logic_accumulator += effective_dt
     logic_step = scene.ctx.cfg.logic_step_seconds()
     processed_steps = 0
@@ -155,12 +201,20 @@ def update(scene: "GameScene", dt: float) -> None:
             _handle_pressure_escalation(scene, game_map)
         game_map.process()
 
+
+def _effects_update_system(scene: "GameScene") -> None:
+    visual = scene.ctx.visual
     frame_dt = pyray.get_frame_time()
     visual.particles.update(frame_dt)
     visual.light_bursts.update(frame_dt)
     visual.screen_shake.update(frame_dt)
     visual.floating_text.update(frame_dt)
     visual.screen_flash.update(frame_dt)
+
+
+def _combat_or_collision_system(scene: "GameScene", game_map) -> bool:
+    run = scene.ctx.run
+    runtime = scene.ctx.runtime
 
     if run.score > run.high_score:
         run.high_score = run.score
@@ -170,10 +224,12 @@ def update(scene: "GameScene", dt: float) -> None:
         check_near_miss(scene)
     if pacman is not None and pacman.state == State.NONE and scene.transition is None:
         start_death_transition(scene)
-        return
+        return True
 
     if game_map.remaining_seeds() == 0 and scene.transition is None:
         start_level_complete_transition(scene)
+        return True
+    return False
 
 
 def _handle_pressure_escalation(scene: "GameScene", game_map) -> None:
