@@ -35,8 +35,9 @@ class Sprite:
         position,
         rotation: float = 0.0,
         scale: float = 1.0,
+        tint=colors.WHITE,
     ):
-        draw_texture_ex(self.texture_dictionary[key][frame], position, rotation, scale, colors.WHITE)
+        draw_texture_ex(self.texture_dictionary[key][frame], position, rotation, scale, tint)
 
     def move_forward(self):
         if not self.current_key:

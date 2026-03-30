@@ -92,8 +92,11 @@ class Pacman(Actor):
         base_y = cfg.board_offset_y + self.y * cfg.tile_size
         px = base_x + cfg.tile_size // 2
         py = base_y + cfg.tile_size // 2
-        glow_radius = max(10, cfg.tile_size // 2 + int((0.5 + 0.5 * __import__("math").sin(time_s * 6.0)) * 6))
-        pyray.draw_circle(px, py, glow_radius, with_alpha((255, 225, 70, 255), 44))
+        pulse = 0.5 + 0.5 * math.sin(time_s * 6.0)
+        glow_radius = max(10, cfg.tile_size // 2 + int(pulse * 6))
+        pyray.draw_circle(px, py, glow_radius + 12, with_alpha((255, 220, 80, 255), 24))
+        pyray.draw_circle(px, py, glow_radius + 5, with_alpha((255, 220, 80, 255), 36))
+        pyray.draw_circle(px, py, max(7, cfg.tile_size // 3), with_alpha(colors.WHITE, 18))
         if self.turn_feedback_timer > 0:
             turn_alpha = min(1.0, self.turn_feedback_timer / 0.14)
             ring_color = colors.ORANGE if not self.rage else colors.GOLD
@@ -112,6 +115,11 @@ class Pacman(Actor):
         self.pacman_sprite.draw(
             (base_x, base_y),
             scale=scale,
+        )
+        # Crisp lower rim helps the sprite sit on the darker stage.
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(base_x + 4, base_y + cfg.tile_size - 4, max(4, cfg.tile_size - 8), 2),
+            with_alpha((255, 208, 92, 255), 76),
         )
 
     def _direction_to_delta(self, state: str) -> tuple[int, int]:

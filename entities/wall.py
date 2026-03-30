@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import math
+
+import core.raylib_api as pyray
+
 from entities.cell import Cell, Actor
 from utils.animated_sprite import Sprite
 from assets.assets import Assets
+from ui.ui import LIVE_CYAN, LIVE_PINK
+from utils.visual_effects import with_alpha
 
 
 class Wall(Cell):
@@ -74,13 +80,46 @@ class Wall(Cell):
 
     def draw(self) -> None:
         cfg = self.ctx.cfg
+        time_s = getattr(self.ctx, "visual_time", 0.0)
         scale = cfg.tile_size / 16
+        px = cfg.board_offset_x + self.x * cfg.tile_size
+        py = cfg.board_offset_y + self.y * cfg.tile_size
+        tile = cfg.tile_size
+        pulse = 0.5 + 0.5 * math.sin(time_s * 2.6 + self.x * 0.37 + self.y * 0.21)
+
+        # Soft underglow makes the maze feel like a lit district arena, not a flat sprite sheet.
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(px - 2, py - 2, tile + 4, tile + 4),
+            with_alpha(LIVE_CYAN, int(8 + pulse * 6)),
+        )
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(px + 2, py + 2, tile - 4, tile - 4),
+            with_alpha((6, 8, 22, 255), 226),
+        )
+
         Wall._sprite().draw_specified(
             self.wall_key,
             0,
-            (
-                cfg.board_offset_x + self.x * cfg.tile_size,
-                cfg.board_offset_y + self.y * cfg.tile_size,
-            ),
+            (px, py),
             scale=scale,
+            tint=(44, 72, 132, 255),
         )
+
+        # Highlight only exposed edges so the walls read as premium neon ridges.
+        n_open = "1" not in self.cardinal_mask[:1]
+        e_open = "1" not in self.cardinal_mask[1:2]
+        s_open = "1" not in self.cardinal_mask[2:3]
+        w_open = "1" not in self.cardinal_mask[3:4]
+
+        edge_main = with_alpha(LIVE_CYAN, int(76 + pulse * 24))
+        edge_soft = with_alpha(LIVE_CYAN, int(18 + pulse * 10))
+
+        if n_open:
+            pyray.draw_rectangle_rec(pyray.Rectangle(px + 2, py + 1, tile - 4, 2), edge_main)
+            pyray.draw_rectangle_rec(pyray.Rectangle(px + 4, py + 3, tile - 8, 1), edge_soft)
+        if s_open:
+            pyray.draw_rectangle_rec(pyray.Rectangle(px + 2, py + tile - 3, tile - 4, 2), edge_main)
+        if w_open:
+            pyray.draw_rectangle_rec(pyray.Rectangle(px + 1, py + 2, 2, tile - 4), edge_main)
+        if e_open:
+            pyray.draw_rectangle_rec(pyray.Rectangle(px + tile - 3, py + 2, 2, tile - 4), edge_main)

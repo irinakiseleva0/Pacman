@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from utils.storage_paths import PROFILE_FILE
+from utils.storage_paths import LEGACY_PROFILE_FILE, PROFILE_FILE, atomic_write_json, migrate_legacy_file
 
 
 DEFAULT_PROFILE = {
@@ -56,6 +56,7 @@ DEFAULT_PROFILE = {
 
 
 def load_profile() -> dict:
+    migrate_legacy_file(PROFILE_FILE, LEGACY_PROFILE_FILE)
     try:
         with PROFILE_FILE.open("r", encoding="utf-8") as file:
             raw = json.load(file)
@@ -112,6 +113,4 @@ def load_profile() -> dict:
 
 
 def save_profile(profile: dict) -> None:
-    PROFILE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with PROFILE_FILE.open("w", encoding="utf-8") as file:
-        json.dump(profile, file, ensure_ascii=False, indent=2)
+    atomic_write_json(PROFILE_FILE, profile)

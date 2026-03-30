@@ -36,10 +36,10 @@ class Menu(Scene):
         cx = cfg.window_width // 2
         self.desktop_layout = cfg.layout_name == "desktop"
         if self.desktop_layout:
-            panel_width = min(286, cfg.window_width - 148)
-            panel_height = min(720, cfg.window_height - 156)
-            panel_x = cfg.window_width - panel_width - 52
-            panel_y = max(52, int((cfg.window_height - panel_height) / 2))
+            panel_width = min(340, cfg.window_width - 140)
+            panel_height = min(650, cfg.window_height - 170)
+            panel_x = cfg.window_width - panel_width - 56
+            panel_y = max(62, int((cfg.window_height - panel_height) / 2))
         else:
             panel_width = min(760, cfg.window_width - 220)
             panel_height = cfg.window_height - 100
@@ -205,40 +205,32 @@ class Menu(Scene):
         draw_panel(main_panel)
 
         title_center_x = int(cfg.window_width * 0.24)
-        title_y = int(cfg.window_height * 0.19)
+        title_y = int(cfg.window_height * 0.18)
         draw_cinematic_title_stack(
             title_center_x,
             title_y,
             "PAC-MAN",
             "NEON DISTRICT",
-            "ARCADE PROTOCOL V2.0",
+            "SYSTEM ONLINE • VER 2.047",
             self.ctx.visual_time,
             variant=self.ctx.title_variant_name(),
         )
         draw_text_centered(
-            self.ctx.mode_label().upper(),
+            "Navigate the neon-soaked corridors of the digital underworld.",
             title_center_x,
-            title_y + 144,
+            title_y + 174,
             16,
-            PANEL_ACCENT,
+            TEXT_DIM,
         )
 
         if not self.ctx.capture_mode_enabled():
-            reward_card = pyray.Rectangle(int(cfg.window_width * 0.08), int(cfg.window_height * 0.74), 252, 90)
-            goal_card = pyray.Rectangle(int(cfg.window_width * 0.08) + 270, int(cfg.window_height * 0.74), 336, 90)
+            status_card = pyray.Rectangle(int(main_panel.x), int(main_panel.y + main_panel.height + 18), int(main_panel.width), 80)
             draw_street_terminal(
-                reward_card,
-                "REWARDS",
-                f"{self.ctx.challenge_reward_count()} TROPHIES",
+                status_card,
+                "PROFILE",
+                self.ctx.rank_title().upper(),
                 LIVE_GOLD,
-                subline=self.ctx.reward_progress_lines()[0].upper(),
-            )
-            draw_street_terminal(
-                goal_card,
-                "NEXT GOAL",
-                self.ctx.next_unlock_spotlight_lines()[0].upper(),
-                PANEL_ACCENT,
-                subline=self.ctx.next_unlock_spotlight_lines()[1].upper(),
+                subline=f"HIGH SCORE {self.ctx.high_score}",
             )
 
         draw_text_centered("DISPLAY", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 18), 14, TEXT_DIM)

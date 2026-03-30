@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import core.raylib_api as pyray
 from raylib import colors
 
@@ -76,8 +78,9 @@ class Cherry(Cell):
         base_y = cfg.board_offset_y + self.y * cfg.tile_size
         px = base_x + cfg.tile_size // 2
         py = base_y + cfg.tile_size // 2
-        pulse = 0.5 + 0.5 * __import__("math").sin(getattr(self.ctx, "visual_time", 0.0) * 5.5 + self.x * 0.6)
-        pyray.draw_circle(px, py, cfg.tile_size // 2 - 1 + pulse * 4, with_alpha(colors.RED, 34))
+        pulse = 0.5 + 0.5 * math.sin(getattr(self.ctx, "visual_time", 0.0) * 5.5 + self.x * 0.6)
+        pyray.draw_circle(px, py, cfg.tile_size // 2 + 4 + pulse * 3, with_alpha(colors.RED, 14))
+        pyray.draw_circle(px, py, cfg.tile_size // 2 - 1 + pulse * 4, with_alpha(colors.RED, 28))
         pyray.draw_texture_ex(
             self.image,
             (base_x, base_y),

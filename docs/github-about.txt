@@ -1,0 +1,13 @@
+Description
+Cyberpunk Pac-Man is a neon-styled arcade maze-chase game built with Python and raylib, featuring multiple modes, progression, unlockables, and a cinematic UI shell.
+
+Topics
+python
+raylib
+pacman
+game-dev
+arcade
+cyberpunk
+indie-game
+ui-design
+portfolio-project

@@ -69,18 +69,33 @@ def draw_hud(game_scene) -> None:
         return
 
     cfg = game_scene.ctx.cfg
-    hud_rect = pyray.Rectangle(cfg.hud_x, cfg.hud_y, cfg.hud_width, cfg.hud_height)
+    compact_height = 408
+    if cfg.layout_name == "mobile":
+        compact_height = cfg.hud_height
+    elif game_scene.ctx.game_mode == "Time Attack":
+        compact_height = 430
+    elif getattr(game_scene.ctx.pacman, "rage", False) or game_scene.ctx.power_chain_window > 0:
+        compact_height = 438
+
+    panel_height = min(cfg.hud_height, compact_height)
+    ambient_rect = pyray.Rectangle(cfg.hud_x, cfg.hud_y, cfg.hud_width, panel_height)
+    hud_rect = pyray.Rectangle(cfg.hud_x + 16, cfg.hud_y + 14, cfg.hud_width - 24, panel_height - 28)
     draw_live_panel_accent(hud_rect, game_scene.visual_time)
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(ambient_rect.x - 10, ambient_rect.y, 2, ambient_rect.height),
+        with_alpha(PANEL_ACCENT, 38),
+    )
     draw_panel(hud_rect)
+    _draw_hud_terminal_backdrop(game_scene, hud_rect)
 
     if cfg.hud_mode == "side":
         pyray.draw_rectangle_rec(
-            pyray.Rectangle(cfg.hud_x - 4, 0, 2, cfg.window_height),
-            with_alpha(PANEL_ACCENT, 110),
+            pyray.Rectangle(cfg.hud_x - 2, hud_rect.y - 10, 2, hud_rect.height + 20),
+            with_alpha(PANEL_ACCENT, 56),
         )
         pyray.draw_rectangle_rec(
-            pyray.Rectangle(cfg.hud_x - 12, 0, 1, cfg.window_height),
-            with_alpha(game_scene.ctx.effect_palette()["ghost"], 44),
+            pyray.Rectangle(cfg.hud_x - 10, hud_rect.y - 10, 1, hud_rect.height + 20),
+            with_alpha(game_scene.ctx.effect_palette()["ghost"], 24),
         )
     else:
         pyray.draw_rectangle_rec(
@@ -88,9 +103,9 @@ def draw_hud(game_scene) -> None:
             PANEL_ACCENT,
         )
 
-    hud_x = cfg.hud_x + 18
-    hud_y = 42 if cfg.hud_mode == "side" else cfg.hud_y + 42
-    hud_width = cfg.hud_width - 36
+    hud_x = int(hud_rect.x + 14)
+    hud_y = int(hud_rect.y + 36) if cfg.hud_mode == "side" else int(hud_rect.y + 38)
+    hud_width = int(hud_rect.width - 28)
     hud_columns = cfg.hud_columns
 
     if cfg.layout_name == "mobile":
@@ -107,13 +122,65 @@ def draw_hud(game_scene) -> None:
         x=hud_x,
         y=hud_y,
         width=hud_width,
-        height=cfg.hud_height - 56,
-        font_size=cfg.hud_font_size,
-        line_height=cfg.hud_line_height,
+        height=max(120, int(hud_rect.height - (hud_y - hud_rect.y) - 18)),
+        font_size=max(18, cfg.hud_font_size - 3),
+        line_height=max(24, cfg.hud_line_height - 6),
         columns=hud_columns,
     )
 
     draw_mobile_controls(game_scene.ctx)
+
+
+def _draw_hud_terminal_backdrop(game_scene, hud_rect) -> None:
+    lower_zone = pyray.Rectangle(
+        hud_rect.x + 14,
+        hud_rect.y + hud_rect.height * 0.56,
+        hud_rect.width - 28,
+        hud_rect.height * 0.32,
+    )
+    if lower_zone.height <= 0:
+        return
+
+    pulse = 0.5 + 0.5 * math.sin(game_scene.visual_time * 2.4)
+    accent = game_scene.ctx.effect_palette()["ghost"]
+
+    pyray.draw_rectangle_rec(
+        lower_zone,
+        with_alpha((10, 14, 28, 255), 108),
+    )
+    pyray.draw_rectangle_lines_ex(
+        lower_zone,
+        1,
+        with_alpha(PANEL_ACCENT, 24),
+    )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(lower_zone.x, lower_zone.y, lower_zone.width, max(0, lower_zone.height * 0.24)),
+        with_alpha(colors.WHITE, 5),
+    )
+
+    line_count = 6
+    line_gap = lower_zone.height / (line_count + 1)
+    for index in range(line_count):
+        y = lower_zone.y + (index + 1) * line_gap
+        width = lower_zone.width * (0.82 - index * 0.08)
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(lower_zone.x + 16, y, width, 1),
+            with_alpha(PANEL_ACCENT, 20 if index < 2 else 14),
+        )
+
+    for index in range(4):
+        x = lower_zone.x + lower_zone.width * (0.58 + index * 0.09)
+        height = 24 + index * 10
+        y = lower_zone.y + lower_zone.height - height - 18
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(x, y, 10 + index * 2, height),
+            with_alpha(accent if index % 2 else PANEL_ACCENT, int(18 + pulse * 16)),
+        )
+
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(lower_zone.x + 12, lower_zone.y + lower_zone.height - 18, lower_zone.width - 24, 1),
+        with_alpha(LIVE_PINK, 20),
+    )
 
 
 def draw_live_feedback(game_scene) -> None:
@@ -208,15 +275,6 @@ def draw_live_feedback(game_scene) -> None:
         draw_glass_card(panel, accent_color=colors.WHITE, glow_alpha=int(10 + alert_pulse * 12), fill_alpha=146)
         draw_text_centered("NEAR MISS", center_x, int(panel.y + 10), 15, colors.WHITE)
         draw_text_centered("ghost almost clipped your line", center_x, int(panel.y + 27), 11, palette["ghost"])
-
-    release_status = game_map.ghost_release_status()
-    if release_status is not None and not rage_active:
-        pending, total = release_status
-        width = 188
-        panel = pyray.Rectangle(24, 24, width, 46)
-        draw_glass_card(panel, accent_color=PANEL_ACCENT, glow_alpha=10, fill_alpha=138)
-        draw_text_centered("DEPLOYING", int(panel.x + panel.width / 2), int(panel.y + 10), 14, colors.WHITE)
-        draw_text_centered(f"{pending}/{total} GHOSTS", int(panel.x + panel.width / 2), int(panel.y + 28), 12, TEXT_DIM)
 
 
 def draw_pressure_overlay(game_scene, board_rect) -> None:

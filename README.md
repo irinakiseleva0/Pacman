@@ -145,7 +145,6 @@ python main.py
 assets/      textures and runtime-loaded art
 core/        context, progression, scene base classes, raylib wrapper
 data/config/ JSON-backed runtime, difficulty, and layout tuning
-data/saves/  generated local profile / score save files
 entities/    pacman, ghosts, pellets, cherry, walls, teleports
 maps/        map definitions and board loading
 scenes/      menu flow, gameplay scene, pause/result, meta screens
@@ -158,10 +157,12 @@ main.py      app entry point and scene loop
 
 Generated runtime files:
 
-- `data/saves/profile.json`
-- `data/saves/scores.json`
+- `%AppData%/Cyberpunk Pac-Man/saves/profile.json` on Windows
+- `~/.local/share/Cyberpunk Pac-Man/saves/profile.json` on Linux
+- `%AppData%/Cyberpunk Pac-Man/saves/scores.json` on Windows
+- `~/.local/share/Cyberpunk Pac-Man/saves/scores.json` on Linux
 
-These files are local runtime state and are ignored by git.
+Save files are stored in the user data directory, not in the repository. Writes use an atomic `tmp -> replace` flow, and older `data/saves/` files are migrated automatically when found.
 
 ## Repository Notes
 

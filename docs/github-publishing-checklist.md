@@ -9,7 +9,6 @@ Make sure the default branch reflects the current cleaned structure:
 - `scenes/` is present and used by `main.py`
 - `core/raylib_api.py` is the active raylib wrapper
 - `data/config/` exists
-- `data/saves/.gitkeep` exists
 - no runtime JSON files live in the repository root
 - no legacy `src/` directory remains
 
@@ -31,6 +30,10 @@ Recommended GitHub repository description:
 Shorter variant:
 
 `A cyberpunk Pac-Man reinterpretation built with Python and raylib, with multiple modes, progression, unlockables, and a premium neon UI shell.`
+
+Copy-paste version:
+
+See `docs/github-about.txt`
 
 ## 4. Add Topics
 
@@ -103,6 +106,10 @@ Suggested release notes:
 
 This is an active prototype focused on arcade systems, presentation, and progression design.
 ```
+
+Ready-made release draft:
+
+See `docs/release-v0.1.0.md`
 
 ## 8. Add A One-Line Hook Everywhere
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
+import math
 import core.raylib_api as pyray
 from raylib import colors
 from typing import Tuple
@@ -111,10 +112,31 @@ class Ghost(Actor):
             self._draw_returning_home(px, py, tile)
             return
 
-        pulse = 0.5 + 0.5 * __import__("math").sin(time_s * 5.0 + self.x + self.y)
-        glow_radius = tile // 2 + 4 + int(pulse * 3)
-        pyray.draw_circle(px, py, glow_radius, with_alpha(base_color, 34))
-        pyray.draw_circle(px, py, tile // 2 - 2, base_color)
+        pulse = 0.5 + 0.5 * math.sin(time_s * 5.0 + self.x + self.y)
+        body_radius = max(6, tile // 2 - 2)
+        glow_radius = body_radius + 5 + int(pulse * 3)
+
+        pyray.draw_circle(px, py, glow_radius + 8, with_alpha(base_color, 12))
+        pyray.draw_circle(px, py, glow_radius + 2, with_alpha(base_color, 24))
+        pyray.draw_circle(px, py, body_radius, with_alpha(base_color, 228))
+        pyray.draw_circle(px, py - max(1, tile // 10), max(4, body_radius - 4), with_alpha(colors.WHITE, 10))
+
+        # Give ghosts a cleaner, more readable face and lower edge against the dark maze.
+        eye_radius = max(2, tile // 7)
+        pupil_radius = max(1, eye_radius // 2)
+        eye_offset_x = max(3, tile // 6)
+        eye_y = py - max(1, tile // 10)
+        dir_dx = max(-1, min(1, self.last_dx))
+        dir_dy = max(-1, min(1, self.last_dy))
+
+        for eye_x in (px - eye_offset_x, px + eye_offset_x):
+            pyray.draw_circle(eye_x, eye_y, eye_radius, colors.WHITE)
+            pyray.draw_circle(eye_x + dir_dx, eye_y + dir_dy, pupil_radius, colors.BLACK)
+
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(px - body_radius + 3, py + body_radius - 4, max(4, body_radius * 2 - 6), 2),
+            with_alpha(base_color, 88),
+        )
 
     def update_target(self) -> None:
         """Override in subclasses for different AI behaviors"""

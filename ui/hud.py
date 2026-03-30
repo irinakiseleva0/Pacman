@@ -11,29 +11,39 @@ from utils.visual_effects import with_alpha
 
 
 def _card_height(line_count: int, line_height: int) -> int:
-    return 30 + max(1, line_count) * line_height + 18
+    return 28 + max(1, line_count) * line_height + 18
 
 
 def _draw_card(title: str, lines: list[tuple[str, object]], rect, font_size: int, line_height: int, accent_color) -> None:
-    draw_glass_card(rect, accent_color=accent_color, glow_alpha=12, fill_alpha=144)
-    pyray.draw_text(title, int(rect.x + 22), int(rect.y + 10), max(13, font_size - 7), TEXT_DIM)
+    draw_glass_card(rect, accent_color=accent_color, glow_alpha=10, fill_alpha=132)
+    pyray.draw_text(title, int(rect.x + 18), int(rect.y + 8), max(12, font_size - 10), TEXT_DIM)
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(rect.x + 22, rect.y + 28, max(54, rect.width * 0.22), 2),
-        with_alpha(accent_color, 180),
+        pyray.Rectangle(rect.x + 18, rect.y + 24, max(42, rect.width * 0.18), 2),
+        with_alpha(accent_color, 152),
+    )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x + rect.width - 28, rect.y + 12, 10, 2),
+        with_alpha(accent_color, 72),
     )
 
-    content_y = int(rect.y + 42)
+    content_y = int(rect.y + 38)
     for text, color in lines:
         label_color = TEXT_DIM if color == colors.WHITE else color
         if ":" in text:
             label, value = text.split(":", 1)
-            label_size = max(14, font_size - 6)
-            value_size = max(18, font_size + (2 if label.lower() in {"score", "time"} else -1))
+            key = label.lower()
+            label_size = max(12, font_size - 9)
+            value_boost = 1
+            if key in {"score", "time", "lives", "level"}:
+                value_boost = 5
+            elif key in {"best", "seeds"}:
+                value_boost = 2
+            value_size = max(16, font_size + value_boost)
             pyray.draw_text(f"{label}:", int(rect.x + 22), content_y + 1, label_size, label_color)
             label_width = pyray.measure_text(f"{label}:", label_size)
             pyray.draw_text(value.strip(), int(rect.x + 22 + label_width + 10), content_y - 1, value_size, color)
         else:
-            draw_size = max(16, font_size + 2)
+            draw_size = max(14, font_size + 2)
             pyray.draw_text(text, int(rect.x + 22), content_y, draw_size, color)
         content_y += line_height
 
@@ -158,7 +168,7 @@ def draw_game_hud(
             ("DISTRICT", field_lines, LIVE_GOLD),
         ] + ([("LIVE SIGNAL", bonus_lines, LIVE_CYAN)] if bonus_lines else [])
 
-    gap = 14
+    gap = 10
     if max(1, columns) > 1 and len(sections) >= 2:
         top_width = max(1, int((width - gap) / 2))
         first_height = _card_height(len(sections[0][1]), line_height)

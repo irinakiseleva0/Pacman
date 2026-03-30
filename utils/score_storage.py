@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 
-from utils.storage_paths import SCORE_FILE
+from utils.storage_paths import LEGACY_SCORE_FILE, SCORE_FILE, atomic_write_json, migrate_legacy_file
 
 
 def load_high_score() -> int:
+    migrate_legacy_file(SCORE_FILE, LEGACY_SCORE_FILE)
     if not SCORE_FILE.exists():
         return 0
 
@@ -19,7 +20,4 @@ def load_high_score() -> int:
 
 def save_high_score(score: int) -> None:
     data = {"high_score": score}
-    SCORE_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(SCORE_FILE, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=2)
+    atomic_write_json(SCORE_FILE, data)

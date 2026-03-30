@@ -8,10 +8,10 @@ from raylib import colors
 from utils.visual_effects import with_alpha
 
 
-BG_TOP = (34, 20, 72, 255)
-BG_BOTTOM = (8, 7, 20, 255)
-PANEL_OUTER = (28, 18, 58, 235)
-PANEL_INNER = (16, 14, 38, 220)
+BG_TOP = (22, 16, 52, 255)
+BG_BOTTOM = (4, 5, 16, 255)
+PANEL_OUTER = (22, 16, 44, 235)
+PANEL_INNER = (10, 12, 28, 224)
 PANEL_ACCENT = (102, 232, 255, 255)
 TEXT_DIM = (214, 220, 255, 255)
 BUTTON_IDLE = (52, 36, 98, 255)
@@ -21,8 +21,8 @@ LIVE_CYAN = (112, 242, 255, 255)
 LIVE_PINK = (255, 86, 212, 255)
 LIVE_GOLD = (255, 208, 92, 255)
 PANEL_PINK = (255, 86, 212, 255)
-NOIR_BLUE = (6, 8, 26, 255)
-STREET_BLUE = (14, 20, 48, 255)
+NOIR_BLUE = (4, 6, 18, 255)
+STREET_BLUE = (10, 16, 38, 255)
 GLASS_EDGE = (186, 236, 255, 255)
 PRESENTATION_MODE = False
 THEME_PRESETS = {
@@ -61,6 +61,33 @@ THEME_PRESETS = {
         "BG_TOP": (54, 14, 54, 255),
         "NOIR_BLUE": (18, 6, 22, 255),
         "STREET_BLUE": (28, 10, 32, 255),
+    },
+    "Cool Summer": {
+        "PANEL_ACCENT": (120, 220, 255, 255),
+        "LIVE_CYAN": (132, 238, 255, 255),
+        "LIVE_PINK": (152, 122, 255, 255),
+        "LIVE_GOLD": (220, 245, 255, 255),
+        "BG_TOP": (18, 30, 70, 255),
+        "NOIR_BLUE": (6, 12, 28, 255),
+        "STREET_BLUE": (12, 24, 46, 255),
+    },
+    "Solar Pulse": {
+        "PANEL_ACCENT": (255, 214, 94, 255),
+        "LIVE_CYAN": (255, 198, 88, 255),
+        "LIVE_PINK": (255, 132, 56, 255),
+        "LIVE_GOLD": (255, 236, 148, 255),
+        "BG_TOP": (54, 28, 14, 255),
+        "NOIR_BLUE": (18, 10, 10, 255),
+        "STREET_BLUE": (34, 22, 16, 255),
+    },
+    "Ultraviolet": {
+        "PANEL_ACCENT": (196, 138, 255, 255),
+        "LIVE_CYAN": (132, 166, 255, 255),
+        "LIVE_PINK": (212, 88, 255, 255),
+        "LIVE_GOLD": (236, 196, 255, 255),
+        "BG_TOP": (34, 12, 62, 255),
+        "NOIR_BLUE": (12, 6, 28, 255),
+        "STREET_BLUE": (22, 12, 38, 255),
     },
     "Grid Echo": {
         "PANEL_ACCENT": (130, 232, 255, 255),
@@ -138,25 +165,25 @@ def draw_button(rect, text: str, focused: bool = False) -> None:
     hovered = pyray.check_collision_point_rec(mouse, rect)
     outer_glow = LIVE_CYAN if focused else LIVE_PINK if hovered else PANEL_ACCENT
     fill_color = (
-        with_alpha((34, 28, 70, 255), 182) if hovered
-        else with_alpha((28, 24, 60, 255), 196) if focused
-        else with_alpha((20, 20, 44, 255), 168)
+        with_alpha((18, 28, 50, 255), 172) if hovered
+        else with_alpha((16, 24, 44, 255), 188) if focused
+        else with_alpha((10, 14, 28, 255), 156)
     )
-    border_color = with_alpha(LIVE_CYAN, 160) if focused else with_alpha(GLASS_EDGE, 92)
+    border_color = with_alpha(LIVE_CYAN, 144) if focused else with_alpha(GLASS_EDGE, 58)
 
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(rect.x - 10, rect.y - 10, rect.width + 20, rect.height + 20),
-        with_alpha(outer_glow, 24 if hovered or focused else 12),
+        pyray.Rectangle(rect.x - 8, rect.y - 8, rect.width + 16, rect.height + 16),
+        with_alpha(outer_glow, 16 if hovered or focused else 8),
     )
     pyray.draw_rectangle_rec(rect, fill_color)
     pyray.draw_rectangle_lines_ex(rect, 1, border_color)
     pyray.draw_rectangle_rec(
         pyray.Rectangle(rect.x + 2, rect.y + 2, max(0, rect.width - 4), max(0, rect.height * 0.34)),
-        with_alpha(colors.WHITE, 12),
+        with_alpha(colors.WHITE, 8),
     )
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(rect.x + 16, rect.y + rect.height - 5, max(0, rect.width - 32), 1),
-        with_alpha(LIVE_CYAN if focused else PANEL_ACCENT, 110 if hovered or focused else 38),
+        pyray.Rectangle(rect.x + 14, rect.y + rect.height - 5, max(0, rect.width - 28), 1),
+        with_alpha(LIVE_CYAN if focused else PANEL_ACCENT, 84 if hovered or focused else 24),
     )
 
     font_size = max(18, min(26, int(rect.height * 0.42)))
@@ -234,6 +261,14 @@ def draw_glass_card(rect, accent_color=LIVE_CYAN, *, glow_alpha: int = 18, fill_
     pyray.draw_rectangle_rec(
         pyray.Rectangle(rect.x + 12, rect.y + 12, 3, max(0, rect.height - 24)),
         with_alpha(accent_color, 110),
+    )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x + rect.width - 34, rect.y + 12, 22, 2),
+        with_alpha(accent_color, 82),
+    )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x + rect.width - 12, rect.y + 12, 2, 18),
+        with_alpha(accent_color, 82),
     )
 
 
@@ -467,19 +502,20 @@ def draw_cinematic_menu_background(width: int, height: int, time_s: float = 0.0)
     pyray.draw_rectangle_rec(pyray.Rectangle(0, 0, width, height), NOIR_BLUE)
     pyray.draw_rectangle_rec(
         pyray.Rectangle(0, 0, width, int(height * 0.66)),
-        with_alpha((40, 32, 90, 255), 150),
+        with_alpha((18, 20, 42, 255), 168),
     )
     pyray.draw_rectangle_rec(
         pyray.Rectangle(0, int(height * 0.38), width, int(height * 0.62)),
-        with_alpha(STREET_BLUE, 210),
+        with_alpha(STREET_BLUE, 228),
     )
 
     pulse = 0.5 + 0.5 * math.sin(time_s * 1.8)
-    cyan_alpha = int(34 + pulse * 38)
-    pink_alpha = int(28 + pulse * 34)
+    cyan_alpha = int(18 + pulse * 20)
+    pink_alpha = int(14 + pulse * 18)
 
-    pyray.draw_circle(int(width * 0.22), int(height * 0.24), 180, with_alpha(LIVE_CYAN, 8))
-    pyray.draw_circle(int(width * 0.34), int(height * 0.18), 150, with_alpha(LIVE_PINK, 7))
+    pyray.draw_circle(int(width * 0.28), int(height * 0.26), 220, with_alpha(LIVE_CYAN, 7))
+    pyray.draw_circle(int(width * 0.36), int(height * 0.22), 160, with_alpha(LIVE_PINK, 5))
+    pyray.draw_circle(int(width * 0.76), int(height * 0.24), 140, with_alpha(LIVE_CYAN, 4))
 
     horizon = int(height * 0.56)
     building_x = int(width * 0.52)
@@ -509,23 +545,11 @@ def draw_cinematic_menu_background(width: int, height: int, time_s: float = 0.0)
         building_x += b_width - 8
         index += 1
 
-    left_block = pyray.Rectangle(int(width * 0.12), int(height * 0.20), int(width * 0.30), int(height * 0.16))
-    pyray.draw_rectangle_rec(left_block, with_alpha((32, 28, 74, 255), 44))
+    left_mass = pyray.Rectangle(int(width * 0.10), int(height * 0.20), int(width * 0.34), int(height * 0.18))
+    pyray.draw_rectangle_rec(left_mass, with_alpha((18, 18, 34, 255), 36))
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(left_block.x + 22, left_block.y + 26, left_block.width - 44, 24),
-        with_alpha(colors.WHITE, 4),
-    )
-    pyray.draw_rectangle_rec(
-        pyray.Rectangle(int(width * 0.16), int(height * 0.45), int(width * 0.07), int(height * 0.15)),
-        with_alpha((18, 18, 38, 255), 118),
-    )
-    pyray.draw_rectangle_rec(
-        pyray.Rectangle(int(width * 0.24), int(height * 0.40), int(width * 0.06), int(height * 0.20)),
-        with_alpha((16, 16, 34, 255), 128),
-    )
-    pyray.draw_rectangle_rec(
-        pyray.Rectangle(int(width * 0.31), int(height * 0.42), int(width * 0.04), int(height * 0.14)),
-        with_alpha((14, 14, 30, 255), 110),
+        pyray.Rectangle(left_mass.x + 30, left_mass.y + 30, left_mass.width - 60, 20),
+        with_alpha(colors.WHITE, 3),
     )
 
     street_top = int(height * 0.69)
@@ -547,7 +571,7 @@ def draw_cinematic_menu_background(width: int, height: int, time_s: float = 0.0)
         pyray.draw_rectangle_rec(
             pyray.Rectangle(int(width * 0.05), ry, int(width * 0.72), 2),
             with_alpha(colors.WHITE, alpha),
-        )
+    )
     for index in range(18):
         rx = int(width * 0.09) + index * 46
         reflection_height = 34 + (index % 5) * 22
@@ -564,6 +588,10 @@ def draw_cinematic_menu_background(width: int, height: int, time_s: float = 0.0)
             pyray.Rectangle(stripe_x, stripe_y, stripe_w, 10),
             with_alpha(colors.WHITE, 34),
         )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(0, street_top - 36, width, 28),
+        with_alpha(LIVE_CYAN, 6),
+    )
 
     road_end = int(width * 0.83)
     pyray.draw_rectangle_rec(
@@ -638,53 +666,107 @@ def draw_live_game_background(width: int, height: int, time_s: float) -> None:
 
     pyray.draw_rectangle_rec(
         pyray.Rectangle(0, 0, width, int(height * 0.54)),
-        with_alpha(BG_TOP, 156),
+        with_alpha(BG_TOP, 172),
     )
     pyray.draw_rectangle_rec(
         pyray.Rectangle(0, int(height * 0.54), width, int(height * 0.46)),
-        with_alpha(STREET_BLUE, 214),
+        with_alpha(STREET_BLUE, 226),
     )
 
     haze_specs = (
-        (int(width * 0.18), int(height * 0.22), 140, LIVE_CYAN, 8),
-        (int(width * 0.34), int(height * 0.16), 120, LIVE_PINK, 7),
-        (int(width * 0.82), int(height * 0.28), 110, LIVE_CYAN, 6),
+        (int(width * 0.16), int(height * 0.22), 170, LIVE_CYAN, 7),
+        (int(width * 0.32), int(height * 0.18), 136, LIVE_PINK, 6),
+        (int(width * 0.78), int(height * 0.26), 150, LIVE_CYAN, 5),
+        (int(width * 0.64), int(height * 0.34), 110, LIVE_PINK, 4),
     )
     for cx, cy, radius, color, alpha in haze_specs:
         pyray.draw_circle(cx, cy, radius, with_alpha(color, alpha))
 
-    sign_x = int(width * 0.78)
-    sign_y = int(height * 0.08)
-    for index in range(3):
-        offset = index * 28
+    sign_x = int(width * 0.73)
+    sign_y = int(height * 0.14)
+    for index in range(4):
+        offset = index * 36
         pyray.draw_rectangle_rec(
-            pyray.Rectangle(sign_x + offset, sign_y + index * 12, 16, int(height * 0.84)),
-            with_alpha(LIVE_CYAN if index != 1 else LIVE_PINK, 18 if index != 1 else 14),
+            pyray.Rectangle(sign_x + offset, sign_y + index * 24, 12, int(height * 0.42) - index * 18),
+            with_alpha(LIVE_CYAN if index % 2 == 0 else LIVE_PINK, 12 if index % 2 == 0 else 9),
+        )
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(sign_x + offset - 18, sign_y + 18 + index * 18, 46, 14),
+            with_alpha(LIVE_CYAN if index % 2 == 0 else LIVE_PINK, 10),
+        )
+
+    skyline_base = int(height * 0.42)
+    building_specs = (
+        (0.12, 0.18, 0.12, 0.30),
+        (0.22, 0.11, 0.09, 0.37),
+        (0.30, 0.20, 0.08, 0.28),
+        (0.71, 0.16, 0.06, 0.32),
+        (0.79, 0.12, 0.08, 0.36),
+        (0.88, 0.18, 0.05, 0.26),
+    )
+    for xr, wr, hr, top_offset in building_specs:
+        bx = int(width * xr)
+        bw = int(width * wr)
+        bh = int(height * hr)
+        top = skyline_base - int(height * top_offset)
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(bx, top, bw, bh),
+            with_alpha((10, 10, 24, 255), 170),
+        )
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(bx + 8, top + 20, max(12, bw - 16), max(18, bh - 34)),
+            with_alpha((14, 14, 34, 255), 82),
         )
 
     for index in range(10):
         y = int((index * 54 + time_s * 40) % (height + 40)) - 40
         pyray.draw_rectangle_rec(
             pyray.Rectangle(0, y, width, 2),
-            with_alpha(colors.WHITE, 12),
+            with_alpha(colors.WHITE, 8),
         )
 
-    street_top = int(height * 0.70)
+    street_top = int(height * 0.68)
     pyray.draw_rectangle_rec(
         pyray.Rectangle(0, street_top, width, height - street_top),
-        with_alpha((6, 12, 24, 255), 220),
+        with_alpha((6, 10, 22, 255), 236),
     )
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(0, street_top - 10, width, 2),
-        with_alpha(LIVE_CYAN, 34),
+        pyray.Rectangle(0, street_top - 12, width, 2),
+        with_alpha(LIVE_CYAN, 22),
     )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(0, street_top - 2, width, 1),
+        with_alpha(colors.WHITE, 18),
+    )
+    for index in range(11):
+        ry = street_top + 22 + index * 22
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(int(width * 0.04), ry, int(width * 0.74), 2),
+            with_alpha(colors.WHITE, max(6, 20 - index)),
+        )
+    for index in range(18):
+        rx = int(width * 0.07) + index * max(38, width // 28)
+        glow_h = 30 + (index % 5) * 20
+        glow_w = 2 if index % 3 else 3
+        glow_color = LIVE_CYAN if index % 2 == 0 else LIVE_PINK
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(rx, street_top + 8, glow_w, glow_h),
+            with_alpha(glow_color, 20 if index % 3 else 28),
+        )
+    for index in range(5):
+        sx = int(width * 0.58) + index * 44
+        sy = street_top + 58 + index * 15
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(sx, sy, 62 - index * 5, 8),
+            with_alpha(colors.WHITE, 22),
+        )
     for index in range(12):
         rx = int(width * 0.06) + index * max(48, width // 22)
         r_height = 44 + (index % 4) * 18
         r_color = LIVE_PINK if index % 3 == 0 else LIVE_CYAN
         pyray.draw_rectangle_rec(
             pyray.Rectangle(rx, street_top + 6, 3, r_height),
-            with_alpha(r_color, 18),
+            with_alpha(r_color, 10),
         )
 
     _draw_theme_background_overlays(width, height, time_s, live_mode=True)
@@ -692,28 +774,37 @@ def draw_live_game_background(width: int, height: int, time_s: float) -> None:
 
 def draw_live_board_backdrop(rect, time_s: float) -> None:
     pulse = 0.5 + 0.5 * math.sin(time_s * 2.4)
-    glow_alpha = int(18 + pulse * 18)
+    glow_alpha = int(12 + pulse * 14)
+    outer = pyray.Rectangle(rect.x - 22, rect.y - 20, rect.width + 44, rect.height + 40)
+    inner = pyray.Rectangle(rect.x - 8, rect.y - 8, rect.width + 16, rect.height + 16)
+    stage = pyray.Rectangle(rect.x - 2, rect.y - 2, rect.width + 4, rect.height + 4)
 
+    pyray.draw_rectangle_rec(outer, with_alpha(LIVE_CYAN, 7))
+    pyray.draw_rectangle_rec(inner, with_alpha(LIVE_PINK, 6))
+    pyray.draw_rectangle_rec(stage, with_alpha((4, 6, 18, 255), 255))
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(rect.x - 18, rect.y - 18, rect.width + 36, rect.height + 36),
-        with_alpha(LIVE_CYAN, 10),
+        pyray.Rectangle(rect.x - 10, rect.y + rect.height + 8, rect.width + 20, 26),
+        with_alpha(LIVE_CYAN, 8),
+    )
+    pyray.draw_rectangle_lines_ex(stage, 1, with_alpha(GLASS_EDGE, 44))
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x + 10, rect.y - 4, rect.width - 20, 2),
+        with_alpha(LIVE_CYAN, 42 + glow_alpha),
     )
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(rect.x - 10, rect.y - 10, rect.width + 20, rect.height + 20),
-        with_alpha(LIVE_PINK, 8),
+        pyray.Rectangle(rect.x + 16, rect.y + rect.height + 4, rect.width - 32, 2),
+        with_alpha(LIVE_PINK, 28 + glow_alpha),
     )
-    pyray.draw_rectangle_rec(rect, (3, 4, 12, 255))
-    pyray.draw_rectangle_lines_ex(rect, 1, with_alpha(GLASS_EDGE, 72))
-    pyray.draw_rectangle_rec(
-        pyray.Rectangle(rect.x - 2, rect.y - 2, rect.width + 4, 2),
-        with_alpha(LIVE_CYAN, 54 + glow_alpha),
-    )
-    pyray.draw_rectangle_rec(
-        pyray.Rectangle(rect.x - 2, rect.y + rect.height, rect.width + 4, 2),
-        with_alpha(LIVE_PINK, 36 + glow_alpha),
-    )
+    # Keep only a very subtle internal structure so the board reads as premium stage lighting,
+    # not as a prototype technical grid.
+    for index in range(2):
+        ry = rect.y + int(rect.height * (0.32 + index * 0.28))
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(rect.x + 28, ry, rect.width - 56, 1),
+            with_alpha(colors.WHITE, 3),
+        )
 
-    corner_radius = 28
+    corner_radius = 20
     corners = (
         (rect.x + 8, rect.y + 8, LIVE_CYAN),
         (rect.x + rect.width - 8, rect.y + 8, LIVE_PINK),
@@ -721,8 +812,8 @@ def draw_live_board_backdrop(rect, time_s: float) -> None:
         (rect.x + rect.width - 8, rect.y + rect.height - 8, LIVE_GOLD),
     )
     for cx, cy, color in corners:
-        pyray.draw_circle(int(cx), int(cy), corner_radius, with_alpha(color, 28))
-        pyray.draw_circle(int(cx), int(cy), 8, with_alpha(color, 120))
+        pyray.draw_circle(int(cx), int(cy), corner_radius, with_alpha(color, 16))
+        pyray.draw_circle(int(cx), int(cy), 6, with_alpha(color, 104))
 
     theme_name = _current_theme_name()
     if theme_name == "Amber Rain":
@@ -747,15 +838,23 @@ def draw_live_board_backdrop(rect, time_s: float) -> None:
 
 def draw_live_panel_accent(rect, time_s: float) -> None:
     pulse = 0.5 + 0.5 * math.sin(time_s * 3.0)
-    alpha = int(18 + pulse * 18)
-    bar_height = 5
+    alpha = int(14 + pulse * 12)
+    bar_height = 3
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(rect.x + 14, rect.y + 14, rect.width - 28, bar_height),
+        pyray.Rectangle(rect.x + 18, rect.y + 16, rect.width - 36, bar_height),
         with_alpha(LIVE_CYAN, alpha),
     )
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(rect.x + 14, rect.y + 24, int((rect.width - 28) * 0.54), 2),
-        with_alpha(LIVE_PINK, 58),
+        pyray.Rectangle(rect.x + 18, rect.y + 24, int((rect.width - 36) * 0.44), 1),
+        with_alpha(LIVE_PINK, 46),
+    )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x + rect.width - 32, rect.y + 16, 14, 2),
+        with_alpha(LIVE_CYAN, 52),
+    )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x + rect.width - 18, rect.y + 16, 2, 14),
+        with_alpha(LIVE_CYAN, 52),
     )
 
 
@@ -832,8 +931,8 @@ def draw_shadowed_text_centered(
 
 def draw_cinematic_title_stack(center_x: int, y: int, title: str, subtitle: str, kicker: str, time_s: float = 0.0, *, variant: str = "Standard") -> None:
     pulse = 0.5 + 0.5 * math.sin(time_s * 1.7)
-    title_size = 68
-    glow_w = max(280, pyray.measure_text(title, title_size) + 56)
+    title_size = 82
+    glow_w = max(360, pyray.measure_text(title, title_size) + 72)
 
     line_color = LIVE_CYAN
     subtitle_color = with_alpha(LIVE_PINK, 220)
@@ -868,17 +967,17 @@ def draw_cinematic_title_stack(center_x: int, y: int, title: str, subtitle: str,
             with_alpha(colors.WHITE, 48),
         )
 
-    pyray.draw_circle(center_x - 76, y + 20, 68, with_alpha(LIVE_CYAN, 5))
-    pyray.draw_circle(center_x + 48, y + 10, 58, with_alpha(LIVE_PINK, 4))
+    pyray.draw_circle(center_x - 96, y + 28, 110, with_alpha(LIVE_CYAN, 6))
+    pyray.draw_circle(center_x + 62, y + 14, 78, with_alpha(LIVE_PINK, 4))
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(center_x - glow_w // 2, y + 76, glow_w, 1),
-        with_alpha(line_color, 68),
+        pyray.Rectangle(center_x - glow_w // 2, y + 94, glow_w, 1),
+        with_alpha(line_color, 60),
     )
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(center_x - glow_w // 2 + 28, y + 79, glow_w - 56, 1),
-        with_alpha(line_color, int(26 + pulse * 14)),
+        pyray.Rectangle(center_x - glow_w // 2 + 28, y + 97, glow_w - 56, 1),
+        with_alpha(line_color, int(18 + pulse * 10)),
     )
 
     draw_shadowed_text_centered(title, center_x, y, title_size, colors.WHITE)
-    draw_text_centered(subtitle, center_x, y + 86, 18, subtitle_color)
-    draw_text_centered(kicker, center_x, y + 112, 13, kicker_color)
+    draw_text_centered(subtitle, center_x, y + 106, 20, subtitle_color)
+    draw_text_centered(kicker, center_x, y + 134, 13, kicker_color)

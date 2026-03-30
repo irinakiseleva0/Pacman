@@ -29,44 +29,172 @@ from core.game_data import (
     ThemePreset,
     TitleVariantPreset,
 )
-from core.state import ProgressionState, RunStats, RuntimeRefs, VisualSystems
+from core.services import ProfileService, ProgressionService, SettingsService
+from core.state import RunState, RunStats, RuntimeRefs, VisualSystems
 from ui.layout import DEFAULT_LAYOUT, LAYOUT_PROFILES
-from utils.profile_storage import PROFILE_FILE, save_profile
-from utils.score_storage import load_high_score
+from utils.profile_storage import PROFILE_FILE
 
 @dataclass
 class GameContext:
     cfg: Config = field(default_factory=Config)
-
-    difficulty: str = "Normal"
-    game_mode: str = "Arcade"
-    challenge_name: str = "One Life District"
-    score: int = 0
-    high_score: int = field(default_factory=load_high_score)
-    lives: int = field(default=3)
-    current_level: int = 1
-    last_result: str = ""
-    should_resume_game: bool = False
-    ghost_mode: str = "chase"
-    ghost_mode_timer: int = 0
-    ghost_combo: int = 0
-    power_chain_level: int = 0
-    power_chain_window: int = 0
-    route_chain_count: int = 0
-    route_chain_window: int = 0
-    pressure_stage: int = 0
-    time_attack_seconds: float = 0.0
-
+    run: RunState = field(default_factory=RunState)
     visual: VisualSystems = field(default_factory=VisualSystems)
     runtime: RuntimeRefs = field(default_factory=RuntimeRefs)
-    progression: ProgressionState = field(default_factory=ProgressionState)
+    profile_service: ProfileService = field(default_factory=ProfileService)
+    progression_service: ProgressionService = field(default_factory=ProgressionService)
+    settings: SettingsService = field(init=False)
 
     def __post_init__(self):
+        self.settings = SettingsService(self.profile_service)
         self.apply_layout(self.cfg.layout_name)
         self.set_capture_mode_enabled(self.capture_mode_enabled(), save=False)
         # Initialize lives from config if not already set
         if self.lives == 3:
             self.lives = self.cfg.initial_lives
+
+    @property
+    def difficulty(self) -> str:
+        return self.run.difficulty
+
+    @difficulty.setter
+    def difficulty(self, value: str) -> None:
+        self.run.difficulty = value
+
+    @property
+    def game_mode(self) -> str:
+        return self.run.game_mode
+
+    @game_mode.setter
+    def game_mode(self, value: str) -> None:
+        self.run.game_mode = value
+
+    @property
+    def challenge_name(self) -> str:
+        return self.run.challenge_name
+
+    @challenge_name.setter
+    def challenge_name(self, value: str) -> None:
+        self.run.challenge_name = value
+
+    @property
+    def score(self) -> int:
+        return self.run.score
+
+    @score.setter
+    def score(self, value: int) -> None:
+        self.run.score = value
+
+    @property
+    def high_score(self) -> int:
+        return self.run.high_score
+
+    @high_score.setter
+    def high_score(self, value: int) -> None:
+        self.run.high_score = value
+
+    @property
+    def lives(self) -> int:
+        return self.run.lives
+
+    @lives.setter
+    def lives(self, value: int) -> None:
+        self.run.lives = value
+
+    @property
+    def current_level(self) -> int:
+        return self.run.current_level
+
+    @current_level.setter
+    def current_level(self, value: int) -> None:
+        self.run.current_level = value
+
+    @property
+    def last_result(self) -> str:
+        return self.run.last_result
+
+    @last_result.setter
+    def last_result(self, value: str) -> None:
+        self.run.last_result = value
+
+    @property
+    def should_resume_game(self) -> bool:
+        return self.run.should_resume_game
+
+    @should_resume_game.setter
+    def should_resume_game(self, value: bool) -> None:
+        self.run.should_resume_game = value
+
+    @property
+    def ghost_mode(self) -> str:
+        return self.run.ghost_mode
+
+    @ghost_mode.setter
+    def ghost_mode(self, value: str) -> None:
+        self.run.ghost_mode = value
+
+    @property
+    def ghost_mode_timer(self) -> int:
+        return self.run.ghost_mode_timer
+
+    @ghost_mode_timer.setter
+    def ghost_mode_timer(self, value: int) -> None:
+        self.run.ghost_mode_timer = value
+
+    @property
+    def ghost_combo(self) -> int:
+        return self.run.ghost_combo
+
+    @ghost_combo.setter
+    def ghost_combo(self, value: int) -> None:
+        self.run.ghost_combo = value
+
+    @property
+    def power_chain_level(self) -> int:
+        return self.run.power_chain_level
+
+    @power_chain_level.setter
+    def power_chain_level(self, value: int) -> None:
+        self.run.power_chain_level = value
+
+    @property
+    def power_chain_window(self) -> int:
+        return self.run.power_chain_window
+
+    @power_chain_window.setter
+    def power_chain_window(self, value: int) -> None:
+        self.run.power_chain_window = value
+
+    @property
+    def route_chain_count(self) -> int:
+        return self.run.route_chain_count
+
+    @route_chain_count.setter
+    def route_chain_count(self, value: int) -> None:
+        self.run.route_chain_count = value
+
+    @property
+    def route_chain_window(self) -> int:
+        return self.run.route_chain_window
+
+    @route_chain_window.setter
+    def route_chain_window(self, value: int) -> None:
+        self.run.route_chain_window = value
+
+    @property
+    def pressure_stage(self) -> int:
+        return self.run.pressure_stage
+
+    @pressure_stage.setter
+    def pressure_stage(self, value: int) -> None:
+        self.run.pressure_stage = value
+
+    @property
+    def time_attack_seconds(self) -> float:
+        return self.run.time_attack_seconds
+
+    @time_attack_seconds.setter
+    def time_attack_seconds(self, value: float) -> None:
+        self.run.time_attack_seconds = value
 
     @property
     def particles(self):
@@ -118,43 +246,43 @@ class GameContext:
 
     @property
     def profile(self) -> dict:
-        return self.progression.profile
+        return self.profile_service.profile
 
     @profile.setter
     def profile(self, value: dict) -> None:
-        self.progression.profile = value
+        self.profile_service.profile = value
 
     @property
     def run_stats(self) -> RunStats:
-        return self.progression.run_stats
+        return self.progression_service.run_stats
 
     @run_stats.setter
     def run_stats(self, value: RunStats) -> None:
-        self.progression.run_stats = value
+        self.progression_service.run_stats = value
 
     @property
     def pre_run_unlock_snapshot(self) -> dict:
-        return self.progression.pre_run_unlock_snapshot
+        return self.progression_service.pre_run_unlock_snapshot
 
     @pre_run_unlock_snapshot.setter
     def pre_run_unlock_snapshot(self, value: dict) -> None:
-        self.progression.pre_run_unlock_snapshot = value
+        self.progression_service.pre_run_unlock_snapshot = value
 
     @property
     def last_unlock_lines(self) -> tuple[str, str, str]:
-        return self.progression.last_unlock_lines
+        return self.progression_service.last_unlock_lines
 
     @last_unlock_lines.setter
     def last_unlock_lines(self, value: tuple[str, str, str]) -> None:
-        self.progression.last_unlock_lines = value
+        self.progression_service.last_unlock_lines = value
 
     @property
     def last_unlocks_are_new(self) -> bool:
-        return self.progression.last_unlocks_are_new
+        return self.progression_service.last_unlocks_are_new
 
     @last_unlocks_are_new.setter
     def last_unlocks_are_new(self, value: bool) -> None:
-        self.progression.last_unlocks_are_new = value
+        self.progression_service.last_unlocks_are_new = value
 
     def apply_layout(self, layout_name: str) -> None:
         profile = LAYOUT_PROFILES[layout_name]
@@ -591,6 +719,12 @@ class GameContext:
             return self.challenge_reward_count() >= 2
         if name == "Velvet Alley":
             return self.profile["best_score"] >= 5000
+        if name == "Cool Summer":
+            return int(self.profile.get("total_levels_cleared", 0)) >= 3
+        if name == "Solar Pulse":
+            return int(self.profile.get("best_score", 0)) >= 4200
+        if name == "Ultraviolet":
+            return self.challenge_reward_count() >= 6
         if name == "Grid Echo":
             return self.mode_mastery_value("Arcade") >= 9
         if name == "After Hours":
@@ -615,6 +749,15 @@ class GameContext:
             if name == "Velvet Alley":
                 remaining = max(0, 5000 - int(self.profile["best_score"]))
                 return f"{name}: score {remaining} more best-score pts"
+            if name == "Cool Summer":
+                remaining = max(0, 3 - int(self.profile.get("total_levels_cleared", 0)))
+                return f"{name}: clear {remaining} more levels"
+            if name == "Solar Pulse":
+                remaining = max(0, 4200 - int(self.profile.get("best_score", 0)))
+                return f"{name}: score {remaining} more best-score pts"
+            if name == "Ultraviolet":
+                remaining = max(0, 6 - self.challenge_reward_count())
+                return f"{name}: earn {remaining} more trophies"
             if name == "Grid Echo":
                 remaining = max(0, 9 - self.mode_mastery_value("Arcade"))
                 return f"{name}: gain {remaining} Arcade mastery"
@@ -663,6 +806,42 @@ class GameContext:
                 "power_flash": colors.VIOLET,
                 "win_flash": colors.MAGENTA,
                 "death_flash": colors.MAROON,
+            }
+        if theme_name == "Cool Summer":
+            return {
+                "dot": colors.SKYBLUE,
+                "power": colors.WHITE,
+                "cherry": (colors.SKYBLUE, colors.BLUE, colors.VIOLET, colors.WHITE),
+                "respawn": (colors.WHITE, colors.SKYBLUE, colors.VIOLET),
+                "ghost": colors.BLUE,
+                "ready_flash": colors.SKYBLUE,
+                "power_flash": colors.WHITE,
+                "win_flash": colors.SKYBLUE,
+                "death_flash": colors.VIOLET,
+            }
+        if theme_name == "Solar Pulse":
+            return {
+                "dot": colors.GOLD,
+                "power": colors.YELLOW,
+                "cherry": (colors.ORANGE, colors.GOLD, colors.YELLOW, colors.RED),
+                "respawn": (colors.GOLD, colors.YELLOW, colors.WHITE),
+                "ghost": colors.ORANGE,
+                "ready_flash": colors.GOLD,
+                "power_flash": colors.YELLOW,
+                "win_flash": colors.GOLD,
+                "death_flash": colors.RED,
+            }
+        if theme_name == "Ultraviolet":
+            return {
+                "dot": colors.VIOLET,
+                "power": colors.SKYBLUE,
+                "cherry": (colors.VIOLET, colors.BLUE, colors.MAGENTA, colors.WHITE),
+                "respawn": (colors.WHITE, colors.VIOLET, colors.SKYBLUE),
+                "ghost": colors.MAGENTA,
+                "ready_flash": colors.VIOLET,
+                "power_flash": colors.SKYBLUE,
+                "win_flash": colors.VIOLET,
+                "death_flash": colors.MAGENTA,
             }
         if theme_name == "Grid Echo":
             return {

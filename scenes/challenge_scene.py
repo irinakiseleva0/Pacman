@@ -9,7 +9,8 @@ from core.scene_ids import MODES_SCENE
 from ui import gamepad
 from ui.navigation import ButtonNavigator
 from ui.ui import (
-    PANEL_ACCENT,
+    LIVE_CYAN,
+    LIVE_GOLD,
     TEXT_DIM,
     button_clicked,
     centered_rect,
@@ -40,19 +41,19 @@ class ChallengeScene(Scene):
         cfg = self.ctx.cfg
         self.navigator.reset(0)
         panel_width = min(1120, cfg.window_width - 88) if cfg.layout_name == "desktop" else min(560, cfg.window_width - 36)
-        panel_height = min(860, cfg.window_height - 72)
+        panel_height = min(820, cfg.window_height - 80)
         panel_x = cfg.window_width // 2 - panel_width // 2
         panel_y = max(30, int((cfg.window_height - panel_height) / 2))
         self.panel = pyray.Rectangle(panel_x, panel_y, panel_width, panel_height)
 
         self.challenge_buttons = []
         if cfg.layout_name == "desktop":
-            self.columns = 3
-            gap_x = 16
-            gap_y = 14
-            width = int((panel_width - 76 - gap_x * 2) / 3)
-            height = 124
-            start_y = int(panel_y + 238)
+            self.columns = 2
+            gap_x = 18
+            gap_y = 16
+            width = int((panel_width - 84 - gap_x) / 2)
+            height = 138
+            start_y = int(panel_y + 232)
             for index in range(len(self.CHALLENGES)):
                 row = index // self.columns
                 col = index % self.columns
@@ -137,27 +138,27 @@ class ChallengeScene(Scene):
         unlocked = self.ctx.challenge_unlocked(selected_name)
         reward_unlocked = self.ctx.challenge_reward_unlocked(selected_name)
 
-        summary = pyray.Rectangle(panel.x + 30, panel.y + 124, int(panel.width * 0.34), 102)
-        briefing = pyray.Rectangle(summary.x + summary.width + 20, panel.y + 124, panel.width - summary.width - 80, 102)
-        draw_glass_card(summary, accent_color=colors.WHITE, glow_alpha=10, fill_alpha=154)
-        draw_glass_card(briefing, accent_color=preset.accent if unlocked else colors.GRAY, glow_alpha=12, fill_alpha=166)
+        summary = pyray.Rectangle(panel.x + 30, panel.y + 126, int(panel.width * 0.28), 90)
+        briefing = pyray.Rectangle(summary.x + summary.width + 18, panel.y + 126, panel.width - summary.width - 78, 90)
+        draw_glass_card(summary, accent_color=LIVE_CYAN, glow_alpha=8, fill_alpha=144)
+        draw_glass_card(briefing, accent_color=preset.accent if unlocked else colors.GRAY, glow_alpha=10, fill_alpha=150)
 
         summary_x = int(summary.x + summary.width / 2)
-        draw_text_centered("BOARD STATUS", summary_x, int(summary.y + 14), 16, TEXT_DIM)
-        line_y = int(summary.y + 38)
+        draw_text_centered("BOARD STATUS", summary_x, int(summary.y + 12), 14, TEXT_DIM)
+        line_y = int(summary.y + 32)
         summary_lines = self.ctx.challenge_board_summary_lines()
         summary_lines = (summary_lines[0], summary_lines[1], self.ctx.next_challenge_unlock_goal() or summary_lines[2])
         for line in summary_lines:
-            draw_text_centered(line, summary_x, line_y, 14, colors.WHITE)
-            line_y += 18
+            draw_text_centered(line, summary_x, line_y, 12, colors.WHITE)
+            line_y += 16
 
         briefing_x = int(briefing.x + briefing.width / 2)
-        draw_text_centered(f"{preset.board_tag}  |  {preset.threat_label}", briefing_x, int(briefing.y + 12), 14, preset.accent if unlocked else colors.GRAY)
-        draw_text_centered(preset.title, briefing_x, int(briefing.y + 32), 24, colors.WHITE if unlocked else TEXT_DIM)
+        draw_text_centered(f"{preset.board_tag}  |  {preset.threat_label}", briefing_x, int(briefing.y + 10), 13, preset.accent if unlocked else colors.GRAY)
+        draw_text_centered(preset.title, briefing_x, int(briefing.y + 26), 22, colors.WHITE if unlocked else TEXT_DIM)
         middle_line = preset.subtitle if unlocked else preset.unlock_text
-        draw_text_centered(middle_line.upper(), briefing_x, int(briefing.y + 58), 13, preset.accent if unlocked else colors.GRAY)
+        draw_text_centered(middle_line.upper(), briefing_x, int(briefing.y + 48), 12, preset.accent if unlocked else colors.GRAY)
         footer = f"REWARD {preset.reward_title}" if not reward_unlocked else f"TROPHY EARNED {preset.reward_title}"
-        draw_text_centered(footer, briefing_x, int(briefing.y + 78), 12, colors.WHITE if reward_unlocked else TEXT_DIM)
+        draw_text_centered(footer, briefing_x, int(briefing.y + 66), 11, colors.WHITE if reward_unlocked else TEXT_DIM)
 
     def _draw_card(self, rect, challenge_name: str, *, focused: bool) -> None:
         preset = CHALLENGE_PRESETS[challenge_name]
@@ -165,24 +166,25 @@ class ChallengeScene(Scene):
         reward_unlocked = self.ctx.challenge_reward_unlocked(challenge_name)
         active = self.ctx.game_mode == "Challenge" and self.ctx.challenge_name == challenge_name
         accent = preset.accent if unlocked else colors.GRAY
-        draw_glass_card(rect, accent_color=accent, glow_alpha=18 if focused or active else 10, fill_alpha=182 if active else 144)
+        draw_glass_card(rect, accent_color=accent, glow_alpha=16 if focused or active else 8, fill_alpha=170 if active else 136)
 
         center_x = int(rect.x + rect.width / 2)
-        title_size = 18
-        subtitle_size = 12
+        title_size = 22
         title_color = colors.WHITE if unlocked and (active or focused) else TEXT_DIM
-        draw_text_centered(preset.board_tag, center_x, int(rect.y + 10), 11, accent)
+        draw_text_centered(preset.board_tag, center_x, int(rect.y + 10), 10, accent)
         draw_text_centered(preset.title, center_x, int(rect.y + 24), title_size, title_color)
-        draw_text_centered(preset.threat_label, center_x, int(rect.y + 46), 11, accent)
+        draw_text_centered(preset.threat_label, center_x, int(rect.y + 50), 10, accent)
+        state_line = preset.subtitle if unlocked else preset.unlock_text
+        draw_text_centered(state_line.upper(), center_x, int(rect.y + 72), 11, colors.WHITE if unlocked else TEXT_DIM)
         reward_text = preset.reward_title if reward_unlocked else "REWARD " + preset.reward_title
-        draw_text_centered(reward_text, center_x, int(rect.y + 72), 10, colors.WHITE if reward_unlocked else TEXT_DIM)
+        draw_text_centered(reward_text, center_x, int(rect.y + 94), 10, LIVE_GOLD if reward_unlocked else TEXT_DIM)
         if unlocked:
             footer = "TROPHY EARNED" if reward_unlocked else "ACTIVE" if active else "PRESS ENTER"
             footer_color = colors.WHITE if active else accent
         else:
             footer = "LOCKED"
             footer_color = accent
-        draw_text_centered(footer, center_x, int(rect.y + rect.height - 18), 11, footer_color)
+        draw_text_centered(footer, center_x, int(rect.y + rect.height - 20), 11, footer_color)
 
     def _move_focus(self) -> None:
         total = len(self.CHALLENGES)
