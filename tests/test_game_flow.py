@@ -31,3 +31,14 @@ class GameFlowTests(unittest.TestCase):
         self.assertIsNone(scene.transition)
         self.assertEqual(ctx.last_result, "lose")
         self.assertEqual(scene.consume_switch_request(), RESULT_SCENE)
+
+    def test_finish_transition_routes_to_result_scene_on_level_clear_result(self) -> None:
+        ctx = GameContext()
+        scene = GameScene(ctx)
+        scene.transition = game_flow._transition(scene, "level_complete", 0.0, "game_won")
+
+        game_flow.finish_transition(scene)
+
+        self.assertIsNone(scene.transition)
+        self.assertEqual(ctx.last_result, "game_won")
+        self.assertEqual(scene.consume_switch_request(), RESULT_SCENE)

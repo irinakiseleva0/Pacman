@@ -12,34 +12,13 @@ Arcade maze-chasing reimagined as a neon district survival run.
 - `systems depth`: district modifiers, directives, ghost personalities, pressure escalation
 - `presentation`: neon menu shell, controller support, capture mode
 
-## Screenshots
+## Media
 
-Drop exported media into:
+Release screenshots and a short gameplay GIF are planned for the next public polish pass.
 
-- `docs/screenshots/menu.png`
-- `docs/screenshots/gameplay.png`
-- `docs/screenshots/challenge-board.png`
-- `docs/screenshots/career.png`
-- `docs/gifs/pressure-loop.gif`
+The contributor-facing media template lives in:
 
-Then replace this section with:
-
-```md
-## Screenshots
-
-![Main Menu](docs/screenshots/menu.png)
-![Gameplay](docs/screenshots/gameplay.png)
-![Challenge Board](docs/screenshots/challenge-board.png)
-![Career](docs/screenshots/career.png)
-
-## GIF
-
-![Pressure Loop](docs/gifs/pressure-loop.gif)
-```
-
-Media helper:
-
-See [docs/README-media-template.md](docs/README-media-template.md)
+- [docs/README-media-template.md](docs/README-media-template.md)
 
 ## Overview
 
@@ -198,6 +177,12 @@ macOS:
 - not the primary tested target for this repo
 - expect to verify raylib/windowing support locally before relying on it
 
+### Tested On
+
+- Windows 11
+- Python `3.12`
+- `raylib==5.5.0.4`
+
 ## Project Structure
 
 ```text
@@ -244,12 +229,23 @@ Publishing helper docs:
 
 ## Roadmap
 
-- stronger cyberpunk gameplay presentation
+### Current Prototype
+
+- multi-mode arcade shell with progression, unlocks, and cyberpunk presentation
+- active refactors around scene systems, rendering, saves, and test coverage
+
+### Next Gameplay Milestone
+
 - richer district-specific enemy pressure
-- more reward-track visualization
 - more map-specific mechanics
+- more readable mastery- and style-driven progression
+
+### Next Polish Milestone
+
+- stronger release-ready gameplay screenshots and GIFs
+- more reward-track visualization
 - additional elite trials and unlock paths
-- trailer/screenshot polish
+- cleaner release/changelog cadence tied to GitHub releases
 
 ## Status
 

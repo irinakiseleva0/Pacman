@@ -28,6 +28,21 @@ class WorkspaceTempDir:
 
 
 class ProfileStorageTests(unittest.TestCase):
+    def test_profile_load_returns_defaults_when_file_missing(self) -> None:
+        with WorkspaceTempDir() as tmp:
+            root = Path(tmp)
+            profile_file = root / "profile.json"
+            legacy_file = root / "legacy_profile.json"
+
+            with (
+                patch.object(profile_storage, "PROFILE_FILE", profile_file),
+                patch.object(profile_storage, "LEGACY_PROFILE_FILE", legacy_file),
+            ):
+                loaded = profile_storage.load_profile()
+
+            self.assertEqual(loaded["total_runs"], profile_storage.DEFAULT_PROFILE["total_runs"])
+            self.assertEqual(loaded["settings"]["theme_name"], profile_storage.DEFAULT_PROFILE["settings"]["theme_name"])
+
     def test_profile_save_and_load_roundtrip(self) -> None:
         with WorkspaceTempDir() as tmp:
             root = Path(tmp)

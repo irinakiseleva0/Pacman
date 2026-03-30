@@ -44,3 +44,29 @@ class ProgressionTests(unittest.TestCase):
         self.assertEqual(ctx.profile["challenge_rewards"]["One Life District"], 1)
         self.assertEqual(ctx.profile["run_history"][0]["mode"], "Challenge")
         self.assertTrue(ctx.last_unlock_lines[0] != "")
+
+    def test_start_new_game_tracks_selected_mode_run(self) -> None:
+        ctx = self._fresh_context()
+        ctx.game_mode = "Endless"
+        ctx.difficulty = "Hard"
+        ctx.score = 999
+
+        ctx.start_new_game()
+
+        self.assertEqual(ctx.profile["total_runs"], 1)
+        self.assertEqual(ctx.profile["mode_runs"]["Endless"], 1)
+        self.assertEqual(ctx.profile["difficulty_runs"]["Hard"], 1)
+        self.assertEqual(ctx.score, 0)
+        self.assertEqual(ctx.current_level, 1)
+
+    def test_directive_pack_unlocks_follow_style_medals(self) -> None:
+        ctx = self._fresh_context()
+
+        self.assertEqual(ctx.directive_pack_names(), {"Core Directives"})
+
+        ctx.profile["style_medals"]["No Panic Clear"] = 1
+        ctx.profile["style_medals"]["Line Master"] = 1
+        self.assertIn("Style Circuit", ctx.directive_pack_names())
+
+        ctx.profile["style_medals"]["Predator Run"] = 2
+        self.assertIn("Predator Protocol", ctx.directive_pack_names())
