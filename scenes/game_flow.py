@@ -34,6 +34,8 @@ def enter_tree(scene: "GameScene") -> None:
     scene.failure_reason = ""
     scene.near_miss_timer = 0.0
     scene.near_miss_cooldown = 0.0
+    scene.overtime_banner_timer = 0.0
+    scene.overtime_announced = False
 
     if run.should_resume_game and runtime.game_map is not None:
         run.should_resume_game = False
@@ -76,6 +78,7 @@ def update(scene: "GameScene", dt: float) -> None:
     scene.ctx.tick_route_chain_window()
     scene.near_miss_timer = max(0.0, scene.near_miss_timer - dt)
     scene.near_miss_cooldown = max(0.0, scene.near_miss_cooldown - dt)
+    scene.overtime_banner_timer = max(0.0, scene.overtime_banner_timer - dt)
 
     game_map.frame()
 
@@ -89,6 +92,20 @@ def update(scene: "GameScene", dt: float) -> None:
 
     if run.game_mode == "Time Attack":
         run.time_attack_seconds = max(0.0, run.time_attack_seconds - dt)
+        if run.time_attack_seconds <= 10.0 and not scene.overtime_announced:
+            scene.overtime_announced = True
+            scene.overtime_banner_timer = 1.35
+            scene.ctx.trigger_screen_flash(colors.ORANGE, 0.12, 0.12)
+            scene.ctx.trigger_screen_shake(2.8, 0.12)
+            if runtime.pacman is not None:
+                visual.floating_text.add_text(
+                    "OVERTIME WINDOW",
+                    runtime.pacman.x * 16 - 30,
+                    runtime.pacman.y * 16 - 28,
+                    colors.ORANGE,
+                    0.9,
+                    13,
+                )
         if run.time_attack_seconds <= 0:
             start_timeout_transition(scene)
             return
@@ -296,6 +313,7 @@ def check_near_miss(scene: "GameScene") -> None:
     risk_turn = getattr(pacman, "turn_feedback_timer", 0.0) > 0.03
     scene.near_miss_timer = 0.55
     scene.near_miss_cooldown = 1.1
+    scene.ctx.run_stats.near_misses += 1
     scene.ctx.trigger_screen_flash(palette["ghost"], 0.06 if risk_turn else 0.05, 0.07 if risk_turn else 0.06)
     scene.ctx.trigger_screen_shake(2.1 if risk_turn else 1.4, 0.1 if risk_turn else 0.08)
     scene.ctx.visual.light_bursts.add_grid_burst(
@@ -315,6 +333,7 @@ def check_near_miss(scene: "GameScene") -> None:
         12,
     )
     if risk_turn:
+        scene.ctx.run_stats.thread_turns += 1
         bonus = scene.ctx.risk_turn_bonus_value()
         scene.ctx.run.score += bonus
         scene.ctx.visual.floating_text.add_text(

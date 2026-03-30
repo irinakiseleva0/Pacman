@@ -26,6 +26,8 @@ class GameScene(Scene):
         self.failure_reason = ""
         self.near_miss_timer = 0.0
         self.near_miss_cooldown = 0.0
+        self.overtime_banner_timer = 0.0
+        self.overtime_announced = False
 
     def _tutorial_step_total(self) -> int:
         return 4

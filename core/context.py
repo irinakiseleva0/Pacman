@@ -34,6 +34,13 @@ from core.state import RunState, RunStats, RuntimeRefs, VisualSystems
 from ui.layout import DEFAULT_LAYOUT, LAYOUT_PROFILES
 from utils.profile_storage import PROFILE_FILE
 
+STYLE_MEDAL_ORDER: tuple[str, ...] = (
+    "No Panic Clear",
+    "Predator Run",
+    "Close-Call Survivor",
+    "Line Master",
+)
+
 @dataclass
 class GameContext:
     cfg: Config = field(default_factory=Config)
@@ -465,6 +472,12 @@ class GameContext:
 
     def current_run_directive(self) -> RunDirective:
         if self.game_mode == "Arcade":
+            if "Style Circuit" in self.directive_pack_names() and self.mode_mastery_value("Arcade") < 18:
+                if self.current_level == 1:
+                    return RunDirective("THREAD DRIVE", "eat 3 ghosts", "ghosts", 3, 420, colors.MAGENTA)
+                if self.current_level == 2:
+                    return RunDirective("STYLE MARKET", "collect 2 cherries", "cherries", 2, 580, colors.GOLD)
+                return RunDirective("FINAL LINE", "earn 1900 score", "score", 1900, 720, colors.SKYBLUE)
             if self.mode_mastery_value("Arcade") >= 18:
                 if self.current_level == 1:
                     return RunDirective("CAMPAIGN EX", "earn 1600 score", "score", 1600, 420, colors.SKYBLUE)
@@ -478,6 +491,13 @@ class GameContext:
             return RunDirective("GHOST BREAK", "eat 3 ghosts", "ghosts", 3, 700, colors.RED)
 
         if self.game_mode == "Endless":
+            if "Predator Protocol" in self.directive_pack_names() and self.mode_mastery_value("Endless") < 18:
+                cycle = self.current_level % 3
+                if cycle == 1:
+                    return RunDirective("PREDATOR PUSH", "eat 6 ghosts", "ghosts", 6, 840, colors.RED)
+                if cycle == 2:
+                    return RunDirective("SURVIVOR CUT", "collect 2 cherries", "cherries", 2, 680, colors.GOLD)
+                return RunDirective("THREAD SCORE", "earn 2400 score", "score", 2400 + max(0, self.current_level - 1) * 140, 620, colors.MAGENTA)
             if self.mode_mastery_value("Endless") >= 18:
                 cycle = self.current_level % 3
                 if cycle == 1:
@@ -493,6 +513,12 @@ class GameContext:
             return RunDirective("LUCK RUSH", "collect 1 cherry", "cherries", 1, 500, colors.GREEN)
 
         if self.game_mode == "Time Attack":
+            if "Style Circuit" in self.directive_pack_names() and self.mode_mastery_value("Time Attack") < 9:
+                if self.current_level == 1:
+                    return RunDirective("CLOCK THREAD", "eat 3 ghosts", "ghosts", 3, 540, colors.MAGENTA)
+                if self.current_level == 2:
+                    return RunDirective("SPLIT MARKET", "collect 2 cherries", "cherries", 2, 700, colors.GOLD)
+                return RunDirective("ZERO LINE", "finish above 2000", "score", 2000, 840, colors.ORANGE)
             if self.mode_mastery_value("Time Attack") >= 9:
                 if self.current_level == 1:
                     return RunDirective("SPLIT PUSH", "finish above 1700", "score", 1700, 520, colors.ORANGE)
@@ -610,7 +636,7 @@ class GameContext:
         return (
             f"Themes {themes_open}/{len(THEME_PRESETS)}  HUD {hud_open}/{len(HUD_PACK_PRESETS)}",
             f"Titles {title_open}/{len(TITLE_VARIANT_PRESETS)}  Trials {self.challenge_reward_count()}/{len(CHALLENGE_PRESETS)}",
-            f"Directive Packs {len(self.directive_pack_names())}  Elite Districts {len(self.elite_district_names())}",
+            f"Directive Packs {len(self.directive_pack_names())}  Elite Districts {len(self.elite_district_names())}  Medals {self.style_medal_total()}",
         )
 
     def next_unlock_spotlight_lines(self) -> tuple[str, str, str]:
@@ -675,6 +701,10 @@ class GameContext:
 
     def directive_pack_names(self) -> set[str]:
         packs = {"Core Directives"}
+        if self.style_medal_total() >= 2:
+            packs.add("Style Circuit")
+        if self.style_medal_count("Predator Run") >= 2:
+            packs.add("Predator Protocol")
         if self.mode_mastery_value("Arcade") >= 18:
             packs.add("Campaign EX")
         if self.mode_mastery_value("Endless") >= 18:
@@ -684,6 +714,10 @@ class GameContext:
         return packs
 
     def next_directive_pack_goal(self) -> Optional[str]:
+        if self.style_medal_total() < 2:
+            return f"Style Circuit: earn {2 - self.style_medal_total()} more run medals"
+        if self.style_medal_count("Predator Run") < 2:
+            return f"Predator Protocol: earn {2 - self.style_medal_count('Predator Run')} more Predator Run medals"
         if self.mode_mastery_value("Arcade") < 18:
             return f"Campaign EX: gain {18 - self.mode_mastery_value('Arcade')} Arcade mastery"
         if self.mode_mastery_value("Endless") < 18:
@@ -694,6 +728,10 @@ class GameContext:
 
     def elite_district_names(self) -> set[str]:
         names = set()
+        if self.style_medal_count("Close-Call Survivor") >= 2:
+            names.add("Glass Panic")
+        if self.style_medal_count("Predator Run") >= 2:
+            names.add("Predator Loop")
         if self.mode_mastery_value("Endless") >= 12:
             names.add("Redline Sector")
         if int(self.profile.get("best_score", 0)) >= 6000:
@@ -701,6 +739,10 @@ class GameContext:
         return names
 
     def next_elite_district_goal(self) -> Optional[str]:
+        if self.style_medal_count("Close-Call Survivor") < 2:
+            return f"Glass Panic: earn {2 - self.style_medal_count('Close-Call Survivor')} more Close-Call Survivor medals"
+        if self.style_medal_count("Predator Run") < 2:
+            return f"Predator Loop: earn {2 - self.style_medal_count('Predator Run')} more Predator Run medals"
         if self.mode_mastery_value("Endless") < 12:
             return f"Redline Sector: gain {12 - self.mode_mastery_value('Endless')} Endless mastery"
         if int(self.profile.get("best_score", 0)) < 6000:
@@ -983,6 +1025,10 @@ class GameContext:
 
         if self.game_mode == "Endless":
             cycle = ["Neon Calm", "Harvest Grid", "Overdrive", "Power Surge"]
+            if "Predator Loop" in self.elite_district_names():
+                cycle.append("Predator Loop")
+            if "Glass Panic" in self.elite_district_names():
+                cycle.append("Glass Panic")
             if "Redline Sector" in self.elite_district_names():
                 cycle.append("Redline Sector")
             if "Null Pulse" in self.elite_district_names():
@@ -991,9 +1037,13 @@ class GameContext:
 
         if self.game_mode == "Time Attack":
             cycle = ["Power Surge", "Harvest Grid", "Overdrive"]
+            if "Glass Panic" in self.elite_district_names():
+                cycle[0] = "Glass Panic"
             if "Null Pulse" in self.elite_district_names():
                 cycle[1] = "Null Pulse"
-            if "Redline Sector" in self.elite_district_names():
+            if "Predator Loop" in self.elite_district_names():
+                cycle[2] = "Predator Loop"
+            elif "Redline Sector" in self.elite_district_names():
                 cycle[2] = "Redline Sector"
             return cycle[min(max(1, self.current_level), len(cycle)) - 1]
 
@@ -1087,6 +1137,7 @@ class GameContext:
         if self.run.line_chain_count >= 8 and self.run.line_chain_count % 4 == 0:
             bonus = 28 + max(0, self.run.line_chain_count - 8) * 10
             bonus = int(bonus * self.mode_score_multiplier())
+            self.run_stats.line_bonuses += 1
         return self.run.line_chain_count, bonus
 
     def risk_turn_bonus_value(self) -> int:
@@ -1276,6 +1327,21 @@ class GameContext:
     def current_map_trait(self) -> MapTrait:
         return MAP_TRAITS.get(self.current_map_number(), MAP_TRAITS[1])
 
+    def current_map_scene_tag(self) -> str:
+        return self.current_map_trait().scene_tag
+
+    def current_map_scene_brief(self) -> str:
+        return self.current_map_trait().scene_brief
+
+    def map_has_teleport_pressure(self) -> bool:
+        return self.current_map_number() == 4
+
+    def map_is_speed_route_scene(self) -> bool:
+        return self.current_map_number() in {1, 4}
+
+    def map_is_pressure_scene(self) -> bool:
+        return self.current_map_number() in {2, 5}
+
     def arcade_campaign_chapter(self, level: Optional[int] = None) -> Optional[ArcadeChapter]:
         if self.game_mode != "Arcade":
             return None
@@ -1425,6 +1491,10 @@ class GameContext:
         elif self.game_mode == "Challenge":
             self.profile["challenge_streak"] = 0
         self.profile["challenge_credits"] = int(self.profile.get("challenge_credits", 0)) + self.challenge_credit_reward(result)
+        style_medals = self.earned_style_medals(result)
+        self.profile.setdefault("style_medals", {name: 0 for name in STYLE_MEDAL_ORDER})
+        for medal_name in style_medals:
+            self.profile["style_medals"][medal_name] = int(self.profile["style_medals"].get(medal_name, 0)) + 1
         challenge_title = self.challenge_preset().title if self.game_mode == "Challenge" else ""
         self.profile.setdefault("run_history", [])
         self.profile["run_history"].insert(
@@ -1436,6 +1506,7 @@ class GameContext:
                 "result": result,
                 "score": self.score,
                 "level": self.current_level,
+                "medals": style_medals,
             },
         )
         self.profile["run_history"] = self.profile["run_history"][:12]
@@ -1467,6 +1538,10 @@ class GameContext:
             },
             "directive_packs": self.directive_pack_names(),
             "elite_districts": self.elite_district_names(),
+            "style_medals": {
+                name for name in STYLE_MEDAL_ORDER
+                if self.style_medal_count(name) > 0
+            },
             "challenges": {
                 name for name, _preset, unlocked in self.challenge_entries()
                 if unlocked
@@ -1517,6 +1592,10 @@ class GameContext:
         new_elite_districts = sorted(after["elite_districts"] - before.get("elite_districts", set()))
         for name in new_elite_districts:
             lines.append(f"Elite District: {name.upper()}")
+
+        new_style_medals = sorted(after["style_medals"] - before.get("style_medals", set()))
+        for name in new_style_medals:
+            lines.append(f"Run Medal: {name.upper()}")
 
         new_challenges = sorted(after["challenges"] - before.get("challenges", set()))
         for name in new_challenges:
@@ -1726,6 +1805,46 @@ class GameContext:
             f"Challenge {self.mode_mastery_rank('Challenge')} {self.mode_mastery_value('Challenge')}  Time {self.mode_mastery_rank('Time Attack')} {self.mode_mastery_value('Time Attack')}",
         )
 
+    def style_medal_count(self, name: str) -> int:
+        medals = self.profile.get("style_medals", {})
+        if not isinstance(medals, dict):
+            return 0
+        return max(0, int(medals.get(name, 0)))
+
+    def style_medal_total(self) -> int:
+        return sum(self.style_medal_count(name) for name in STYLE_MEDAL_ORDER)
+
+    def style_medal_summary_lines(self) -> tuple[str, str, str]:
+        return (
+            f"No Panic {self.style_medal_count('No Panic Clear')}  Predator {self.style_medal_count('Predator Run')}",
+            f"Close Call {self.style_medal_count('Close-Call Survivor')}  Line {self.style_medal_count('Line Master')}",
+            f"Total Style Medals {self.style_medal_total()}",
+        )
+
+    def earned_style_medals(self, result: str) -> list[str]:
+        medals: list[str] = []
+        survived = result in {"game_won", "level_complete"}
+        if survived and self.run_stats.near_misses == 0:
+            medals.append("No Panic Clear")
+        if self.run_stats.ghosts_eaten >= 6:
+            medals.append("Predator Run")
+        if survived and self.run_stats.near_misses >= 4:
+            medals.append("Close-Call Survivor")
+        if self.run_stats.line_bonuses >= 3:
+            medals.append("Line Master")
+        return medals
+
+    def next_style_medal_goal(self) -> Optional[str]:
+        if self.style_medal_count("No Panic Clear") == 0:
+            return "No Panic Clear: finish a run with zero near misses"
+        if self.style_medal_count("Predator Run") < 2:
+            return f"Predator Run: log {2 - self.style_medal_count('Predator Run')} more runs with 6 ghost eats"
+        if self.style_medal_count("Close-Call Survivor") < 2:
+            return f"Close-Call Survivor: log {2 - self.style_medal_count('Close-Call Survivor')} more runs with 4 near misses"
+        if self.style_medal_count("Line Master") == 0:
+            return "Line Master: finish a run with 3 line bonuses"
+        return None
+
     def achievement_entries(self) -> list[tuple[str, str, bool]]:
         profile = self.profile
         return [
@@ -1828,6 +1947,7 @@ class GameContext:
             self.next_title_variant_goal(),
             self.next_directive_pack_goal(),
             self.next_elite_district_goal(),
+            self.next_style_medal_goal(),
             self.next_mode_mastery_goal(),
             self.next_challenge_rank_goal(),
             self.next_achievement_goal(),

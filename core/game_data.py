@@ -100,6 +100,8 @@ class EndlessTier:
 class MapTrait:
     title: str
     subtitle: str
+    scene_tag: str
+    scene_brief: str
     accent: tuple[int, int, int, int]
     chase_bonus: int = 0
     scatter_penalty: int = 0
@@ -215,14 +217,16 @@ DISTRICT_MODIFIERS: dict[str, DistrictModifier] = {
     "Blackout": DistrictModifier("BLACKOUT", "Short windows, big danger", colors.VIOLET, chase_bonus=24, scatter_penalty=12, release_bonus=3, rage_bonus=-40, ghost_score_bonus=100),
     "Redline Sector": DistrictModifier("REDLINE SECTOR", "Elite overrun district", colors.RED, chase_bonus=32, scatter_penalty=16, release_bonus=4, ghost_score_bonus=160, seed_score_bonus=8),
     "Null Pulse": DistrictModifier("NULL PULSE", "Cold precision and short windows", colors.SKYBLUE, chase_bonus=18, scatter_penalty=10, release_bonus=3, rage_bonus=-28, cherry_score_bonus=220),
+    "Glass Panic": DistrictModifier("GLASS PANIC", "Thread-the-needle pressure district", colors.MAGENTA, chase_bonus=28, scatter_penalty=14, release_bonus=4, ghost_score_bonus=120, seed_score_bonus=10),
+    "Predator Loop": DistrictModifier("PREDATOR LOOP", "Aggressive hunt district", colors.GOLD, chase_bonus=26, scatter_penalty=10, release_bonus=4, ghost_score_bonus=180, cherry_score_bonus=120),
 }
 
 MAP_TRAITS: dict[int, MapTrait] = {
-    1: MapTrait("TRANSIT GRID", "faster cherries, steadier flow", colors.SKYBLUE, cherry_respawn_bonus=-18, cherry_score_bonus=50),
-    2: MapTrait("PRESSURE LANES", "faster release, shorter scatter", colors.RED, release_bonus=2, scatter_penalty=6, chase_bonus=8),
-    3: MapTrait("BLACK CHANNEL", "big risk, bigger ghost payouts", colors.VIOLET, rage_bonus=-25, ghost_score_bonus=120, chase_bonus=10),
-    4: MapTrait("MARKET LOOP", "warmer bonus tempo", colors.GOLD, cherry_respawn_bonus=-24, cherry_score_bonus=100),
-    5: MapTrait("CREDIT SPIRAL", "high pressure survival board", colors.MAGENTA, release_bonus=3, scatter_penalty=8, chase_bonus=14),
+    1: MapTrait("TRANSIT GRID", "faster cherries, steadier flow", "SPEED ROUTE", "open lanes built for tempo and line control", colors.SKYBLUE, cherry_respawn_bonus=-18, cherry_score_bonus=50),
+    2: MapTrait("PRESSURE LANES", "faster release, shorter scatter", "PRESSURE ZONE", "tight corridors where retreat gets punished fast", colors.RED, release_bonus=2, scatter_penalty=6, chase_bonus=8),
+    3: MapTrait("BLACK CHANNEL", "big risk, bigger ghost payouts", "HUNT WINDOW", "dark flank-heavy district with brutal ghost reward routing", colors.VIOLET, rage_bonus=-25, ghost_score_bonus=120, chase_bonus=10),
+    4: MapTrait("MARKET LOOP", "warmer bonus tempo", "TELEPORT LOOP", "open bonus market with risky side exits and tempo warps", colors.GOLD, cherry_respawn_bonus=-24, cherry_score_bonus=100),
+    5: MapTrait("CREDIT SPIRAL", "high pressure survival board", "OVERRUN RING", "late-run survival scene built around collapse pressure", colors.MAGENTA, release_bonus=3, scatter_penalty=8, chase_bonus=14),
 }
 
 ARCADE_CHAPTERS: tuple[ArcadeChapter, ...] = (

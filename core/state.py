@@ -13,6 +13,9 @@ class RunStats:
     power_seeds_eaten: int = 0
     cherries_eaten: int = 0
     ghosts_eaten: int = 0
+    near_misses: int = 0
+    thread_turns: int = 0
+    line_bonuses: int = 0
     levels_cleared: int = 0
     level_start_score: int = 0
     level_start_dots: int = 0
@@ -45,6 +48,7 @@ class RunState:
     line_chain_dy: int = 0
     pressure_stage: int = 0
     time_attack_seconds: float = 0.0
+    last_killer_name: str = ""
 
 
 @dataclass

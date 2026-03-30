@@ -15,8 +15,8 @@ from ui.ui import (
     PANEL_ACCENT,
     TEXT_DIM,
     draw_glass_card,
-    draw_live_board_backdrop,
-    draw_live_game_background,
+    draw_live_board_backdrop as ui_draw_live_board_backdrop,
+    draw_live_game_background as ui_draw_live_game_background,
     draw_live_panel_accent,
     draw_panel,
     draw_presentation_bars,
@@ -37,8 +37,8 @@ def draw_scene(game_scene) -> None:
     shake_x, shake_y = visual.screen_shake.get_offset()
     board_rect = pyray.Rectangle(cfg.board_offset_x, cfg.board_offset_y, cfg.board_width, cfg.board_height)
 
-    draw_live_game_background(cfg.window_width, cfg.window_height, game_scene.visual_time)
-    draw_live_board_backdrop(board_rect, game_scene.visual_time)
+    draw_live_game_background(game_scene, cfg.window_width, cfg.window_height, game_scene.visual_time)
+    draw_live_board_backdrop(game_scene, board_rect, game_scene.visual_time)
     draw_pressure_overlay(game_scene, board_rect)
 
     game_map.draw()
@@ -66,6 +66,92 @@ def draw_scene(game_scene) -> None:
 
     visual.screen_flash.draw()
     draw_presentation_bars(cfg.window_width, cfg.window_height)
+
+
+def draw_live_game_background(game_scene, width: int, height: int, time_s: float) -> None:
+    ui_draw_live_game_background(width, height, time_s)
+    map_number = game_scene.ctx.current_map_number()
+    trait = game_scene.ctx.current_map_trait()
+    pulse = 0.5 + 0.5 * math.sin(time_s * 2.1)
+
+    if map_number == 1:
+        # Transit Grid: longer speed streaks and route lanes.
+        for index in range(6):
+            y = int(height * 0.18) + index * 54
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(int(width * 0.58), y, int(width * 0.26), 3),
+                with_alpha(trait.accent, int(10 + pulse * 12)),
+            )
+    elif map_number == 2:
+        # Pressure Lanes: narrowing red tension columns.
+        for index in range(4):
+            x = int(width * (0.10 + index * 0.18))
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(x, 0, 18, height),
+                with_alpha(trait.accent, 8 + index * 2),
+            )
+    elif map_number == 3:
+        # Black Channel: darker flank scene with cold side haze.
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(0, 0, width, height),
+            with_alpha((10, 6, 24, 255), 24),
+        )
+        for index in range(3):
+            cx = int(width * (0.18 + index * 0.28))
+            pyray.draw_circle(cx, int(height * 0.34), 120 + index * 24, with_alpha(trait.accent, 6))
+    elif map_number == 4:
+        # Market Loop: warmer bonus scene with side beacons around teleport play.
+        for index in range(5):
+            x = int(width * 0.12) + index * 96
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(x, int(height * 0.16), 26, int(height * 0.30)),
+                with_alpha(trait.accent, 9 + index * 2),
+            )
+    elif map_number == 5:
+        # Credit Spiral: collapse scene with magenta overrun bands.
+        for index in range(5):
+            y = int(height * 0.12) + index * 72
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(0, y, width, 10),
+                with_alpha(trait.accent, 7 + index * 2),
+            )
+
+
+def draw_live_board_backdrop(game_scene, rect, time_s: float) -> None:
+    ui_draw_live_board_backdrop(rect, time_s)
+    map_number = game_scene.ctx.current_map_number()
+    trait = game_scene.ctx.current_map_trait()
+    pulse = 0.5 + 0.5 * math.sin(time_s * 3.2)
+
+    if map_number == 1:
+        for index in range(4):
+            x = rect.x + 42 + index * max(56, int(rect.width / 5))
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(x, rect.y - 12, 2, rect.height + 24),
+                with_alpha(trait.accent, int(14 + pulse * 10)),
+            )
+    elif map_number == 2:
+        for index in range(3):
+            y = rect.y + 28 + index * max(64, int(rect.height / 4))
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(rect.x - 16, y, rect.width + 32, 3),
+                with_alpha(trait.accent, int(14 + pulse * 14)),
+            )
+    elif map_number == 3:
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(rect.x - 18, rect.y - 18, rect.width + 36, rect.height + 36),
+            with_alpha((12, 8, 28, 255), 16),
+        )
+    elif map_number == 4:
+        # Telegraph teleport risk with side exit halos.
+        for cx in (rect.x + 18, rect.x + rect.width - 18):
+            pyray.draw_circle(int(cx), int(rect.y + rect.height * 0.43), 26, with_alpha(trait.accent, int(16 + pulse * 12)))
+            pyray.draw_circle(int(cx), int(rect.y + rect.height * 0.57), 26, with_alpha(trait.accent, int(16 + pulse * 12)))
+    elif map_number == 5:
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(rect.x - 10, rect.y + rect.height - 44, rect.width + 20, 30),
+            with_alpha(trait.accent, int(14 + pulse * 12)),
+        )
 
 
 def draw_hud(game_scene) -> None:
@@ -264,6 +350,13 @@ def draw_live_feedback(game_scene) -> None:
         draw_text_centered(feedback.near_miss_card.headline, center_x, int(panel.y + 10), 15, colors.WHITE)
         draw_text_centered(feedback.near_miss_card.detail, center_x, int(panel.y + 27), 11, palette["ghost"])
 
+    if getattr(game_scene, "overtime_banner_timer", 0.0) > 0:
+        overtime_alpha = min(1.0, game_scene.overtime_banner_timer / 1.35)
+        panel = pyray.Rectangle(center_x - 158, top_y + 12, 316, 52)
+        draw_glass_card(panel, accent_color=colors.ORANGE, glow_alpha=int(14 + overtime_alpha * 16), fill_alpha=156)
+        draw_text_centered("OVERTIME", center_x, int(panel.y + 9), 16, colors.WHITE)
+        draw_text_centered("CLOCK DANGER  |  NO SAFE RESET", center_x, int(panel.y + 28), 12, colors.ORANGE)
+
 
 def draw_pressure_overlay(game_scene, board_rect) -> None:
     pressure_stage = getattr(game_scene.ctx, "pressure_stage", 0)
@@ -364,25 +457,34 @@ def draw_transition_card(game_scene, headline: str, detail: str, accent_color, *
 def draw_ready_overlay(game_scene) -> None:
     directive = game_scene.ctx.current_run_directive()
     map_trait = game_scene.ctx.current_map_trait()
+    scene_tag = game_scene.ctx.current_map_scene_tag()
+    scene_brief = game_scene.ctx.current_map_scene_brief().upper()
     if game_scene.ctx.game_mode == "Arcade":
         chapter = game_scene.ctx.arcade_campaign_chapter()
-        detail = f"{chapter.title}  |  {chapter.subtitle}" if chapter is not None else f"{map_trait.title}  |  {directive.title}"
+        detail = f"{chapter.title}  |  {scene_tag}  |  {scene_brief}" if chapter is not None else f"{map_trait.title}  |  {scene_tag}  |  {scene_brief}"
         accent = chapter.accent if chapter is not None else map_trait.accent
     elif game_scene.ctx.game_mode == "Endless":
         tier = game_scene.ctx.endless_tier()
-        detail = f"{tier.title}  |  {map_trait.title}"
+        detail = f"{tier.title}  |  {scene_tag}  |  {scene_brief}"
         accent = tier.accent
     elif game_scene.ctx.game_mode == "Time Attack":
         seconds_left = max(0, math.ceil(game_scene.ctx.time_attack_seconds))
-        detail = f"T-{seconds_left:02d}  |  {directive.title}"
+        detail = f"T-{seconds_left:02d}  |  {scene_tag}  |  {scene_brief}"
         accent = colors.ORANGE
     else:
-        detail = f"{map_trait.title}  |  {directive.title}"
+        detail = f"{map_trait.title}  |  {scene_tag}  |  {scene_brief}"
         accent = map_trait.accent
-    draw_transition_card(game_scene, "READY", detail, accent, width=430)
+    draw_transition_card(game_scene, "DISTRICT LIVE", detail, accent, width=560)
 
 
 def draw_death_overlay(game_scene) -> None:
+    killer_map = {
+        "Blinky": "BLINKY CUT THE ROUTE",
+        "Pinky": "PINKY HELD THE FRONT",
+        "Inky": "INKY SLIPPED THE FLANK",
+        "Clyde": "CLYDE FLIPPED THE READ",
+    }
+    killer_line = killer_map.get(game_scene.ctx.run.last_killer_name, "DISTRICT CONTROL LOST")
     if game_scene.failure_reason == "timeout":
         draw_transition_card(
             game_scene,
@@ -395,7 +497,7 @@ def draw_death_overlay(game_scene) -> None:
         draw_transition_card(
             game_scene,
             "GAME OVER",
-            "DISTRICT CONTROL LOST",
+            killer_line,
             game_scene.ctx.effect_palette()["death_flash"],
             width=380,
         )
@@ -403,9 +505,9 @@ def draw_death_overlay(game_scene) -> None:
         draw_transition_card(
             game_scene,
             "LIFE LOST",
-            "SIGNAL RESTORE IN PROGRESS",
+            f"{killer_line}  |  SIGNAL RESTORE IN PROGRESS",
             game_scene.ctx.effect_palette()["death_flash"],
-            width=380,
+            width=520,
         )
 
 
@@ -428,11 +530,11 @@ def draw_level_complete_overlay(game_scene) -> None:
         headline = "LEVEL CLEAR"
         headline_color = game_scene.ctx.effect_palette()["win_flash"]
         if game_scene.ctx.game_mode == "Endless":
-            detail = "NEXT SURVIVAL WAVE COMING UP"
+            detail = f"{game_scene.ctx.current_map_scene_tag()} SECURED  |  NEXT SURVIVAL WAVE"
         elif game_scene.ctx.game_mode == "Time Attack":
-            detail = "BANKING TIME FOR THE NEXT BOARD"
+            detail = "DISTRICT CLOCK BANKED  |  NEXT BOARD ARMED"
         else:
-            detail = "SYNCING NEXT REPORT"
+            detail = f"{game_scene.ctx.current_map_scene_tag()} SECURED  |  SYNCING NEXT REPORT"
 
     draw_transition_card(game_scene, headline, detail, headline_color, width=420)
 

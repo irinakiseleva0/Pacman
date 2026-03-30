@@ -138,6 +138,7 @@ class Map:
         else:
             # Ghost eats Pacman
             self.ctx.reset_ghost_combo()
+            self.ctx.run.last_killer_name = getattr(type(ghost), "__name__", "Ghost")
             pacman.kill()
 
     def frame(self) -> None:

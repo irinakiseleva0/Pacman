@@ -127,7 +127,16 @@ class CareerScene(Scene):
         self._draw_labeled_lines(mid_left, "MODE MASTERY", self.ctx.mode_mastery_summary_lines(), max_lines=1)
         self._draw_labeled_lines(bottom_left, "LIFETIME STATS", self.ctx.lifetime_stat_lines(), max_lines=1)
         hud_unlocked = sum(1 for _name, _preset, unlocked in self.ctx.hud_pack_entries() if unlocked)
-        self._draw_labeled_lines(trophy_left, f"UNLOCKS {self.ctx.challenge_reward_count()}/{len(CHALLENGE_PRESETS)}", (self.ctx.challenge_progress_lines()[0], f"HUD PACKS {hud_unlocked}/{len(HUD_PACK_PRESETS)}", f"ACTIVE {self.ctx.hud_pack_name().upper()}"), max_lines=2)
+        self._draw_labeled_lines(
+            trophy_left,
+            f"STYLE + UNLOCKS {self.ctx.challenge_reward_count()}/{len(CHALLENGE_PRESETS)}",
+            (
+                self.ctx.style_medal_summary_lines()[2],
+                f"HUD PACKS {hud_unlocked}/{len(HUD_PACK_PRESETS)}",
+                f"ACTIVE {self.ctx.hud_pack_name().upper()}",
+            ),
+            max_lines=3,
+        )
 
         center_x = int(right_card.x + right_card.width / 2)
         draw_text_centered("NEXT GOALS", center_x, int(right_card.y + 18), 20, TEXT_DIM)

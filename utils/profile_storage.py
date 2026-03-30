@@ -38,6 +38,12 @@ DEFAULT_PROFILE = {
     "challenge_streak": 0,
     "best_challenge_streak": 0,
     "challenge_rewards": {},
+    "style_medals": {
+        "No Panic Clear": 0,
+        "Predator Run": 0,
+        "Close-Call Survivor": 0,
+        "Line Master": 0,
+    },
     "run_history": [],
     "settings": {
         "fx_intensity": "High",
@@ -80,6 +86,11 @@ def load_profile() -> dict:
                 for reward_name, reward_value in value.items():
                     rewards[str(reward_name)] = 1 if int(reward_value) else 0
                 profile["challenge_rewards"] = rewards
+            elif key == "style_medals" and isinstance(value, dict):
+                medals: dict[str, int] = {}
+                for medal_name in profile["style_medals"]:
+                    medals[medal_name] = max(0, int(value.get(medal_name, 0)))
+                profile["style_medals"] = medals
             elif key == "run_history" and isinstance(value, list):
                 history: list[dict] = []
                 for item in value[:12]:

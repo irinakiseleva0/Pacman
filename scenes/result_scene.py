@@ -31,7 +31,7 @@ class ResultScene(Scene):
         cfg = self.ctx.cfg
         cx = cfg.window_width // 2
         panel_width = min(560, cfg.window_width - 120)
-        panel_height = min(760, cfg.window_height - 120)
+        panel_height = min(820, cfg.window_height - 96)
         panel_x = cx - panel_width // 2
         panel_y = max(44, int((cfg.window_height - panel_height) / 2))
         self.panel = pyray.Rectangle(panel_x, panel_y, panel_width, panel_height)
@@ -188,6 +188,41 @@ class ResultScene(Scene):
             return colors.ORANGE
         return colors.MAGENTA
 
+    def _breakdown_lines(self) -> tuple[str, str, str]:
+        stats = self.ctx.run_stats
+        trait = self.ctx.current_map_trait()
+        medals = self.ctx.earned_style_medals(self.ctx.last_result)
+        medal_line = " | ".join(medals[:2]) if medals else "No style medals this run"
+        if self.ctx.last_result == "level_complete":
+            return (
+                f"{trait.title}  |  {self.ctx.current_map_scene_tag()}",
+                f"Dots {stats.dots_eaten}  Power {stats.power_seeds_eaten}  Ghosts {stats.ghosts_eaten}",
+                medal_line,
+            )
+        if self.ctx.last_result == "game_won":
+            return (
+                f"Run Won  |  {self.ctx.mode_label()}",
+                f"Levels {stats.levels_cleared}  Ghosts {stats.ghosts_eaten}  Dots {stats.dots_eaten}",
+                medal_line,
+            )
+        if self.ctx.last_result == "challenge_failed":
+            return (
+                f"Trial Missed  |  {self.ctx.challenge_preset().title}",
+                f"Ghosts {stats.ghosts_eaten}  Dots {stats.dots_eaten}",
+                medal_line,
+            )
+        killer_map = {
+            "Blinky": "Blinky cut the route",
+            "Pinky": "Pinky held the front",
+            "Inky": "Inky slipped the flank",
+            "Clyde": "Clyde flipped the read",
+        }
+        return (
+            f"Run Lost  |  {self.ctx.mode_label()}",
+            killer_map.get(self.ctx.run.last_killer_name, "District pressure broke the run"),
+            medal_line,
+        )
+
     def draw(self) -> None:
         cfg = self.ctx.cfg
         center_x = cfg.window_width // 2
@@ -222,16 +257,24 @@ class ResultScene(Scene):
         draw_text_centered(str(self.ctx.score), center_x, int(score_card.y + 48), 34, colors.WHITE)
         draw_text_centered(f"HIGH SCORE {self.ctx.high_score}", center_x, int(score_card.y + 84), 20, colors.YELLOW)
 
-        summary_card = pyray.Rectangle(panel.x + 34, panel.y + 292, int(panel.width - 68), 148)
+        summary_card = pyray.Rectangle(panel.x + 34, panel.y + 292, int(panel.width - 68), 132)
         draw_glass_card(summary_card, accent_color=result_color, glow_alpha=14)
         draw_text_centered(self._status_label(), center_x, int(summary_card.y + 16), 18, TEXT_DIM)
 
         summary_y = int(summary_card.y + 52)
         for line in self._summary_lines():
-            draw_text_centered(line, center_x, summary_y, 18, TEXT_DIM)
-            summary_y += 28
+            draw_text_centered(line, center_x, summary_y, 16, TEXT_DIM)
+            summary_y += 24
 
-        profile_card = pyray.Rectangle(panel.x + 34, panel.y + 456, int(panel.width - 68), 102)
+        breakdown_card = pyray.Rectangle(panel.x + 34, panel.y + 438, int(panel.width - 68), 94)
+        draw_glass_card(breakdown_card, accent_color=PANEL_ACCENT, glow_alpha=10, fill_alpha=150)
+        draw_text_centered("RUN BREAKDOWN", center_x, int(breakdown_card.y + 12), 16, TEXT_DIM)
+        breakdown_y = int(breakdown_card.y + 34)
+        for line in self._breakdown_lines():
+            draw_text_centered(line, center_x, breakdown_y, 15, colors.WHITE if breakdown_y == int(breakdown_card.y + 34) else TEXT_DIM)
+            breakdown_y += 18
+
+        profile_card = pyray.Rectangle(panel.x + 34, panel.y + 546, int(panel.width - 68), 102)
         draw_glass_card(profile_card, accent_color=self._progression_accent(), glow_alpha=12)
         draw_text_centered("PROFILE SAVED", center_x, int(profile_card.y + 14), 18, TEXT_DIM)
         profile_y = int(profile_card.y + 40)
@@ -256,7 +299,7 @@ class ResultScene(Scene):
             draw_text_centered(line, center_x, profile_y, 16, TEXT_DIM)
             profile_y += 22
 
-        unlock_card = pyray.Rectangle(panel.x + 34, panel.y + 574, int(panel.width - 68), 110)
+        unlock_card = pyray.Rectangle(panel.x + 34, panel.y + 664, int(panel.width - 68), 94)
         reward_accent = colors.GOLD if self.ctx.last_unlocks_are_new else PANEL_ACCENT
         reward_label = "NEW REWARDS" if self.ctx.last_unlocks_are_new else "NEXT REWARDS"
         draw_glass_card(unlock_card, accent_color=reward_accent, glow_alpha=10, fill_alpha=148)
@@ -268,7 +311,7 @@ class ResultScene(Scene):
             draw_text_centered(line, center_x, unlock_y, 14, colors.WHITE)
             unlock_y += 18
 
-        draw_text_centered("CONTINUE", center_x, int(panel.y + panel.height - 156), 18, TEXT_DIM)
+        draw_text_centered("CONTINUE", center_x, int(panel.y + panel.height - 136), 18, TEXT_DIM)
         draw_button(self.btn_action, button_text, focused=True)
         draw_scene_footer(panel)
         draw_presentation_bars(cfg.window_width, cfg.window_height)
