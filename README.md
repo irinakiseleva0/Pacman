@@ -172,7 +172,10 @@ Useful next GitHub-side improvements:
 - topic tags
 - screenshots / GIF previews
 - first release
-- explicit license
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
 
 Publishing helper docs:
 
