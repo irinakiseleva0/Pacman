@@ -33,8 +33,13 @@ class Cherry(Cell):
         self.ctx.play_sfx("cherry")
         self.timer = self.ctx.effective_cherry_respawn()
         market_bonus = self.ctx.map_cherry_bonus_value()
+        market_window_bonus = self.ctx.consume_market_window_bonus()
         if market_bonus > 0:
             self.ctx.score += market_bonus
+            self.ctx.run_stats.cherry_bonus_score += market_bonus
+        if market_window_bonus > 0:
+            self.ctx.score += market_window_bonus
+            self.ctx.run_stats.cherry_bonus_score += market_window_bonus
 
         self.ctx.particles.create_cherry_eat_effect(self.x, self.y, palette["cherry"])
         self.ctx.floating_text.add_score_text(
@@ -50,6 +55,16 @@ class Cherry(Cell):
                 12,
             )
             self.ctx.trigger_screen_flash(palette["respawn"][0], 0.06, 0.08)
+        if market_window_bonus > 0:
+            self.ctx.floating_text.add_text(
+                f"JACKPOT +{market_window_bonus}",
+                self.x * 16 - 26,
+                self.y * 16 - 42,
+                palette["cherry"][1],
+                1.05,
+                12,
+            )
+            self.ctx.trigger_screen_flash(palette["cherry"][1], 0.09, 0.09)
         self.ctx.trigger_screen_shake(5.0, 0.35)
 
     def tick(self) -> None:

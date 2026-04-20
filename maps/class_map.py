@@ -8,9 +8,12 @@ from entities.cell import Cell, Actor
 from entities.empty_cell import EmptyCell
 from entities.wall import Wall
 from entities.door import Door
+from entities.bonus_gate import BonusGate
 from entities.teleport import Teleport
+from entities.pulse_barrier import PulseBarrier
 from entities.cherry import Cherry
 from entities.seeds import Seed, LargeSeed
+from entities.hotspot_seed import HotspotSeed
 from entities.pacman import Pacman
 from entities.ghost import Ghost, Blinky, Pinky, Inky, Clyde
 
@@ -111,6 +114,7 @@ class Map:
             else:
                 ghost.reset_to_spawn()
             run.score += score_value
+            self.ctx.run_stats.ghost_bonus_score += score_value
             rage_extension = self.ctx.map_ghost_rage_extension()
             if rage_extension > 0 and getattr(pacman, "rage", False):
                 pacman.rage_timer += rage_extension
@@ -131,14 +135,14 @@ class Map:
                     0.9,
                     12,
                 )
-            flash_strength = 0.16 if combo_step <= 1 else min(0.28, 0.16 + combo_step * 0.03)
-            shake_strength = 5.2 if combo_step <= 1 else min(9.0, 5.2 + combo_step * 1.0)
+            flash_strength = 0.22 if combo_step <= 1 else min(0.36, 0.22 + combo_step * 0.035)
+            shake_strength = 6.8 if combo_step <= 1 else min(10.5, 6.8 + combo_step * 1.15)
             self.ctx.trigger_screen_flash(palette["ghost"], flash_strength, 0.08)
-            self.ctx.trigger_screen_shake(shake_strength, 0.24)
+            self.ctx.trigger_screen_shake(shake_strength, 0.26)
             self.ctx.trigger_action_juice(
-                hitstop=0.05 if combo_step <= 1 else min(0.075, 0.05 + combo_step * 0.007),
-                slow_scale=0.52 if combo_step <= 1 else 0.46,
-                slow_duration=0.075 if combo_step <= 1 else 0.095,
+                hitstop=0.07 if combo_step <= 1 else min(0.095, 0.07 + combo_step * 0.006),
+                slow_scale=0.48 if combo_step <= 1 else 0.42,
+                slow_duration=0.11 if combo_step <= 1 else 0.13,
             )
         else:
             # Ghost eats Pacman
@@ -323,7 +327,7 @@ class Map:
                 f"{path}: expected {expected_height} rows, got {len(lines)}"
             )
 
-        allowed_symbols = {"#", "d", "t", ".", "s", "c", "p", "g", "_"}
+        allowed_symbols = {"#", "d", "b", "t", "v", ".", "x", "s", "c", "p", "g", "_"}
         pacman_count = 0
         ghost_count = 0
 
@@ -352,10 +356,16 @@ class Map:
             return Wall(self.ctx)
         if symbol == "d":
             return Door(self.ctx)
+        if symbol == "b":
+            return BonusGate(self.ctx)
         if symbol == "t":
             return Teleport(self.ctx)
+        if symbol == "v":
+            return PulseBarrier(self.ctx)
         if symbol == ".":
             return Seed(self.ctx)
+        if symbol == "x":
+            return HotspotSeed(self.ctx)
         if symbol == "s":
             return LargeSeed(self.ctx)
         if symbol == "c":

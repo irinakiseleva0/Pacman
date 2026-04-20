@@ -102,9 +102,10 @@ class RunHistoryScene(Scene):
             accent = colors.GOLD if result == "game_won" else colors.RED if result in {"lose", "challenge_failed"} else colors.GREEN
             draw_glass_card(rect, accent_color=accent, glow_alpha=10, fill_alpha=154)
             mode_tag = str(entry.get("challenge") or entry.get("mode", "Arcade"))
-            line1 = f"{mode_tag} / {entry.get('difficulty', 'Normal')}"
+            grade_tag = str(entry.get("grade", "") or "-")
+            line1 = f"{mode_tag} / {entry.get('difficulty', 'Normal')} / {grade_tag}"
             result_tag = result.replace("_", " ").upper()
-            line2 = f"SCORE {int(entry.get('score', 0))}  LEVEL {int(entry.get('level', 1))}"
+            line2 = f"SCORE {int(entry.get('score', 0))}  LEVEL {int(entry.get('level', 1))}  MAP {int(entry.get('map', 1))}"
             pyray.draw_text(line1, int(rect.x + 14), int(rect.y + 10), 17 if not compact else 15, colors.WHITE)
             pyray.draw_text(line2, int(rect.x + 14), int(rect.y + 32), 14 if not compact else 13, TEXT_DIM)
             draw_text_centered(result_tag, int(rect.x + rect.width - 70), int(rect.y + 18), 13, accent)

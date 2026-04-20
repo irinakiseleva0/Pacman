@@ -54,6 +54,7 @@ class Seed(Cell):
                     self.ctx.trigger_screen_flash(palette["dot"], 0.05, 0.06)
             if route_bonus > 0:
                 self.ctx.score += route_bonus
+                self.ctx.run_stats.route_bonus_score += route_bonus
                 self.ctx.floating_text.add_text(
                     f"ROUTE {route_chain_count} +{route_bonus}",
                     self.x * 16 - 22,
@@ -66,6 +67,7 @@ class Seed(Cell):
                 self.ctx.trigger_screen_flash(palette["dot"], 0.055, 0.05)
             if line_bonus > 0:
                 self.ctx.score += line_bonus
+                self.ctx.run_stats.line_bonus_score += line_bonus
                 self.ctx.floating_text.add_text(
                     f"LINE {line_count} +{line_bonus}",
                     self.x * 16 - 20,
@@ -134,11 +136,14 @@ class LargeSeed(Cell):
             score_value = self.ctx.effective_large_seed_score()
             already_raging = bool(getattr(actor, "rage", False))
             chain_level, chain_bonus, rage_bonus, keep_combo = self.ctx.trigger_power_chain(already_raging)
+            hunt_bonus, hunt_rage_bonus = self.ctx.consume_hunt_window_bonus()
             self.enabled = False
-            self.ctx.score += score_value + chain_bonus
+            self.ctx.score += score_value + chain_bonus + hunt_bonus
+            self.ctx.run_stats.ghost_bonus_score += chain_bonus
+            self.ctx.run_stats.risk_bonus_score += hunt_bonus
             self.ctx.record_power_seed_eaten()
             self.ctx.play_sfx("power")
-            actor.enable_rage(self.ctx.effective_rage_duration() + rage_bonus, keep_combo=keep_combo)
+            actor.enable_rage(self.ctx.effective_rage_duration() + rage_bonus + hunt_rage_bonus, keep_combo=keep_combo)
 
             game_map = self.ctx.game_map
             if game_map is not None:
@@ -160,6 +165,15 @@ class LargeSeed(Cell):
                     1.0,
                     12,
                 )
+            if hunt_bonus > 0:
+                self.ctx.floating_text.add_text(
+                    f"HUNT +{hunt_bonus}",
+                    self.x * 16 - 22,
+                    self.y * 16 - 42,
+                    palette["power"],
+                    0.96,
+                    12,
+                )
             if keep_combo and self.ctx.ghost_combo > 0:
                 self.ctx.floating_text.add_text(
                     "COMBO HELD",
@@ -169,9 +183,9 @@ class LargeSeed(Cell):
                     0.9,
                     11,
                 )
-            self.ctx.trigger_screen_shake(7.0, 0.46)
-            self.ctx.trigger_screen_flash(palette["power_flash"], 0.28, 0.18)
-            self.ctx.trigger_action_juice(hitstop=0.034, slow_scale=0.64, slow_duration=0.095)
+            self.ctx.trigger_screen_shake(8.2, 0.5)
+            self.ctx.trigger_screen_flash(palette["power_flash"], 0.34, 0.2)
+            self.ctx.trigger_action_juice(hitstop=0.055, slow_scale=0.58, slow_duration=0.12)
 
     def draw(self) -> None:
         if not self.enabled:

@@ -20,3 +20,4 @@ dev = [
 
 [project.scripts]
 cyberpunk-pacman = "main:main"
+cyberpunk-pacman-check = "checks:main"

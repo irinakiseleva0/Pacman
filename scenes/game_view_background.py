@@ -158,7 +158,7 @@ def draw_pressure_overlay(game_scene, board_rect) -> None:
     remaining = max(0, game_map.remaining_pickups())
     total = max(1, getattr(game_map, "total_pickups", 1))
     scarcity = 1.0 - (remaining / total)
-    shift_alpha = int((8 + pressure_stage * 6) * scarcity + pulse * 8)
+    shift_alpha = int((12 + pressure_stage * 8) * scarcity + pulse * 12)
     heat_color = colors.ORANGE if scarcity >= 0.8 else colors.RED if pressure_stage >= 3 else base_color
 
     pyray.draw_rectangle_rec(board_rect, with_alpha(base_color, shift_alpha))
@@ -169,8 +169,8 @@ def draw_pressure_overlay(game_scene, board_rect) -> None:
         )
 
     glow_pad = 18 + pressure_stage * 6
-    glow_alpha = int(26 + pressure_stage * 12 + pulse * 22 + scarcity * 16)
-    inner_alpha = int(8 + pressure_stage * 5 + pulse * 10 + scarcity * 8)
+    glow_alpha = int(34 + pressure_stage * 14 + pulse * 26 + scarcity * 22)
+    inner_alpha = int(10 + pressure_stage * 6 + pulse * 12 + scarcity * 12)
 
     pyray.draw_rectangle_rec(
         pyray.Rectangle(
@@ -219,7 +219,7 @@ def draw_pressure_overlay(game_scene, board_rect) -> None:
             with_alpha(base_color, int(10 + scarcity * 14 + pulse * 6)),
         )
 
-    if scarcity >= 0.75:
+    if scarcity >= 0.6:
         top_bar_alpha = int(10 + scarcity * 28 + pulse * 8)
         pyray.draw_rectangle_rec(
             pyray.Rectangle(board_rect.x, board_rect.y - 4, board_rect.width, 4),

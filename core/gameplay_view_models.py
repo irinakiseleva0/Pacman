@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from raylib import colors
 
+from core.core_loop import current_core_loop_focus
 from entities.ghost import Ghost
 from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK
 
@@ -111,46 +112,53 @@ def build_hud_model(ctx, game_map) -> GameplayHudModel:
 
     if ctx.route_chain_active():
         bonus_lines.append((f"Route: x{run.route_chain_count}", ctx.effect_palette()["dot"]))
+    if ctx.hunt_window_active():
+        bonus_lines.append(("Hunt window live", ctx.effect_palette()["power"]))
+    if ctx.market_window_active():
+        bonus_lines.append(("Jackpot route live", ctx.effect_palette()["cherry"][1]))
+
+    loop_focus = current_core_loop_focus(ctx, game_map)
+    signal_lines = [(loop_focus.detail.upper(), loop_focus.accent), *bonus_lines]
 
     sections = [
         HudSection("RUN", tuple(core_lines), LIVE_CYAN),
         HudSection("DISTRICT", tuple(field_lines), LIVE_PINK),
     ]
-    if bonus_lines:
-        sections.append(HudSection("LIVE SIGNAL", tuple(bonus_lines), LIVE_GOLD))
+    if signal_lines:
+        sections.append(HudSection(loop_focus.phase, tuple(signal_lines), loop_focus.accent))
 
     if hud_pack == "Relay Grid":
         sections = [
             HudSection("ROUTE FEED", tuple(core_lines), LIVE_CYAN),
             HudSection("DISTRICT FEED", tuple(field_lines), LIVE_GOLD),
-        ] + ([HudSection("LIVE SIGNAL", tuple(bonus_lines), LIVE_PINK)] if bonus_lines else [])
+        ] + ([HudSection(loop_focus.phase, tuple(signal_lines), LIVE_PINK)] if signal_lines else [])
     elif hud_pack == "Hunter Scope":
         sections = [
             HudSection("HUNTER SCOPE", tuple(core_lines), LIVE_PINK),
             HudSection("THREAT READOUT", tuple(field_lines), colors.RED),
-        ] + ([HudSection("TACTICAL SIGNAL", tuple(bonus_lines), LIVE_GOLD)] if bonus_lines else [])
+        ] + ([HudSection(loop_focus.phase, tuple(signal_lines), LIVE_GOLD)] if signal_lines else [])
     elif hud_pack == "Chrome Vector":
         sections = [
             HudSection("VECTOR RUN", tuple(core_lines), colors.WHITE),
             HudSection("FIELD VECTOR", tuple(field_lines), LIVE_CYAN),
-        ] + ([HudSection("LIVE SIGNAL", tuple(bonus_lines), LIVE_GOLD)] if bonus_lines else [])
+        ] + ([HudSection(loop_focus.phase, tuple(signal_lines), LIVE_GOLD)] if signal_lines else [])
 
     theme_name = getattr(ctx, "theme_name", lambda: "Neon District")()
     if theme_name == "Amber Rain":
         sections = [
             HudSection("RUN", tuple(core_lines), LIVE_GOLD),
             HudSection("DISTRICT", tuple(field_lines), LIVE_PINK),
-        ] + ([HudSection("LIVE SIGNAL", tuple(bonus_lines), LIVE_CYAN)] if bonus_lines else [])
+        ] + ([HudSection(loop_focus.phase, tuple(signal_lines), LIVE_CYAN)] if signal_lines else [])
     elif theme_name == "Ice Circuit":
         sections = [
             HudSection("RUN", tuple(core_lines), LIVE_CYAN),
             HudSection("DISTRICT", tuple(field_lines), colors.SKYBLUE),
-        ] + ([HudSection("LIVE SIGNAL", tuple(bonus_lines), LIVE_GOLD)] if bonus_lines else [])
+        ] + ([HudSection(loop_focus.phase, tuple(signal_lines), LIVE_GOLD)] if signal_lines else [])
     elif theme_name == "Velvet Alley":
         sections = [
             HudSection("RUN", tuple(core_lines), LIVE_PINK),
             HudSection("DISTRICT", tuple(field_lines), LIVE_GOLD),
-        ] + ([HudSection("LIVE SIGNAL", tuple(bonus_lines), LIVE_CYAN)] if bonus_lines else [])
+        ] + ([HudSection(loop_focus.phase, tuple(signal_lines), LIVE_CYAN)] if signal_lines else [])
 
     return GameplayHudModel(tuple(sections))
 
@@ -203,11 +211,20 @@ def build_live_feedback_model(scene) -> LiveFeedbackModel:
 
     near_miss_card = None
     if scene.near_miss_timer > 0:
+        chain_count = getattr(scene, "danger_chain_count", 0)
+        if chain_count >= 2:
+            detail = f"nerve chain x{chain_count}  |  keep threading pressure"
+            headline = f"NERVE CHAIN {chain_count}"
+            width = 252
+        else:
+            detail = "ghost almost clipped your line"
+            headline = "NEAR MISS"
+            width = 212
         near_miss_card = FeedbackCard(
-            "NEAR MISS",
-            "ghost almost clipped your line",
+            headline,
+            detail,
             colors.WHITE,
-            212,
+            width,
         )
 
     return LiveFeedbackModel(

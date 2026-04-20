@@ -16,6 +16,12 @@ class RunStats:
     near_misses: int = 0
     thread_turns: int = 0
     line_bonuses: int = 0
+    bonus_gates: int = 0
+    route_bonus_score: int = 0
+    line_bonus_score: int = 0
+    risk_bonus_score: int = 0
+    ghost_bonus_score: int = 0
+    cherry_bonus_score: int = 0
     levels_cleared: int = 0
     level_start_score: int = 0
     level_start_dots: int = 0
@@ -49,6 +55,8 @@ class RunState:
     pressure_stage: int = 0
     time_attack_seconds: float = 0.0
     last_killer_name: str = ""
+    hunt_window_ticks: int = 0
+    market_window_ticks: int = 0
 
 
 @dataclass

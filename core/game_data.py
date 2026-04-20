@@ -29,6 +29,9 @@ class ChallengePreset:
     threat_label: str
     target_score: int = 0
     target_ghosts: int = 0
+    target_cherries: int = 0
+    target_near_misses: int = 0
+    target_bonus_gates: int = 0
     unlock_text: str = "Available from the start"
     reward_title: str = "DISTRICT TOKEN"
 
@@ -180,6 +183,14 @@ CHALLENGE_PRESETS: dict[str, ChallengePreset] = {
     "Last Call": ChallengePreset("LAST CALL", "Clear District 3 and eat 8 ghosts", ("Late-board ghost pressure challenge", "Eat 8 ghosts before the district ends", "Built for long power-chain routing"), colors.PINK, (3,), 2, "BOARD D2", "HUNT", target_ghosts=8, unlock_text="Unlock: eat 20 ghosts total", reward_title="LAST CALL PASS"),
     "Redline Protocol": ChallengePreset("REDLINE EX", "Elite district clear above 5200", ("Prestige board with elite pressure", "Finish above 5200 on the final district", "Built for top-rank score routing"), colors.RED, (5,), 2, "BOARD E1", "ELITE", target_score=5200, unlock_text="Unlock: Challenge rank HUNTER", reward_title="REDLINE CORE"),
     "Clock Reaper": ChallengePreset("CLOCK REAPER", "Timed hunt, clear and eat 7 ghosts", ("Tempo-heavy hunt on a timed board", "Eat 7 ghosts before the district falls", "Designed for high-pressure chain play"), colors.ORANGE, (4,), 1, "BOARD E2", "ELITE", target_ghosts=7, unlock_text="Unlock: Time Attack mastery PRO", reward_title="REAPER CLOCK"),
+    "Market Heist": ChallengePreset("MARKET HEIST", "Clear District 4 and collect 4 cherries", ("Bonus-heavy market raid challenge", "Route four cherries before the district closes", "Built around timing windows and side exits"), colors.GOLD, (4,), 2, "BOARD M1", "JACKPOT", target_cherries=4, unlock_text="Unlock: clear 2 total levels", reward_title="HEIST SEAL"),
+    "Thread Needle": ChallengePreset("THREAD NEEDLE", "Clear District 5 with 4 near misses", ("Late pressure survival style test", "Log four near misses before the clear", "Built for nerve chains under collapse pressure"), colors.MAGENTA, (5,), 2, "BOARD T1", "THREAD", target_near_misses=4, unlock_text="Unlock: earn 4 near misses in total", reward_title="THREAD SPIKE"),
+    "Gate Crasher": ChallengePreset("GATE CRASHER", "Clear District 4 and hit 3 bonus gates", ("Chain-gated shortcut route challenge", "Open and cross three bonus gates in one run", "Built for route maintenance under pressure"), colors.SKYBLUE, (4,), 2, "BOARD G1", "GATE", target_bonus_gates=3, unlock_text="Unlock: Arcade mastery INITIATE", reward_title="GATE CORE"),
+    "Blackout Harvest": ChallengePreset("BLACKOUT HARVEST", "Clear District 3 above 3600 and eat 5 ghosts", ("Predator-style hunt in the blackout lanes", "Need 3600 score and 5 ghost eats to clear", "Built around brutal rage-window routing"), colors.VIOLET, (3,), 2, "BOARD H1", "HUNT", target_score=3600, target_ghosts=5, unlock_text="Unlock: best score 2800", reward_title="HARVEST SHARD"),
+    "Pulse Corridor": ChallengePreset("PULSE CORRIDOR", "Clear District 2 with 3 near misses above 3000", ("Barrier-driven pressure run in the corridor grid", "Need 3 near misses and 3000 score to clear", "Built around pulse timing and last-second turns"), colors.RED, (2,), 1, "BOARD P2", "PULSE", target_score=3000, target_near_misses=3, unlock_text="Unlock: lose 1 run or clear 3 levels", reward_title="CORRIDOR CHIP"),
+    "Jackpot Circuit": ChallengePreset("JACKPOT CIRCUIT", "Clear District 4 with 3 cherries and 2 bonus gates", ("Market loop multi-goal raid challenge", "Need 3 cherries and 2 gate breaks on one clear", "Built around chain maintenance and bonus timing"), colors.GOLD, (4,), 2, "BOARD J4", "JACKPOT", target_cherries=3, target_bonus_gates=2, unlock_text="Unlock: collect 6 cherries total", reward_title="JACKPOT KEY"),
+    "Spiral Dive": ChallengePreset("SPIRAL DIVE", "Clear District 5 with 5 near misses above 3400", ("Survival-scoring trial in the collapse spiral", "Need 5 near misses and 3400 score to clear", "Built for nerve chains inside the overrun ring"), colors.MAGENTA, (5,), 2, "BOARD S5", "THREAD", target_score=3400, target_near_misses=5, unlock_text="Unlock: Challenge credits 9", reward_title="SPIRAL TOKEN"),
+    "Predator Window": ChallengePreset("PREDATOR WINDOW", "One life, clear District 3 with 6 ghosts and 2 near misses", ("Single-life blackout hunt with no safe pacing", "Need 6 ghost eats and 2 near misses before the clear", "Built around short windows and nerve control"), colors.ORANGE, (3,), 1, "BOARD W3", "ELITE", target_ghosts=6, target_near_misses=2, unlock_text="Unlock: eat 30 ghosts total", reward_title="WINDOW FANG"),
 }
 
 THEME_PRESETS: dict[str, ThemePreset] = {

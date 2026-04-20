@@ -23,9 +23,13 @@ class GameScene(Scene):
         self.transition: SceneTransition | None = None
         self.visual_time = 0.0
         self.tutorial_stage = 0
+        self.tutorial_stage_timer = 0.0
+        self.tutorial_wow_timer = 0.0
         self.failure_reason = ""
         self.near_miss_timer = 0.0
         self.near_miss_cooldown = 0.0
+        self.danger_chain_count = 0
+        self.danger_chain_timer = 0.0
         self.overtime_banner_timer = 0.0
         self.overtime_announced = False
         self.btn_pause = None
@@ -34,7 +38,7 @@ class GameScene(Scene):
         self.btn_exit = None
 
     def _tutorial_step_total(self) -> int:
-        return 4
+        return 7
 
     def _tutorial_progress_index(self) -> int:
         if self.tutorial_stage <= 0:
@@ -97,6 +101,9 @@ class GameScene(Scene):
 
     def _update_tutorial_state(self, mobile_action: str | None) -> None:
         game_flow.update_tutorial_state(self, mobile_action)
+
+    def _tutorial_card_content(self):
+        return game_flow.tutorial_card_content(self)
 
     def navigator_confirm_like(self) -> bool:
         return game_flow.navigator_confirm_like()

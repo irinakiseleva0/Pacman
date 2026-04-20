@@ -7,7 +7,7 @@ from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE, MODES_SCENE, OPTIONS_SCENE
 from ui.layout import LAYOUT_PROFILES
 from ui.navigation import ButtonNavigator
-from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, PANEL_ACCENT, TEXT_DIM, draw_arcade_background, draw_cinematic_menu_background, draw_cinematic_title_stack, draw_dashboard_rail, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_scan_intro, draw_street_terminal, draw_title_glitch_pass, button_clicked, centered_rect, draw_button, draw_shadowed_text_centered, draw_text_centered
+from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, PANEL_ACCENT, TEXT_DIM, draw_arcade_background, draw_cinematic_menu_background, draw_cinematic_title_stack, draw_dashboard_rail, draw_glass_card, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_scan_intro, draw_street_terminal, draw_title_glitch_pass, button_clicked, centered_rect, draw_button, draw_shadowed_text_centered, draw_text_centered
 
 
 class Menu(Scene):
@@ -38,10 +38,10 @@ class Menu(Scene):
         cx = cfg.window_width // 2
         self.desktop_layout = cfg.layout_name == "desktop"
         if self.desktop_layout:
-            panel_width = min(340, cfg.window_width - 140)
-            panel_height = min(650, cfg.window_height - 170)
-            panel_x = cfg.window_width - panel_width - 56
-            panel_y = max(62, int((cfg.window_height - panel_height) / 2))
+            panel_width = min(408, cfg.window_width - 120)
+            panel_height = min(590, cfg.window_height - 160)
+            panel_x = cfg.window_width - panel_width - 42
+            panel_y = max(70, int((cfg.window_height - panel_height) / 2) + 10)
         else:
             panel_width = min(760, cfg.window_width - 220)
             panel_height = cfg.window_height - 100
@@ -55,9 +55,9 @@ class Menu(Scene):
             stacked_w = int(panel_width - panel_padding * 2)
             split_gap = 8
             split_w = int((stacked_w - split_gap) / 2)
-            layout_y = int(panel_y + 102)
-            diff_y = int(panel_y + 198)
-            action_y = int(panel_y + panel_height - 212)
+            layout_y = int(panel_y + 92)
+            diff_y = int(panel_y + 178)
+            action_y = int(panel_y + panel_height - 192)
             self.btn_desktop = pyray.Rectangle(panel_x + panel_padding, layout_y, split_w, btn_h)
             self.btn_mobile = pyray.Rectangle(panel_x + panel_padding + split_w + split_gap, layout_y, split_w, btn_h)
 
@@ -213,15 +213,17 @@ class Menu(Scene):
         cfg = self.ctx.cfg
         draw_panel(main_panel, time_s=self.ctx.visual_time)
 
-        title_center_x = int(cfg.window_width * 0.24)
-        title_y = int(cfg.window_height * 0.18)
-        draw_dashboard_rail(title_center_x, title_y - 32, 260, label="DISTRICT FEED", accent_color=LIVE_PINK, time_s=self.ctx.visual_time)
+        title_center_x = int(cfg.window_width * 0.27)
+        title_y = int(cfg.window_height * 0.15)
+        focal_rect = pyray.Rectangle(int(cfg.window_width * 0.10), int(cfg.window_height * 0.15), int(cfg.window_width * 0.36), 210)
+        draw_glass_card(focal_rect, accent_color=LIVE_PINK, glow_alpha=10, fill_alpha=64, time_s=self.ctx.visual_time)
+        draw_dashboard_rail(title_center_x, title_y - 30, 286, label="DISTRICT FEED", accent_color=LIVE_PINK, time_s=self.ctx.visual_time)
         draw_cinematic_title_stack(
             title_center_x,
             title_y,
             "PAC-MAN",
             "NEON DISTRICT",
-            "SYSTEM ONLINE • VER 2.047",
+            "SYSTEM ONLINE | VER 2.047",
             self.ctx.visual_time,
             variant=self.ctx.title_variant_name(),
         )
@@ -231,10 +233,42 @@ class Menu(Scene):
         draw_text_centered(
             "Navigate the neon-soaked corridors of the digital underworld.",
             title_center_x,
-            title_y + 174,
-            16,
+            title_y + 182,
+            17,
             TEXT_DIM,
         )
+        draw_text_centered(
+            "Route clean. Break pressure. Own the district.",
+            title_center_x,
+            title_y + 208,
+            15,
+            LIVE_CYAN,
+        )
+
+        sign_rect = pyray.Rectangle(int(cfg.window_width * 0.55), int(cfg.window_height * 0.26), 128, 72)
+        draw_glass_card(sign_rect, accent_color=LIVE_PINK, glow_alpha=16, fill_alpha=86, time_s=self.ctx.visual_time)
+        draw_text_centered("NOVA", int(sign_rect.x + sign_rect.width / 2), int(sign_rect.y + 18), 24, colors.WHITE)
+        draw_text_centered("DISTRICT BAR", int(sign_rect.x + sign_rect.width / 2), int(sign_rect.y + 44), 12, LIVE_PINK)
+
+        floor_band = pyray.Rectangle(0, int(cfg.window_height * 0.68), cfg.window_width, int(cfg.window_height * 0.24))
+        pyray.draw_rectangle_rec(floor_band, pyray.fade(colors.BLACK, 0.28))
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(0, int(cfg.window_height * 0.70), cfg.window_width, 2),
+            pyray.fade(LIVE_CYAN, 0.22),
+        )
+        for index in range(9):
+            y = int(cfg.window_height * 0.74) + index * 24
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(int(cfg.window_width * 0.04), y, int(cfg.window_width * 0.64), 2),
+                pyray.fade(colors.WHITE, max(0.02, 0.10 - index * 0.008)),
+            )
+        for index in range(6):
+            rx = int(cfg.window_width * 0.10) + index * 96
+            rw = 56 + (index % 3) * 18
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(rx, int(cfg.window_height * 0.74) + index * 10, rw, 10),
+                pyray.fade(LIVE_PINK if index % 2 else LIVE_CYAN, 0.08),
+            )
 
         if not self.ctx.capture_mode_enabled():
             status_card = pyray.Rectangle(int(main_panel.x), int(main_panel.y + main_panel.height + 18), int(main_panel.width), 80)
@@ -246,16 +280,16 @@ class Menu(Scene):
                 subline=f"HIGH SCORE {self.ctx.high_score}",
             )
 
-        draw_text_centered("DISPLAY", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 18), 14, TEXT_DIM)
+        draw_text_centered("DISPLAY", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 16), 14, TEXT_DIM)
         draw_button(self.btn_desktop, "DESKTOP", focused=self.navigator.focus_index == 0, time_s=self.ctx.visual_time)
         draw_button(self.btn_mobile, "MOBILE", focused=self.navigator.focus_index == 1, time_s=self.ctx.visual_time)
 
-        draw_text_centered("DIFFICULTY", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 150), 14, TEXT_DIM)
+        draw_text_centered("DIFFICULTY", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 138), 14, TEXT_DIM)
         draw_button(self.btn_easy, "EASY", focused=self.navigator.focus_index == 2, time_s=self.ctx.visual_time)
         draw_button(self.btn_normal, "NORMAL", focused=self.navigator.focus_index == 3, time_s=self.ctx.visual_time)
         draw_button(self.btn_hard, "HARD", focused=self.navigator.focus_index == 4, time_s=self.ctx.visual_time)
 
-        draw_text_centered("PLAY", int(main_panel.x + main_panel.width / 2), int(self.btn_start.y - 28), 14, TEXT_DIM)
+        draw_text_centered("PLAY", int(main_panel.x + main_panel.width / 2), int(self.btn_start.y - 22), 14, TEXT_DIM)
         draw_button(self.btn_start, "START RUN", focused=self.navigator.focus_index == 5, time_s=self.ctx.visual_time)
         draw_button(self.btn_modes, "MODES", focused=self.navigator.focus_index == 6, time_s=self.ctx.visual_time)
         draw_button(self.btn_options, "OPTIONS", focused=self.navigator.focus_index == 7, time_s=self.ctx.visual_time)

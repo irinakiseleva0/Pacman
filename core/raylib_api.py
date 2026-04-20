@@ -83,6 +83,10 @@ window_should_close = rl.WindowShouldClose
 close_window = rl.CloseWindow
 
 
+def set_window_size(width: int, height: int):
+    rl.SetWindowSize(int(width), int(height))
+
+
 # -------------------------
 # Audio
 # -------------------------
@@ -149,6 +153,10 @@ def draw_circle(center_x: int, center_y: int, radius: int, color):
 
 def draw_circle_lines(center_x: int, center_y: int, radius: int, color):
     rl.DrawCircleLines(int(center_x), int(center_y), float(radius), color)
+
+
+def fade(color, alpha: float):
+    return rl.Fade(color, float(alpha))
 
 
 # -------------------------

@@ -206,29 +206,31 @@ class ResultScene(Scene):
         stats = self.ctx.run_stats
         trait = self.ctx.current_map_trait()
         medals = self.ctx.earned_style_medals(self.ctx.last_result)
-        medal_line = " | ".join(medals[:2]) if medals else "No style medals this run"
+        score_line = self.ctx.score_focus_summary_lines()[0]
+        medal_line = " | ".join(medals[:2]) if medals else self.ctx.score_focus_summary_lines()[2]
+        grade = self.ctx.current_run_grade(self.ctx.last_result)
         if self.ctx.last_result == "level_complete":
             return (
-                f"{trait.title}  |  {self.ctx.current_map_scene_tag()}",
-                f"Dots {stats.dots_eaten}  Power {stats.power_seeds_eaten}  Ghosts {stats.ghosts_eaten}",
+                f"{trait.title}  |  {self.ctx.current_map_scene_tag()}  |  Grade {grade}",
+                score_line,
                 medal_line,
             )
         if self.ctx.last_result == "game_won":
             return (
-                f"Run Won  |  {self.ctx.mode_label()}",
-                f"Levels {stats.levels_cleared}  Ghosts {stats.ghosts_eaten}  Dots {stats.dots_eaten}",
+                f"Run Won  |  {self.ctx.mode_label()}  |  Grade {grade}",
+                score_line,
                 medal_line,
             )
         if self.ctx.last_result == "challenge_failed":
             return (
-                f"Trial Missed  |  {self.ctx.challenge_preset().title}",
-                f"Ghosts {stats.ghosts_eaten}  Dots {stats.dots_eaten}",
+                f"Trial Missed  |  {self.ctx.challenge_preset().title}  |  Grade {grade}",
+                self.ctx.score_focus_summary_lines()[1],
                 medal_line,
             )
         if self.ctx.last_result == "abandon":
             return (
-                f"Run Aborted  |  {self.ctx.mode_label()}",
-                f"Level {self.ctx.current_level}  Score {self.ctx.score}",
+                f"Run Aborted  |  {self.ctx.mode_label()}  |  Grade {grade}",
+                self.ctx.score_focus_summary_lines()[1],
                 medal_line,
             )
         killer_map = {
@@ -238,8 +240,8 @@ class ResultScene(Scene):
             "Clyde": "Clyde flipped the read",
         }
         return (
-            f"Run Lost  |  {self.ctx.mode_label()}",
-            killer_map.get(self.ctx.run.last_killer_name, "District pressure broke the run"),
+            f"Run Lost  |  {self.ctx.mode_label()}  |  Grade {grade}",
+            self.ctx.death_reason_detail(),
             medal_line,
         )
 
@@ -300,25 +302,25 @@ class ResultScene(Scene):
 
         profile_card = pyray.Rectangle(panel.x + 34, panel.y + 546, int(panel.width - 68), 102)
         draw_glass_card(profile_card, accent_color=self._progression_accent(), glow_alpha=12, time_s=self.ctx.visual_time)
-        draw_text_centered("PROFILE SAVED", center_x, int(profile_card.y + 14), 18, TEXT_DIM)
+        draw_text_centered("PROGRESSION UPDATE", center_x, int(profile_card.y + 14), 18, TEXT_DIM)
         profile_y = int(profile_card.y + 40)
         mastery_gain = self.ctx.mode_mastery_gain(self.ctx.last_result)
+        grade = self.ctx.current_run_grade(self.ctx.last_result)
+        record_lines = self.ctx.record_book_summary_lines()
+        daily_lines = self.ctx.daily_directive_summary_lines()
         if self.ctx.game_mode == "Challenge":
             credit_gain = self.ctx.challenge_credit_reward(self.ctx.last_result)
             profile_lines = (
-                f"Challenge {self.ctx.challenge_track_rank()} +{credit_gain}C",
-                self.ctx.challenge_progress_lines()[1],
-                self.ctx.profile_summary_lines()[1],
+                f"{self.ctx.challenge_preset().title}  |  Grade {grade}  |  +{credit_gain}C",
+                record_lines[1],
+                daily_lines[0],
             )
         else:
             profile_lines = (
-                f"{self.ctx.game_mode} {self.ctx.mode_mastery_rank(self.ctx.game_mode)} +{mastery_gain}",
-                self.ctx.profile_summary_lines()[0],
-                self.ctx.profile_summary_lines()[1],
+                f"{self.ctx.game_mode} {self.ctx.mode_mastery_rank(self.ctx.game_mode)} +{mastery_gain}  |  Grade {grade}",
+                record_lines[0],
+                daily_lines[0],
             )
-        tag = self.ctx.challenge_preset().title if self.ctx.game_mode == "Challenge" else self.ctx.mode_label()
-        save_hint = self.ctx.profile_save_summary_lines()[1]
-        profile_lines = (f"{tag} / {self.ctx.rank_title()}", profile_lines[0], save_hint)
         for line in profile_lines:
             draw_text_centered(line, center_x, profile_y, 16, TEXT_DIM)
             profile_y += 22

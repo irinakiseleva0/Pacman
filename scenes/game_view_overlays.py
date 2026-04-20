@@ -189,13 +189,7 @@ def draw_death_overlay(game_scene) -> None:
         pyray.Rectangle(0, 0, cfg.window_width, cfg.window_height),
         with_alpha(colors.WHITE, int(6 + pulse * 12)),
     )
-    killer_map = {
-        "Blinky": "BLINKY CUT THE ROUTE",
-        "Pinky": "PINKY HELD THE FRONT",
-        "Inky": "INKY SLIPPED THE FLANK",
-        "Clyde": "CLYDE FLIPPED THE READ",
-    }
-    killer_line = killer_map.get(game_scene.ctx.run.last_killer_name, "DISTRICT CONTROL LOST")
+    killer_line = game_scene.ctx.death_reason_detail().upper()
     if game_scene.failure_reason == "timeout":
         draw_transition_card(game_scene, "TIME OUT", "CLOCK DRAINED  |  RUN FORCE-CLOSED", colors.ORANGE, width=380)
     elif game_scene.transition is not None and game_scene.transition.result == "lose":
@@ -240,22 +234,22 @@ def draw_level_complete_overlay(game_scene) -> None:
 
 def draw_tutorial_overlay(game_scene) -> None:
     cfg = game_scene.ctx.cfg
-    panel_w = min(520, cfg.window_width - 120)
-    panel_h = 144
+    panel_w = min(620, cfg.window_width - 80)
+    panel_h = 164
     panel = pyray.Rectangle(cfg.window_width // 2 - panel_w // 2, cfg.window_height - panel_h - 34, panel_w, panel_h)
-    draw_glass_card(panel, accent_color=LIVE_CYAN, glow_alpha=14, fill_alpha=164)
-
-    titles = {
-        1: ("MOVE OUT", "Move with WASD or Arrow Keys"),
-        2: ("CLEAR A LANE", "Eat dots to start the route"),
-        3: ("TRIGGER RAGE", "Grab a power seed and flip the chase"),
-        4: ("YOU'RE SET", "Start moving to continue"),
-    }
-    title, body = titles.get(game_scene.tutorial_stage, titles[4])
+    title, body, detail, accent = game_scene._tutorial_card_content() if hasattr(game_scene, "_tutorial_card_content") else ("MOVE OUT", "Move with WASD or Arrow Keys", "Start moving to continue", LIVE_CYAN)
+    glow = 14 if game_scene.tutorial_wow_timer <= 0 else 24
+    fill = 164 if game_scene.tutorial_wow_timer <= 0 else 178
+    draw_glass_card(panel, accent_color=accent, glow_alpha=glow, fill_alpha=fill)
     step_label = f"STEP {game_scene._tutorial_progress_index()}/{game_scene._tutorial_step_total()}"
 
-    draw_text_centered("FIRST RUN TRAINING", int(panel.x + panel.width / 2), int(panel.y + 14), 16, LIVE_CYAN)
-    draw_shadowed_text_centered(title, int(panel.x + panel.width / 2), int(panel.y + 40), 24, colors.WHITE)
-    draw_text_centered(body.upper(), int(panel.x + panel.width / 2), int(panel.y + 76), 14, LIVE_CYAN)
-    draw_text_centered(step_label, int(panel.x + panel.width / 2), int(panel.y + 100), 12, TEXT_DIM)
-    draw_text_centered("START MOVING TO CONTINUE", int(panel.x + panel.width / 2), int(panel.y + 118), 12, colors.WHITE)
+    center_x = int(panel.x + panel.width / 2)
+    draw_text_centered("FIRST RUN TRAINING", center_x, int(panel.y + 14), 16, accent)
+    draw_shadowed_text_centered(title, center_x, int(panel.y + 40), 24, colors.WHITE)
+    draw_text_centered(body.upper(), center_x, int(panel.y + 74), 14, accent)
+    draw_text_centered(detail.upper(), center_x, int(panel.y + 100), 12, TEXT_DIM)
+    draw_text_centered(step_label, center_x, int(panel.y + 124), 12, TEXT_DIM)
+    footer = "FOLLOW THE PROMPT AND KEEP MOVING"
+    if game_scene.tutorial_stage >= 7:
+        footer = "PRESS CONFIRM TO FINISH TRAINING"
+    draw_text_centered(footer, center_x, int(panel.y + 142), 12, colors.WHITE)

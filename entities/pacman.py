@@ -24,7 +24,8 @@ class State:
 
 class Pacman(Actor):
     _images_cache = None
-    TURN_BUFFER_SECONDS = 0.22
+    TURN_BUFFER_SECONDS = 0.28
+    CORNER_GRACE_SECONDS = 0.08
 
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
@@ -39,6 +40,7 @@ class Pacman(Actor):
         self.turn_feedback_timer = 0.0
         self.turn_feedback_dir = (0, -1)
         self.turn_buffer_timer = 0.0
+        self.turn_grace_timer = 0.0
 
         # Track last movement direction for ghost AI
         self.last_dx = 0
@@ -165,7 +167,9 @@ class Pacman(Actor):
         return not next_cell.is_blocking(self)
 
     def _apply_buffered_turn(self) -> None:
-        if self.next_state in (State.NONE, State.DEAD) or self.turn_buffer_timer <= 0:
+        if self.next_state in (State.NONE, State.DEAD):
+            return
+        if self.turn_buffer_timer <= 0 and self.turn_grace_timer <= 0:
             return
 
         if self._can_move_in_direction(self.next_state):
@@ -176,16 +180,34 @@ class Pacman(Actor):
             self.turn_buffer_timer = 0.0
 
     def _post_move_turn_snap(self) -> None:
-        if self.next_state in (State.NONE, State.DEAD) or self.turn_buffer_timer <= 0:
+        if self.next_state in (State.NONE, State.DEAD):
+            return
+        if self.turn_buffer_timer <= 0 and self.turn_grace_timer <= 0:
             return
         if self.state == self.next_state:
             self.turn_buffer_timer = 0.0
+            self.turn_grace_timer = 0.0
             return
         if self._can_move_in_direction(self.next_state):
             self.state = self.next_state
             self.pacman_sprite.set_key(self.state, False)
             self._trigger_turn_feedback()
             self.turn_buffer_timer = 0.0
+            self.turn_grace_timer = 0.0
+
+    def _attempt_turn_when_blocked(self) -> bool:
+        if self.next_state in (State.NONE, State.DEAD):
+            return False
+        if self.turn_buffer_timer <= 0 and self.turn_grace_timer <= 0:
+            return False
+        if not self._can_move_in_direction(self.next_state):
+            return False
+        self.state = self.next_state
+        self.pacman_sprite.set_key(self.state, False)
+        self._trigger_turn_feedback()
+        self.turn_buffer_timer = 0.0
+        self.turn_grace_timer = 0.0
+        return True
 
     def _trigger_turn_feedback(self) -> None:
         dx, dy = self._direction_to_delta(self.state)
@@ -249,6 +271,14 @@ class Pacman(Actor):
                 self.ctx.visual.particles.add_particle(
                     Particle(center_x, center_y, -dx * 10, -dy * 10, 0.14, trail_color, 2.0 if self.rage else 1.4)
                 )
+        elif result.blocked:
+            if self._attempt_turn_when_blocked():
+                ndx, ndy = self._direction_to_delta(self.state)
+                retry = game_map.try_move(self, ndx, ndy)
+                if retry.moved:
+                    self.last_dx = ndx
+                    self.last_dy = ndy
+                    self.pacman_sprite.move_forward()
 
     def frame(self, x: int, y: int) -> None:
         super().frame(x, y)
@@ -272,6 +302,10 @@ class Pacman(Actor):
         if self.turn_buffer_timer > 0:
             self.turn_buffer_timer = max(0.0, self.turn_buffer_timer - pyray.get_frame_time())
             if self.turn_buffer_timer == 0 and self.next_state != self.state:
+                self.turn_grace_timer = max(self.turn_grace_timer, self.CORNER_GRACE_SECONDS)
+        if self.turn_grace_timer > 0:
+            self.turn_grace_timer = max(0.0, self.turn_grace_timer - pyray.get_frame_time())
+            if self.turn_grace_timer == 0 and self.next_state != self.state:
                 self.next_state = self.state
 
         if self.rage_timer > 0:

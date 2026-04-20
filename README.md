@@ -160,6 +160,18 @@ or:
 pip install -e .[dev]
 ```
 
+Run the repo checks in one command:
+
+```bash
+python -m checks
+```
+
+After `pip install -e .[dev]`, you can also use:
+
+```bash
+cyberpunk-pacman-check
+```
+
 ### OS Notes
 
 Windows:

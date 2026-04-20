@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -53,6 +54,7 @@ class GameContext:
 
     def __post_init__(self):
         self.settings = SettingsService(self.profile_service)
+        self._normalize_daily_progress()
         self.apply_layout(self.cfg.layout_name)
         self.set_capture_mode_enabled(self.capture_mode_enabled(), save=False)
         # Initialize lives from config if not already set
@@ -324,6 +326,7 @@ class GameContext:
         self.run_stats = RunStats()
         self.reset_power_chain()
         self.reset_route_chain()
+        self.reset_district_windows()
         self.time_attack_seconds = self.starting_time_attack_seconds()
         self.mark_level_baseline()
 
@@ -342,6 +345,7 @@ class GameContext:
 
     def start_new_game(self) -> None:
         """Start a new game using the current config."""
+        self._normalize_daily_progress()
         self.pre_run_unlock_snapshot = self.unlock_snapshot()
         self.reset_run_state()
         self.profile["total_runs"] += 1
@@ -389,6 +393,22 @@ class GameContext:
             return int(self.profile.get("challenge_credits", 0)) >= 18
         if name == "Clock Reaper":
             return self.mode_mastery_value("Time Attack") >= 9
+        if name == "Market Heist":
+            return profile["total_levels_cleared"] >= 2
+        if name == "Thread Needle":
+            return profile["total_runs"] >= 2 or profile["total_losses"] >= 1
+        if name == "Gate Crasher":
+            return self.mode_mastery_value("Arcade") >= 3
+        if name == "Blackout Harvest":
+            return profile["best_score"] >= 2800
+        if name == "Pulse Corridor":
+            return profile["total_losses"] >= 1 or profile["total_levels_cleared"] >= 3
+        if name == "Jackpot Circuit":
+            return profile["total_cherries"] >= 6
+        if name == "Spiral Dive":
+            return int(profile.get("challenge_credits", 0)) >= 9
+        if name == "Predator Window":
+            return profile["total_ghosts_eaten"] >= 30
         return False
 
     def challenge_entries(self) -> list[tuple[str, ChallengePreset, bool]]:
@@ -1098,6 +1118,10 @@ class GameContext:
         self.run.line_chain_dx = 0
         self.run.line_chain_dy = 0
 
+    def reset_district_windows(self) -> None:
+        self.run.hunt_window_ticks = 0
+        self.run.market_window_ticks = 0
+
     def route_chain_grace_ticks(self) -> int:
         if self.game_mode == "Time Attack":
             return 46 + self.map_route_grace_bonus_ticks()
@@ -1111,6 +1135,12 @@ class GameContext:
             if self.route_chain_window == 0:
                 self.reset_route_chain()
 
+    def tick_district_windows(self) -> None:
+        if self.run.hunt_window_ticks > 0:
+            self.run.hunt_window_ticks -= 1
+        if self.run.market_window_ticks > 0:
+            self.run.market_window_ticks -= 1
+
     def register_route_chain_dot(self) -> tuple[int, int]:
         if self.route_chain_window > 0:
             self.route_chain_count += 1
@@ -1120,8 +1150,8 @@ class GameContext:
         self.route_chain_window = self.route_chain_grace_ticks()
 
         bonus = 0
-        if self.route_chain_count >= 6 and self.route_chain_count % 4 == 0:
-            bonus = 40 + max(0, self.route_chain_count - 4) * 12
+        if self.route_chain_count >= 5 and self.route_chain_count % 3 == 2:
+            bonus = 32 + max(0, self.route_chain_count - 5) * 10
             bonus = int(bonus * self.mode_score_multiplier())
         return self.route_chain_count, bonus
 
@@ -1140,22 +1170,37 @@ class GameContext:
             self.run.line_chain_count = 1
 
         bonus = 0
-        if self.run.line_chain_count >= 8 and self.run.line_chain_count % 4 == 0:
-            bonus = 28 + max(0, self.run.line_chain_count - 8) * 10
+        if self.run.line_chain_count >= 6 and self.run.line_chain_count % 3 == 0:
+            bonus = 24 + max(0, self.run.line_chain_count - 6) * 8
             bonus = int(bonus * self.mode_score_multiplier())
             self.run_stats.line_bonuses += 1
         return self.run.line_chain_count, bonus
 
     def risk_turn_bonus_value(self) -> int:
-        base = 70
+        base = 48
         if self.game_mode == "Challenge":
-            base = 95
+            base = 68
         elif self.game_mode == "Time Attack":
-            base = 85
+            base = 58
         elif self.game_mode == "Endless":
-            base = 78
+            base = 54
         if self.pressure_stage >= 2:
-            base += 18
+            base += 12
+        return int(base * self.mode_score_multiplier())
+
+    def danger_chain_bonus_value(self, chain_count: int, *, risk_turn: bool = False) -> int:
+        count = max(2, chain_count)
+        base = 42 + (count - 2) * 24
+        if self.game_mode == "Challenge":
+            base += 20
+        elif self.game_mode == "Time Attack":
+            base += 12
+        elif self.game_mode == "Endless":
+            base += 8
+        if self.pressure_stage >= 2:
+            base += 10
+        if risk_turn:
+            base += 16
         return int(base * self.mode_score_multiplier())
 
     def power_chain_grace_ticks(self) -> int:
@@ -1191,6 +1236,37 @@ class GameContext:
         rage_bonus = max(0, self.power_chain_level - 1) * 36
         keep_combo = self.power_chain_level > 1
         return self.power_chain_level, chain_bonus, rage_bonus, keep_combo
+
+    def hunt_window_active(self) -> bool:
+        return self.run.hunt_window_ticks > 0
+
+    def arm_hunt_window(self) -> None:
+        self.run.hunt_window_ticks = max(self.run.hunt_window_ticks, 145)
+
+    def consume_hunt_window_bonus(self) -> tuple[int, int]:
+        if not self.hunt_window_active():
+            return 0, 0
+        self.run.hunt_window_ticks = 0
+        score_bonus = int((140 + self.current_level * 22) * self.mode_score_multiplier())
+        rage_bonus = 28 + self.pressure_stage * 6
+        return score_bonus, rage_bonus
+
+    def market_window_active(self) -> bool:
+        return self.run.market_window_ticks > 0
+
+    def arm_market_window(self) -> None:
+        self.run.market_window_ticks = max(self.run.market_window_ticks, 170)
+
+    def consume_market_window_bonus(self) -> int:
+        if not self.market_window_active():
+            return 0
+        self.run.market_window_ticks = 0
+        bonus = 180
+        if self.route_chain_active():
+            bonus += 90
+        if self.pressure_stage >= 1:
+            bonus += 45
+        return int(bonus * self.mode_score_multiplier())
 
     def next_ghost_combo_score(self) -> int:
         combo_step = min(self.ghost_combo, 3)
@@ -1234,14 +1310,14 @@ class GameContext:
         pressure = self.pressure_stage if pressure_stage is None else pressure_stage
         modifier = self.district_modifier()
         map_trait = self.current_map_trait()
-        chase_ticks = self.cfg.ghost_chase_ticks + level_offset * self.cfg.ghost_chase_tick_step + pressure * 8 + modifier.chase_bonus + map_trait.chase_bonus
+        chase_ticks = self.cfg.ghost_chase_ticks + level_offset * self.cfg.ghost_chase_tick_step + pressure * 6 + modifier.chase_bonus + map_trait.chase_bonus
         scatter_ticks = max(
             self.cfg.ghost_scatter_tick_min,
-            self.cfg.ghost_scatter_ticks - level_offset * self.cfg.ghost_scatter_tick_step - pressure * 6 - modifier.scatter_penalty - map_trait.scatter_penalty,
+            self.cfg.ghost_scatter_ticks - level_offset * self.cfg.ghost_scatter_tick_step - pressure * 4 - modifier.scatter_penalty - map_trait.scatter_penalty,
         )
         if self.elite_pressure_active():
-            chase_ticks += 18
-            scatter_ticks = max(self.cfg.ghost_scatter_tick_min, scatter_ticks - 8)
+            chase_ticks += 12
+            scatter_ticks = max(self.cfg.ghost_scatter_tick_min, scatter_ticks - 5)
         return chase_ticks, scatter_ticks
 
     def effective_rage_duration(self) -> int:
@@ -1250,7 +1326,7 @@ class GameContext:
         map_trait = self.current_map_trait()
         return max(
             self.cfg.rage_duration_tick_min,
-            self.cfg.rage_duration_ticks - level_offset * self.cfg.rage_duration_tick_step + modifier.rage_bonus + map_trait.rage_bonus + self.mode_rage_bonus(),
+            self.cfg.rage_duration_ticks - level_offset * self.cfg.rage_duration_tick_step + modifier.rage_bonus + map_trait.rage_bonus + self.mode_rage_bonus() - self.pressure_stage * 6,
         )
 
     def effective_cherry_respawn(self) -> int:
@@ -1259,7 +1335,7 @@ class GameContext:
         map_trait = self.current_map_trait()
         return max(
             self.cfg.cherry_respawn_tick_min,
-            self.cfg.cherry_respawn_ticks - level_offset * self.cfg.cherry_respawn_tick_step - modifier.cherry_respawn_bonus - map_trait.cherry_respawn_bonus,
+            self.cfg.cherry_respawn_ticks - level_offset * self.cfg.cherry_respawn_tick_step - modifier.cherry_respawn_bonus - map_trait.cherry_respawn_bonus - self.pressure_stage * 4,
         )
 
     def effective_cherry_score(self) -> int:
@@ -1285,7 +1361,7 @@ class GameContext:
             self.cfg.ghost_release_tick_interval - level_offset * self.cfg.ghost_release_tick_step - modifier.release_bonus - map_trait.release_bonus,
         )
         if self.elite_pressure_active():
-            interval = max(self.cfg.ghost_release_tick_min, interval - 2)
+            interval = max(self.cfg.ghost_release_tick_min, interval - 1)
         return interval
 
     def effective_item_counts(self) -> tuple[int, int, int] | None:
@@ -1395,11 +1471,37 @@ class GameContext:
     def map_teleport_bonus_value(self) -> int:
         return 180 if self.current_map_number() == 4 else 0
 
+    def bonus_gate_value(self) -> int:
+        bonus = 90 + max(0, self.route_chain_count - 4) * 18
+        return int(bonus * self.mode_score_multiplier())
+
+    def hotspot_seed_bonus_value(self) -> int:
+        bonus = 30 + self.pressure_stage * 12
+        if self.current_map_number() == 5:
+            bonus += 20
+        elif self.current_map_number() == 2:
+            bonus += 10
+        return int(bonus * self.mode_score_multiplier())
+
     def map_pressure_spike_step(self) -> int:
         if self.current_map_number() == 2:
             return 72
         if self.current_map_number() == 5:
             return 56
+        return 0
+
+    def pulse_barrier_cycle_ticks(self) -> int:
+        if self.current_map_number() == 2:
+            return 42
+        if self.current_map_number() == 5:
+            return 34
+        return 0
+
+    def pulse_barrier_closed_ticks(self) -> int:
+        if self.current_map_number() == 2:
+            return 18
+        if self.current_map_number() == 5:
+            return 16 if self.pressure_stage < 2 else 20
         return 0
 
     def map_ghost_rage_extension(self) -> int:
@@ -1458,6 +1560,12 @@ class GameContext:
             return "challenge_failed"
         if preset.target_ghosts > 0 and self.run_stats.ghosts_eaten < preset.target_ghosts:
             return "challenge_failed"
+        if preset.target_cherries > 0 and self.run_stats.cherries_eaten < preset.target_cherries:
+            return "challenge_failed"
+        if preset.target_near_misses > 0 and self.run_stats.near_misses < preset.target_near_misses:
+            return "challenge_failed"
+        if preset.target_bonus_gates > 0 and self.run_stats.bonus_gates < preset.target_bonus_gates:
+            return "challenge_failed"
         return "game_won"
 
     def next_level(self) -> None:
@@ -1472,6 +1580,24 @@ class GameContext:
     def record_dot_eaten(self) -> None:
         self.run_stats.dots_eaten += 1
 
+    def map_transit_escape_bonus(self) -> int:
+        if self.current_map_number() != 1 or self.route_chain_count < 3:
+            return 0
+        bonus = 28 + self.route_chain_count * 9
+        return int(bonus * self.mode_score_multiplier())
+
+    def map_pressure_bait_bonus(self) -> int:
+        if self.current_map_number() != 2:
+            return 0
+        bonus = 30 + self.pressure_stage * 16
+        return int(bonus * self.mode_score_multiplier())
+
+    def map_survival_bank_bonus(self, danger_chain_count: int) -> int:
+        if self.current_map_number() != 5:
+            return 0
+        bonus = 38 + max(0, danger_chain_count - 1) * 18 + self.pressure_stage * 12
+        return int(bonus * self.mode_score_multiplier())
+
     def route_chain_active(self) -> bool:
         return self.route_chain_count >= 4 and self.route_chain_window > 0
 
@@ -1484,6 +1610,46 @@ class GameContext:
     def record_ghost_eaten(self) -> None:
         self.run_stats.ghosts_eaten += 1
 
+    def record_bonus_gate(self) -> None:
+        self.run_stats.bonus_gates += 1
+
+    def score_focus_summary_lines(self) -> tuple[str, str, str]:
+        stats = self.run_stats
+        drivers = [
+            ("Ghost Hunt", int(stats.ghost_bonus_score)),
+            ("Route Control", int(stats.route_bonus_score)),
+            ("Risk Play", int(stats.risk_bonus_score)),
+            ("Bonus Pickups", int(stats.cherry_bonus_score)),
+            ("Line Bonus", int(stats.line_bonus_score)),
+        ]
+        top = sorted(drivers, key=lambda item: item[1], reverse=True)
+        if top[0][1] <= 0:
+            return (
+                "Big score comes from chaining routes and ghost windows",
+                "Near misses are now support bonuses, not the main economy",
+                "If a run felt flat, look for cleaner route and power-seed timing",
+            )
+        first = f"{top[0][0]} +{top[0][1]}"
+        second = f"{top[1][0]} +{top[1][1]}" if len(top) > 1 and top[1][1] > 0 else "Pressure and route bonuses scale with cleaner reads"
+        if self.last_result in {"lose", "challenge_failed"}:
+            improvement = "You died under chase pressure; use scatter windows or power-seeds earlier"
+            if self.run_stats.near_misses >= 3:
+                improvement = "You flirted with pressure often; convert fewer close calls into safer exits"
+            elif self.run_stats.ghosts_eaten == 0:
+                improvement = "You left hunt value on the table; route one cleaner rage conversion"
+        else:
+            improvement = "Best gains come from holding route chains into cherry or ghost windows"
+        return (first, second, improvement)
+
+    def death_reason_detail(self) -> str:
+        killer = self.run.last_killer_name.upper() if self.run.last_killer_name else "GHOST PRESSURE"
+        mode = self.ghost_mode.upper()
+        if self.pressure_stage >= 3:
+            return f"{killer} CLOSED THE BOARD  |  {mode} PRESSURE STAGE {self.pressure_stage}"
+        if self.pressure_stage >= 1:
+            return f"{killer} WON THE CHASE  |  PRESSURE STAGE {self.pressure_stage}"
+        return f"{killer} BROKE THE LINE  |  {mode} WINDOW"
+
     def record_level_cleared(self) -> None:
         self.run_stats.levels_cleared += 1
         self.profile["total_levels_cleared"] += 1
@@ -1495,7 +1661,9 @@ class GameContext:
             return
 
         self.run_stats.finalized = True
+        self._normalize_daily_progress()
         before_snapshot = self.pre_run_unlock_snapshot or self.unlock_snapshot()
+        run_grade = self.current_run_grade(result)
         if result == "game_won":
             self.profile["total_wins"] += 1
         elif result in {"lose", "challenge_failed", "abandon"}:
@@ -1527,6 +1695,10 @@ class GameContext:
             self.profile["challenge_streak"] = 0
         self.profile["challenge_credits"] = int(self.profile.get("challenge_credits", 0)) + self.challenge_credit_reward(result)
         style_medals = self.earned_style_medals(result)
+        self._update_mode_records(result, run_grade)
+        self._update_district_records(result, run_grade)
+        self._update_series_progress(run_grade, result)
+        self._update_daily_directives(run_grade, result)
         self.profile.setdefault("style_medals", {name: 0 for name in STYLE_MEDAL_ORDER})
         for medal_name in style_medals:
             self.profile["style_medals"][medal_name] = int(self.profile["style_medals"].get(medal_name, 0)) + 1
@@ -1541,6 +1713,8 @@ class GameContext:
                 "result": result,
                 "score": self.score,
                 "level": self.current_level,
+                "grade": run_grade,
+                "map": self.current_map_number(),
                 "medals": style_medals,
             },
         )
@@ -1800,6 +1974,209 @@ class GameContext:
                 return f"{title}: {detail}"
         return None
 
+    def _today_iso(self) -> str:
+        return date.today().isoformat()
+
+    def _normalize_daily_progress(self) -> None:
+        self.profile.setdefault("daily_progress", {
+            "date": "",
+            "completed": [],
+            "streak": 0,
+            "last_full_clear_date": "",
+            "total_completed_days": 0,
+        })
+        daily = self.profile["daily_progress"]
+        today = self._today_iso()
+        if str(daily.get("date", "")) == today:
+            return
+        daily["date"] = today
+        daily["completed"] = []
+
+    def _daily_directive_pool(self) -> tuple[tuple[str, str, int, str], ...]:
+        return (
+            ("clear-run", "Finish any run", 1, "Clear any district result screen"),
+            ("score-2200", "Reach 2200 score", 2200, "Push one run above 2200"),
+            ("ghosts-4", "Eat 4 ghosts", 4, "Convert two power windows cleanly"),
+            ("cherries-2", "Collect 2 cherries", 2, "Route both bonus spawns"),
+            ("near-miss-3", "Log 3 near misses", 3, "Thread pressure without dying"),
+            ("bonus-gates-2", "Break 2 bonus gates", 2, "Hold route chain through gate lanes"),
+            ("grade-a", "Earn grade A", 1, "Finish with an A-or-better run"),
+        )
+
+    def daily_directive_entries(self) -> list[tuple[str, str, bool]]:
+        self._normalize_daily_progress()
+        pool = self._daily_directive_pool()
+        today_value = sum(ord(ch) for ch in self._today_iso())
+        start = today_value % len(pool)
+        picks = [pool[(start + offset) % len(pool)] for offset in range(3)]
+        completed = set(self.profile.get("daily_progress", {}).get("completed", []))
+        return [
+            (directive_id, title, directive_id in completed)
+            for directive_id, title, _target, _detail in picks
+        ]
+
+    def daily_directive_summary_lines(self) -> tuple[str, str, str]:
+        entries = self.daily_directive_entries()
+        completed = sum(1 for _id, _title, is_done in entries if is_done)
+        streak = int(self.profile.get("daily_progress", {}).get("streak", 0))
+        return (
+            f"Daily Directives {completed}/{len(entries)}",
+            f"Streak {streak}  Date {self._today_iso()}",
+            entries[0][1] if entries else "No directive loaded",
+        )
+
+    def current_run_grade(self, result: Optional[str] = None) -> str:
+        result = result or self.last_result or "lose"
+        stats = self.run_stats
+        if result in {"lose", "abandon"}:
+            return "C"
+        if result == "challenge_failed":
+            return "C" if self.score < 2600 else "B"
+
+        points = 0
+        if result == "game_won":
+            points += 2
+        if self.score >= 5000:
+            points += 3
+        elif self.score >= 3400:
+            points += 2
+        elif self.score >= 2200:
+            points += 1
+        if stats.ghosts_eaten >= 6:
+            points += 2
+        elif stats.ghosts_eaten >= 3:
+            points += 1
+        if stats.near_misses >= 4:
+            points += 1
+        if stats.line_bonuses >= 3:
+            points += 1
+        if stats.near_misses == 0 and result in {"game_won", "level_complete"}:
+            points += 1
+
+        if points >= 6:
+            return "S"
+        if points >= 4:
+            return "A"
+        if points >= 2:
+            return "B"
+        return "C"
+
+    def _grade_value(self, grade: str) -> int:
+        order = {"": 0, "C": 1, "B": 2, "A": 3, "S": 4}
+        return order.get(grade, 0)
+
+    def _update_mode_records(self, result: str, grade: str) -> None:
+        self.profile.setdefault("mode_records", {})
+        record = self.profile["mode_records"].setdefault(
+            self.game_mode,
+            {"best_score": 0, "best_grade": "", "wins": 0},
+        )
+        record["best_score"] = max(int(record.get("best_score", 0)), self.score)
+        if self._grade_value(grade) > self._grade_value(str(record.get("best_grade", ""))):
+            record["best_grade"] = grade
+        if result == "game_won":
+            record["wins"] = int(record.get("wins", 0)) + 1
+
+    def _update_district_records(self, result: str, grade: str) -> None:
+        map_key = str(self.current_map_number())
+        self.profile.setdefault("district_records", {})
+        record = self.profile["district_records"].setdefault(
+            map_key,
+            {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {mode: 0 for mode in GAME_MODE_PRESETS.keys()}},
+        )
+        record["best_score"] = max(int(record.get("best_score", 0)), self.score)
+        if self._grade_value(grade) > self._grade_value(str(record.get("best_grade", ""))):
+            record["best_grade"] = grade
+        mode_scores = record.setdefault("best_mode_scores", {mode: 0 for mode in GAME_MODE_PRESETS.keys()})
+        mode_scores[self.game_mode] = max(int(mode_scores.get(self.game_mode, 0)), self.score)
+        if result in {"game_won", "level_complete"}:
+            record["clears"] = int(record.get("clears", 0)) + 1
+
+    def _update_series_progress(self, grade: str, result: str) -> None:
+        self.profile.setdefault("series_progress", {
+            "clear_streak": 0,
+            "best_clear_streak": 0,
+            "grade_streak": 0,
+            "best_grade_streak": 0,
+        })
+        series = self.profile["series_progress"]
+        cleared = result in {"game_won", "level_complete"}
+        if cleared:
+            series["clear_streak"] = int(series.get("clear_streak", 0)) + 1
+        else:
+            series["clear_streak"] = 0
+        series["best_clear_streak"] = max(int(series.get("best_clear_streak", 0)), int(series.get("clear_streak", 0)))
+
+        if self._grade_value(grade) >= self._grade_value("A"):
+            series["grade_streak"] = int(series.get("grade_streak", 0)) + 1
+        else:
+            series["grade_streak"] = 0
+        series["best_grade_streak"] = max(int(series.get("best_grade_streak", 0)), int(series.get("grade_streak", 0)))
+
+    def _update_daily_directives(self, grade: str, result: str) -> None:
+        self._normalize_daily_progress()
+        daily = self.profile["daily_progress"]
+        completed = set(daily.get("completed", []))
+        cleared = result in {"game_won", "level_complete"}
+
+        for directive_id, _title, target, _detail in self._daily_directive_pool():
+            if directive_id == "clear-run" and cleared:
+                completed.add(directive_id)
+            elif directive_id == "score-2200" and self.score >= target:
+                completed.add(directive_id)
+            elif directive_id == "ghosts-4" and self.run_stats.ghosts_eaten >= target:
+                completed.add(directive_id)
+            elif directive_id == "cherries-2" and self.run_stats.cherries_eaten >= target:
+                completed.add(directive_id)
+            elif directive_id == "near-miss-3" and self.run_stats.near_misses >= target:
+                completed.add(directive_id)
+            elif directive_id == "bonus-gates-2" and self.run_stats.bonus_gates >= target:
+                completed.add(directive_id)
+            elif directive_id == "grade-a" and self._grade_value(grade) >= self._grade_value("A"):
+                completed.add(directive_id)
+
+        daily["completed"] = sorted(completed)
+        todays_entries = self.daily_directive_entries()
+        if todays_entries and all(is_done for _id, _title, is_done in todays_entries):
+            today = self._today_iso()
+            last_full_clear = str(daily.get("last_full_clear_date", ""))
+            if last_full_clear != today:
+                if last_full_clear:
+                    try:
+                        gap = (date.fromisoformat(today) - date.fromisoformat(last_full_clear)).days
+                    except ValueError:
+                        gap = 99
+                    daily["streak"] = int(daily.get("streak", 0)) + 1 if gap == 1 else 1
+                else:
+                    daily["streak"] = 1
+                daily["last_full_clear_date"] = today
+                daily["total_completed_days"] = int(daily.get("total_completed_days", 0)) + 1
+
+    def series_progress_lines(self) -> tuple[str, str, str]:
+        series = self.profile.get("series_progress", {})
+        return (
+            f"Clear Streak {int(series.get('clear_streak', 0))}  Best {int(series.get('best_clear_streak', 0))}",
+            f"A-Grade Streak {int(series.get('grade_streak', 0))}  Best {int(series.get('best_grade_streak', 0))}",
+            "Series goals reward steady, clean runs",
+        )
+
+    def next_series_goal(self) -> Optional[str]:
+        series = self.profile.get("series_progress", {})
+        if int(series.get("best_clear_streak", 0)) < 3:
+            return f"Clear Series: chain {3 - int(series.get('best_clear_streak', 0))} more clean results toward a 3-run streak"
+        if int(series.get("best_grade_streak", 0)) < 2:
+            return f"Grade Series: earn {2 - int(series.get('best_grade_streak', 0))} more A/S grades in a row"
+        return None
+
+    def record_book_summary_lines(self) -> tuple[str, str, str]:
+        mode_record = self.profile.get("mode_records", {}).get(self.game_mode, {})
+        district_record = self.profile.get("district_records", {}).get(str(self.current_map_number()), {})
+        return (
+            f"{self.game_mode} Best {int(mode_record.get('best_score', 0))}  Grade {mode_record.get('best_grade', '-') or '-'}",
+            f"District {self.current_map_number()} Best {int(district_record.get('best_score', 0))}  Grade {district_record.get('best_grade', '-') or '-'}",
+            f"Clears {int(district_record.get('clears', 0))}  Wins {int(mode_record.get('wins', 0))}",
+        )
+
     def mode_mastery_gain(self, result: str) -> int:
         gain = 1
         if result == "level_complete":
@@ -1982,6 +2359,8 @@ class GameContext:
 
     def career_goal_lines(self) -> tuple[str, str, str]:
         goals = [
+            self.next_daily_directive_goal(),
+            self.next_series_goal(),
             self.next_rank_goal(),
             self.next_challenge_unlock_goal(),
             self.next_theme_goal(),
@@ -2005,6 +2384,12 @@ class GameContext:
             lines.append("Keep pushing runs to unlock more")
         return (lines[0], lines[1], lines[2])
 
+    def next_daily_directive_goal(self) -> Optional[str]:
+        for directive_id, title, is_done in self.daily_directive_entries():
+            if not is_done:
+                return f"Daily: {title}"
+        return None
+
     def run_history_entries(self) -> list[dict]:
         history = self.profile.get("run_history", [])
         if not isinstance(history, list):
@@ -2022,9 +2407,9 @@ class GameContext:
         latest = entries[0]
         tag = latest.get("challenge") or latest.get("mode", "Arcade")
         return (
-            f"Logged Runs {len(entries)}",
+            f"Logged Runs {len(entries)}  Latest Grade {latest.get('grade', '-') or '-'}",
             f"Latest {tag} / {latest.get('difficulty', 'Normal')}",
-            f"Latest Score {int(latest.get('score', 0))}",
+            f"Latest Score {int(latest.get('score', 0))}  Map {int(latest.get('map', 1))}",
         )
 
     def journal_summary_lines(self) -> tuple[str, str, str]:
