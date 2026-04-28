@@ -8,25 +8,25 @@ from raylib import colors
 from utils.visual_effects import with_alpha
 
 
-BG_TOP = (22, 16, 52, 255)
-BG_BOTTOM = (4, 5, 16, 255)
-PANEL_OUTER = (22, 16, 44, 235)
-PANEL_INNER = (10, 12, 28, 224)
-PANEL_ACCENT = (102, 232, 255, 255)
-TEXT_DIM = (214, 220, 255, 255)
-BUTTON_IDLE = (52, 36, 98, 255)
-BUTTON_ACTIVE = (88, 62, 154, 255)
-BUTTON_HOVER = (114, 86, 188, 255)
-LIVE_CYAN = (112, 242, 255, 255)
-LIVE_PINK = (255, 86, 212, 255)
-LIVE_GOLD = (255, 208, 92, 255)
+BG_TOP = (8, 10, 26, 255)
+BG_BOTTOM = (1, 3, 10, 255)
+PANEL_OUTER = (7, 10, 22, 242)
+PANEL_INNER = (4, 8, 18, 230)
+PANEL_ACCENT = (52, 240, 255, 255)
+TEXT_DIM = (178, 204, 232, 255)
+BUTTON_IDLE = (10, 18, 34, 255)
+BUTTON_ACTIVE = (16, 34, 54, 255)
+BUTTON_HOVER = (28, 42, 66, 255)
+LIVE_CYAN = (32, 244, 255, 255)
+LIVE_PINK = (255, 46, 199, 255)
+LIVE_GOLD = (255, 211, 86, 255)
 PRIMARY_GAMEPLAY = LIVE_CYAN
 SECONDARY_UI = LIVE_PINK
 ACCENT_IMPORTANT = LIVE_GOLD
 PANEL_PINK = (255, 86, 212, 255)
 NOIR_BLUE = (4, 6, 18, 255)
 STREET_BLUE = (10, 16, 38, 255)
-GLASS_EDGE = (186, 236, 255, 255)
+GLASS_EDGE = (138, 246, 255, 255)
 PRESENTATION_MODE = False
 THEME_PRESETS = {
     "Neon District": {
@@ -228,6 +228,51 @@ def _draw_grid_overlay(rect, *, alpha: int = 8, cell: int = 28) -> None:
         y += cell
 
 
+def _draw_corner_brackets(rect, accent_color=LIVE_CYAN, *, alpha: int = 120, length: int = 18, thickness: int = 2) -> None:
+    length = max(6, min(length, int(min(rect.width, rect.height) / 2)))
+    specs = (
+        (rect.x, rect.y, length, thickness),
+        (rect.x, rect.y, thickness, length),
+        (rect.x + rect.width - length, rect.y, length, thickness),
+        (rect.x + rect.width - thickness, rect.y, thickness, length),
+        (rect.x, rect.y + rect.height - thickness, length, thickness),
+        (rect.x, rect.y + rect.height - length, thickness, length),
+        (rect.x + rect.width - length, rect.y + rect.height - thickness, length, thickness),
+        (rect.x + rect.width - thickness, rect.y + rect.height - length, thickness, length),
+    )
+    for x, y, width, height in specs:
+        pyray.draw_rectangle_rec(pyray.Rectangle(x, y, width, height), with_alpha(accent_color, alpha))
+
+
+def _draw_notch_marks(rect, accent_color=LIVE_PINK, *, alpha: int = 86) -> None:
+    notch = max(8, min(18, int(rect.height * 0.28)))
+    pyray.draw_rectangle_rec(pyray.Rectangle(rect.x - 1, rect.y + notch, 2, rect.height - notch * 2), with_alpha(accent_color, alpha))
+    pyray.draw_rectangle_rec(pyray.Rectangle(rect.x + notch, rect.y - 1, rect.width * 0.22, 2), with_alpha(accent_color, alpha))
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x + rect.width - rect.width * 0.22 - notch, rect.y + rect.height - 1, rect.width * 0.22, 2),
+        with_alpha(accent_color, max(24, alpha - 28)),
+    )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(rect.x + rect.width - 2, rect.y + notch, 2, rect.height - notch * 2),
+        with_alpha(LIVE_CYAN, max(24, alpha - 22)),
+    )
+
+
+def _draw_signal_ticks(rect, accent_color=LIVE_CYAN, *, alpha: int = 76, time_s: float = 0.0) -> None:
+    tick_count = max(3, min(7, int(rect.width / 44)))
+    tick_w = max(10, int((rect.width - 26) / (tick_count * 2)))
+    start_x = rect.x + 13
+    y = rect.y + rect.height - 10
+    for index in range(tick_count):
+        flicker = 0.5 + 0.5 * math.sin(time_s * 5.0 + index * 1.8 + rect.y * 0.01)
+        tick_alpha = int(alpha * (0.55 + flicker * 0.45))
+        color = accent_color if index % 2 == 0 else LIVE_PINK
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(start_x + index * tick_w * 2, y, tick_w, 2),
+            with_alpha(color, tick_alpha),
+        )
+
+
 def _draw_glitch_reveal(rect, progress: float, *, accent_color=LIVE_CYAN, time_s: float = 0.0) -> None:
     progress = max(0.0, min(1.0, progress))
     if progress >= 1.0:
@@ -314,11 +359,11 @@ def draw_button(rect, text: str, focused: bool = False, *, time_s: float | None 
     scale = 1.035 if focused else 1.02 if hovered else 1.0
     draw_rect = _scaled_rect(rect, scale)
     fill_color = (
-        with_alpha((18, 28, 50, 255), 172) if hovered
-        else with_alpha((16, 24, 44, 255), 188) if focused
-        else with_alpha((10, 14, 28, 255), 156)
+        with_alpha((16, 30, 46, 255), 218) if hovered
+        else with_alpha((12, 28, 44, 255), 232) if focused
+        else with_alpha((5, 10, 22, 255), 204)
     )
-    border_color = with_alpha(LIVE_CYAN, 144) if focused else with_alpha(GLASS_EDGE, 58)
+    border_color = with_alpha(LIVE_CYAN, 180) if focused else with_alpha(GLASS_EDGE, 78)
 
     _draw_soft_rect_glow(
         draw_rect,
@@ -337,21 +382,29 @@ def draw_button(rect, text: str, focused: bool = False, *, time_s: float | None 
         )
     pyray.draw_rectangle_rec(draw_rect, fill_color)
     pyray.draw_rectangle_lines_ex(draw_rect, 1, border_color)
-    pyray.draw_rectangle_rec(
-        pyray.Rectangle(draw_rect.x + 2, draw_rect.y + 2, max(0, draw_rect.width - 4), max(0, draw_rect.height * 0.34)),
-        with_alpha(colors.WHITE, 8 + int(flicker * 6)),
+    _draw_notch_marks(draw_rect, LIVE_PINK if hovered else PANEL_ACCENT, alpha=112 if focused or hovered else 64)
+    _draw_corner_brackets(
+        draw_rect,
+        LIVE_CYAN if focused else LIVE_PINK if hovered else PANEL_ACCENT,
+        alpha=158 if focused else 124 if hovered else 72,
+        length=15,
     )
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(draw_rect.x + 14, draw_rect.y + draw_rect.height - 5, max(0, draw_rect.width - 28), 1),
-        with_alpha(LIVE_CYAN if focused else PANEL_ACCENT, (92 if hovered or focused else 24) + int(pulse * 18)),
+        pyray.Rectangle(draw_rect.x + 2, draw_rect.y + 2, max(0, draw_rect.width - 4), max(0, draw_rect.height * 0.24)),
+        with_alpha(LIVE_CYAN, 6 + int(flicker * 8)),
+    )
+    pyray.draw_rectangle_rec(
+        pyray.Rectangle(draw_rect.x + 18, draw_rect.y + draw_rect.height - 6, max(0, draw_rect.width - 36), 2),
+        with_alpha(LIVE_CYAN if focused else PANEL_ACCENT, (118 if hovered or focused else 38) + int(pulse * 22)),
     )
     _draw_scanline_overlay(draw_rect, alpha=3 if hovered or focused else 2, spacing=7, time_s=time_s)
+    _draw_signal_ticks(draw_rect, LIVE_CYAN if focused else PANEL_ACCENT, alpha=72 if focused or hovered else 38, time_s=time_s)
 
-    font_size = max(18, min(26, int(draw_rect.height * 0.42)))
+    font_size = max(17, min(25, int(draw_rect.height * 0.4)))
     tw = pyray.measure_text(text, font_size)
     tx = int(draw_rect.x + (draw_rect.width - tw) / 2)
     ty = int(draw_rect.y + (draw_rect.height - font_size) / 2)
-    text_color = with_alpha(LIVE_CYAN, 240) if focused else with_alpha(colors.WHITE, 230)
+    text_color = with_alpha(LIVE_CYAN, 248) if focused else with_alpha(colors.WHITE, 232)
     if focused or hovered:
         _draw_soft_rect_glow(
             pyray.Rectangle(tx - 6, ty - 4, tw + 12, font_size + 8),
@@ -360,6 +413,8 @@ def draw_button(rect, text: str, focused: bool = False, *, time_s: float | None 
             alpha=12 if focused else 8,
             layers=2,
         )
+    if hovered and not focused:
+        pyray.draw_text(text, tx + 1, ty, font_size, with_alpha(LIVE_PINK, 86))
     pyray.draw_text(text, tx, ty, font_size, text_color)
 
 
@@ -369,23 +424,26 @@ def draw_panel(rect, title: str | None = None, *, time_s: float | None = None) -
     flicker = _rare_flicker(time_s, rect.width + rect.height, threshold=0.992)
     pyray.draw_rectangle_rec(
         pyray.Rectangle(rect.x - 16, rect.y - 16, rect.width + 32, rect.height + 32),
-        with_alpha(PANEL_ACCENT, 16 + int(pulse * 10)),
+        with_alpha(PANEL_ACCENT, 12 + int(pulse * 12)),
     )
-    pyray.draw_rectangle_rec(rect, with_alpha((18, 18, 42, 255), 226))
-    pyray.draw_rectangle_lines_ex(rect, 1, with_alpha(GLASS_EDGE, 88))
+    pyray.draw_rectangle_rec(rect, with_alpha((3, 7, 18, 255), 238))
+    pyray.draw_rectangle_lines_ex(rect, 1, with_alpha(GLASS_EDGE, 104))
+    _draw_notch_marks(rect, LIVE_PINK, alpha=78 + int(flicker * 34))
+    _draw_corner_brackets(rect, LIVE_CYAN, alpha=122 + int(pulse * 28), length=30)
 
     inner = pyray.Rectangle(rect.x + 10, rect.y + 10, rect.width - 20, rect.height - 20)
-    pyray.draw_rectangle_rec(inner, with_alpha((16, 14, 34, 255), 210))
-    _draw_scanline_overlay(inner, alpha=4, spacing=8, time_s=time_s)
-    _draw_grid_overlay(inner, alpha=4, cell=34)
+    pyray.draw_rectangle_rec(inner, with_alpha((4, 9, 22, 255), 218))
+    _draw_scanline_overlay(inner, alpha=5, spacing=7, time_s=time_s)
+    _draw_grid_overlay(inner, alpha=5, cell=32)
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(inner.x, inner.y, inner.width, max(0, inner.height * 0.22)),
-        with_alpha(colors.WHITE, 8),
+        pyray.Rectangle(inner.x, inner.y, inner.width, max(0, inner.height * 0.18)),
+        with_alpha(LIVE_CYAN, 7),
     )
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(inner.x + 18, inner.y + inner.height - 18, max(0, inner.width - 36), 1),
-        with_alpha(LIVE_CYAN, 38),
+        pyray.Rectangle(inner.x + 18, inner.y + inner.height - 18, max(0, inner.width - 36), 2),
+        with_alpha(LIVE_CYAN, 48 + int(pulse * 18)),
     )
+    _draw_signal_ticks(inner, LIVE_CYAN, alpha=48, time_s=time_s)
     corner_len = 26
     pyray.draw_rectangle_rec(pyray.Rectangle(rect.x + rect.width - corner_len - 8, rect.y + 8, corner_len, 2), with_alpha(LIVE_CYAN, 72 + int(pulse * 20)))
     pyray.draw_rectangle_rec(pyray.Rectangle(rect.x + rect.width - 10, rect.y + 8, 2, corner_len), with_alpha(LIVE_CYAN, 72 + int(pulse * 20)))
@@ -434,15 +492,17 @@ def draw_glass_card(rect, accent_color=LIVE_CYAN, *, glow_alpha: int = 18, fill_
     )
     pyray.draw_rectangle_rec(
         pyray.Rectangle(rect.x - 6, rect.y - 6, rect.width + 12, rect.height + 12),
-        with_alpha(accent_color, int(glow_alpha * 1.2) + int(pulse * 8)),
+        with_alpha(accent_color, int(glow_alpha * 0.9) + int(pulse * 8)),
     )
-    pyray.draw_rectangle_rec(rect, with_alpha(PANEL_INNER, fill_alpha))
-    _draw_scanline_overlay(rect, alpha=4, spacing=7, time_s=time_s)
-    _draw_grid_overlay(rect, alpha=3, cell=32)
-    pyray.draw_rectangle_lines_ex(rect, 1, with_alpha(GLASS_EDGE, 90))
+    pyray.draw_rectangle_rec(rect, with_alpha(PANEL_INNER, min(242, fill_alpha + 20)))
+    _draw_scanline_overlay(rect, alpha=5, spacing=7, time_s=time_s)
+    _draw_grid_overlay(rect, alpha=4, cell=30)
+    pyray.draw_rectangle_lines_ex(rect, 1, with_alpha(GLASS_EDGE, 96))
+    _draw_notch_marks(rect, accent_color, alpha=74 + int(flicker * 36))
+    _draw_corner_brackets(rect, accent_color, alpha=110 + int(pulse * 28), length=22)
     pyray.draw_rectangle_rec(
-        pyray.Rectangle(rect.x + 3, rect.y + 3, max(0, rect.width - 6), max(0, rect.height * 0.35)),
-        with_alpha(colors.WHITE, 14),
+        pyray.Rectangle(rect.x + 3, rect.y + 3, max(0, rect.width - 6), max(0, rect.height * 0.26)),
+        with_alpha(colors.WHITE, 8),
     )
     pyray.draw_rectangle_rec(
         pyray.Rectangle(rect.x + 12, rect.y + 12, 3, max(0, rect.height - 24)),
@@ -460,6 +520,7 @@ def draw_glass_card(rect, accent_color=LIVE_CYAN, *, glow_alpha: int = 18, fill_
         pyray.Rectangle(rect.x + 10, rect.y + rect.height - 12, rect.width - 20, 2),
         with_alpha(accent_color, 32),
     )
+    _draw_signal_ticks(rect, accent_color, alpha=44, time_s=time_s)
 
 
 def draw_mission_frame(rect, accent_color=LIVE_PINK, *, support_color=LIVE_CYAN, glow_alpha: int = 16, fill_alpha: int = 150) -> None:

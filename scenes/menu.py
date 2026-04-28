@@ -199,7 +199,7 @@ class Menu(Scene):
             draw_panel(main_panel, time_s=self.ctx.visual_time)
             title_size = 44
             draw_shadowed_text_centered("PAC-MAN", center_x, int(main_panel.y + 40), title_size, colors.WHITE)
-            draw_text_centered("NEON DISTRICT", center_x, int(main_panel.y + 140), 18, colors.WHITE)
+            draw_text_centered("CYBER DISTRICT", center_x, int(main_panel.y + 140), 18, colors.WHITE)
             if self.intro_timer > 0.0:
                 intro_progress = min(1.0, 1.0 - self.intro_timer / 0.9)
                 draw_title_glitch_pass(center_x, int(main_panel.y + 58), 360, intro_progress, time_s=self.ctx.visual_time)
@@ -222,8 +222,8 @@ class Menu(Scene):
             title_center_x,
             title_y,
             "PAC-MAN",
-            "NEON DISTRICT",
-            "SYSTEM ONLINE | VER 2.047",
+            "CYBER DISTRICT",
+            "BLACKOUT ROUTE // VER 2.047",
             self.ctx.visual_time,
             variant=self.ctx.title_variant_name(),
         )
@@ -231,14 +231,14 @@ class Menu(Scene):
             intro_progress = min(1.0, 1.0 - self.intro_timer / 0.9)
             draw_title_glitch_pass(title_center_x, title_y + 12, 420, intro_progress, time_s=self.ctx.visual_time)
         draw_text_centered(
-            "Navigate the neon-soaked corridors of the digital underworld.",
+            "Neon maze protocol armed. Ghost pressure is live.",
             title_center_x,
             title_y + 182,
             17,
             TEXT_DIM,
         )
         draw_text_centered(
-            "Route clean. Break pressure. Own the district.",
+            "Route clean. Cut close. Cash out before the city bites back.",
             title_center_x,
             title_y + 208,
             15,
@@ -247,8 +247,8 @@ class Menu(Scene):
 
         sign_rect = pyray.Rectangle(int(cfg.window_width * 0.55), int(cfg.window_height * 0.26), 128, 72)
         draw_glass_card(sign_rect, accent_color=LIVE_PINK, glow_alpha=16, fill_alpha=86, time_s=self.ctx.visual_time)
-        draw_text_centered("NOVA", int(sign_rect.x + sign_rect.width / 2), int(sign_rect.y + 18), 24, colors.WHITE)
-        draw_text_centered("DISTRICT BAR", int(sign_rect.x + sign_rect.width / 2), int(sign_rect.y + 44), 12, LIVE_PINK)
+        draw_text_centered("404", int(sign_rect.x + sign_rect.width / 2), int(sign_rect.y + 18), 24, colors.WHITE)
+        draw_text_centered("GHOST NET", int(sign_rect.x + sign_rect.width / 2), int(sign_rect.y + 44), 12, LIVE_PINK)
 
         floor_band = pyray.Rectangle(0, int(cfg.window_height * 0.68), cfg.window_width, int(cfg.window_height * 0.24))
         pyray.draw_rectangle_rec(floor_band, pyray.fade(colors.BLACK, 0.28))
@@ -280,7 +280,7 @@ class Menu(Scene):
                 subline=f"HIGH SCORE {self.ctx.high_score}",
             )
 
-        draw_text_centered("DISPLAY", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 16), 14, TEXT_DIM)
+        draw_text_centered("DISPLAY GRID", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 16), 14, TEXT_DIM)
         draw_button(self.btn_desktop, "DESKTOP", focused=self.navigator.focus_index == 0, time_s=self.ctx.visual_time)
         draw_button(self.btn_mobile, "MOBILE", focused=self.navigator.focus_index == 1, time_s=self.ctx.visual_time)
 
@@ -289,7 +289,7 @@ class Menu(Scene):
         draw_button(self.btn_normal, "NORMAL", focused=self.navigator.focus_index == 3, time_s=self.ctx.visual_time)
         draw_button(self.btn_hard, "HARD", focused=self.navigator.focus_index == 4, time_s=self.ctx.visual_time)
 
-        draw_text_centered("PLAY", int(main_panel.x + main_panel.width / 2), int(self.btn_start.y - 22), 14, TEXT_DIM)
+        draw_text_centered("RUN CONTROL", int(main_panel.x + main_panel.width / 2), int(self.btn_start.y - 22), 14, TEXT_DIM)
         draw_button(self.btn_start, "START RUN", focused=self.navigator.focus_index == 5, time_s=self.ctx.visual_time)
         draw_button(self.btn_modes, "MODES", focused=self.navigator.focus_index == 6, time_s=self.ctx.visual_time)
         draw_button(self.btn_options, "OPTIONS", focused=self.navigator.focus_index == 7, time_s=self.ctx.visual_time)
@@ -301,8 +301,8 @@ class Menu(Scene):
         center_x = cfg.window_width // 2
         draw_text_centered("RUN MENU", center_x, int(main_panel.y + 18), 18, PANEL_ACCENT)
         draw_shadowed_text_centered("PAC-MAN", center_x, int(main_panel.y + 44), 42, colors.WHITE)
-        draw_text_centered("NEON DISTRICT", center_x, int(main_panel.y + 92), 16, TEXT_DIM)
-        draw_text_centered("LAYOUT", center_x, int(main_panel.y + 134), 20, TEXT_DIM)
+        draw_text_centered("CYBER DISTRICT", center_x, int(main_panel.y + 92), 16, TEXT_DIM)
+        draw_text_centered("DISPLAY GRID", center_x, int(main_panel.y + 134), 20, TEXT_DIM)
         draw_button(self.btn_desktop, "DESKTOP", focused=self.navigator.focus_index == 0, time_s=self.ctx.visual_time)
         draw_button(self.btn_mobile, "MOBILE", focused=self.navigator.focus_index == 1, time_s=self.ctx.visual_time)
         draw_text_centered(f"ACTIVE: {self.layout_name.upper()}", center_x, int(main_panel.y + 238), 20, TEXT_DIM)

@@ -38,10 +38,23 @@ class Ghost(Actor):
         if class_name == "Pinky":
             return LIVE_PINK, 1.0
         if class_name == "Inky":
-            return LIVE_CYAN, 0.9
+            return LIVE_CYAN, 2.6
         if class_name == "Clyde":
             return colors.ORANGE, 1.1
         return self.color, 1.0
+
+    def _trail_spread(self) -> int:
+        if type(self).__name__ == "Inky":
+            return 5
+        if type(self).__name__ in {"Blinky", "Clyde"}:
+            return 2
+        return 3
+
+    def _intent_body_color(self):
+        return None
+
+    def _draw_intent_cue(self, px: int, py: int, tile: int, body_radius: int, time_s: float) -> None:
+        return None
 
     def _pacman_heading(self, pacman) -> tuple[int, int]:
         dx = getattr(pacman, "last_dx", 0)
@@ -189,6 +202,9 @@ class Ghost(Actor):
         trail_color, trail_scale = self._trail_signature()
         frightened = self.mode == "frightened"
         respawning = self.respawn_lock_ticks > 0 or self.release_delay_ticks > 0
+        intent_color = self._intent_body_color()
+        if intent_color is not None and not frightened and not respawning:
+            base_color = intent_color
 
         accent_glow = LIVE_CYAN if self.returning_home else LIVE_PINK if base_color == colors.RED else LIVE_CYAN
         if frightened:
@@ -196,7 +212,7 @@ class Ghost(Actor):
         elif respawning:
             accent_glow = colors.SKYBLUE
         for index in range(4, 0, -1):
-            spread = 2 if type(self).__name__ in {"Blinky", "Clyde"} else 3
+            spread = self._trail_spread()
             trail_x = px - dir_dx * index * spread
             trail_y = py - dir_dy * index * spread
             trail_alpha = 10 + index * 5
@@ -229,6 +245,8 @@ class Ghost(Actor):
         pyray.draw_circle(px, py, glow_radius + 14, with_alpha(base_color, mid_alpha))
         pyray.draw_circle(px, py, glow_radius + 7, with_alpha(base_color, inner_alpha))
         pyray.draw_circle(px, py, body_radius, with_alpha(base_color, 228))
+        if not frightened and not respawning:
+            self._draw_intent_cue(px, py, tile, body_radius, time_s)
         if frightened:
             # Slight distortion band makes frightened state feel unstable.
             band_y = py + int(math.sin(time_s * 18.0 + self.x) * 2)
@@ -548,6 +566,19 @@ class Blinky(Ghost):
         self.last_dy = 0
         self.scatter_target = (self.ctx.cfg.map_width - 2, 1)
 
+    def _draw_intent_cue(self, px: int, py: int, tile: int, body_radius: int, time_s: float) -> None:
+        if self.mode != "chase" or self.returning_home:
+            return
+
+        hunt_pulse = 0.5 + 0.5 * math.sin(time_s * 12.0)
+        chase_alpha = int(36 + hunt_pulse * 42)
+        pyray.draw_circle(px, py, body_radius + 15, with_alpha(colors.RED, chase_alpha))
+        pyray.draw_circle(px, py, body_radius + 8, with_alpha(colors.GOLD, int(18 + hunt_pulse * 18)))
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(px - body_radius + 3, py - body_radius - 4, body_radius * 2 - 6, 3),
+            with_alpha(colors.GOLD, int(72 + hunt_pulse * 72)),
+        )
+
     def update_target(self) -> None:
         """Pressure from behind and punish retreat lanes."""
         pacman = self.ctx.pacman
@@ -587,6 +618,29 @@ class Pinky(Ghost):
         self.last_dx = 0
         self.last_dy = 0
         self.scatter_target = (1, 1)
+
+    def _draw_intent_cue(self, px: int, py: int, tile: int, body_radius: int, time_s: float) -> None:
+        if self.mode != "chase" or self.returning_home:
+            return
+
+        pacman = self.ctx.pacman
+        if pacman is None:
+            return
+
+        heading_dx, heading_dy = self._pacman_heading(pacman)
+        if heading_dx == 0 and heading_dy == 0:
+            heading_dx, heading_dy = self.last_dx, self.last_dy
+        if heading_dx == 0 and heading_dy == 0:
+            return
+
+        flash = 0.5 + 0.5 * math.sin(time_s * 18.0 + self.x * 0.6)
+        marker_alpha = int(38 + flash * 76)
+        for index in range(1, 4):
+            marker_x = px + heading_dx * (body_radius + index * 4)
+            marker_y = py + heading_dy * (body_radius + index * 4)
+            marker_size = max(2, tile // 7 - index // 2)
+            pyray.draw_circle(marker_x, marker_y, marker_size, with_alpha(LIVE_PINK, marker_alpha - index * 10))
+        pyray.draw_circle(px, py, body_radius + 9, with_alpha(LIVE_PINK, int(18 + flash * 22)))
 
     def update_target(self) -> None:
         """Target well ahead of Pac-Man so Pinky reads as a cutter."""
@@ -675,6 +729,34 @@ class Clyde(Ghost):
         self.last_dx = 0
         self.last_dy = 0
         self.scatter_target = (1, self.ctx.cfg.map_height - 2)
+
+    def _retreating(self) -> bool:
+        pacman = self.ctx.pacman
+        if pacman is None:
+            return False
+        rage_timer = getattr(pacman, "rage_timer", 0)
+        if getattr(pacman, "rage", False) and rage_timer > 45:
+            return True
+        distance = abs(pacman.x - self.x) + abs(pacman.y - self.y)
+        return self.mode == "scatter" or distance <= 6
+
+    def _intent_body_color(self):
+        if self._retreating():
+            return colors.GOLD
+        return None
+
+    def _draw_intent_cue(self, px: int, py: int, tile: int, body_radius: int, time_s: float) -> None:
+        if not self._retreating():
+            return
+
+        twitch = 0.5 + 0.5 * math.sin(time_s * 14.0 + self.y)
+        pyray.draw_circle(px, py, body_radius + 12, with_alpha(colors.ORANGE, int(18 + twitch * 28)))
+        pyray.draw_circle(px + body_radius - 1, py - body_radius + 1, max(2, tile // 8), with_alpha(LIVE_CYAN, 90))
+        pyray.draw_circle(px + body_radius + 3, py - body_radius - 2, max(1, tile // 10), with_alpha(colors.WHITE, 72))
+        pyray.draw_rectangle_rec(
+            pyray.Rectangle(px - body_radius // 2, py + body_radius // 3, body_radius, 2),
+            with_alpha(colors.BLACK, 92),
+        )
 
     def update_target(self) -> None:
         """React to Pac-Man's power state instead of following one static mood."""
