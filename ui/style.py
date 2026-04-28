@@ -32,8 +32,8 @@ class CyberTypography:
     screen_title: int = 50
     section: int = 18
     body: int = 16
-    small: int = 13
-    button: int = 22
+    small: int = 12
+    button: int = 20
 
 
 @dataclass(frozen=True)
@@ -42,20 +42,20 @@ class CyberSpacing:
     sm: int = 10
     md: int = 16
     lg: int = 24
-    xl: int = 34
-    panel_pad: int = 22
+    xl: int = 32
+    panel_pad: int = 24
     button_gap: int = 10
     section_gap: int = 18
 
 
 @dataclass(frozen=True)
 class CyberSizes:
-    menu_panel_width: int = 408
-    menu_panel_height: int = 590
-    button_width: int = 220
-    button_height: int = 46
-    button_height_primary: int = 50
-    button_height_compact: int = 40
+    menu_panel_width: int = 460
+    menu_panel_height: int = 720
+    button_width: int = 320
+    button_height: int = 44
+    button_height_primary: int = 44
+    button_height_compact: int = 44
     badge_height: int = 28
     progress_height: int = 12
 
@@ -63,14 +63,15 @@ class CyberSizes:
 @dataclass(frozen=True)
 class CyberMotion:
     intro_seconds: float = 0.9
+    menu_item_stagger: float = 0.035
     slow_pulse: float = 2.2
     button_pulse: float = 4.8
     scanline_speed: float = 22.0
-    hover_scale: float = 1.02
-    focus_scale: float = 1.035
-    glow_idle: int = 10
-    glow_hover: int = 28
-    glow_focus: int = 48
+    hover_scale: float = 1.018
+    focus_scale: float = 1.03
+    glow_idle: int = 4
+    glow_hover: int = 10
+    glow_focus: int = 18
 
 
 @dataclass(frozen=True)
@@ -83,4 +84,3 @@ class CyberStyle:
 
 
 UI_STYLE = CyberStyle()
-

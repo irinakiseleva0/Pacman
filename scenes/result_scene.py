@@ -9,13 +9,14 @@ from core.scene import Scene
 from core.scene_ids import GAME_SCENE, MENU_SCENE
 from ui.components import ProgressBar, StatusBadge
 from ui.navigation import ButtonNavigator
+from ui.style import UI_STYLE
 from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, PANEL_ACCENT, TEXT_DIM, button_clicked, centered_rect, draw_arcade_background, draw_button, draw_cinematic_menu_background, draw_dashboard_rail, draw_glass_card, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_scan_intro, draw_text_centered, draw_title_glitch_pass
 from utils.score_storage import save_high_score
 
 
 class ResultScene(Scene):
-    BTN_W = 240
-    BTN_H = 58
+    BTN_W = UI_STYLE.sizes.button_width
+    BTN_H = UI_STYLE.sizes.button_height
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
@@ -33,13 +34,13 @@ class ResultScene(Scene):
 
         cfg = self.ctx.cfg
         cx = cfg.window_width // 2
-        panel_width = min(560, cfg.window_width - 120)
-        panel_height = min(820, cfg.window_height - 96)
+        panel_width = min(620, cfg.window_width - 120)
+        panel_height = min(760, cfg.window_height - 80)
         panel_x = cx - panel_width // 2
         panel_y = max(44, int((cfg.window_height - panel_height) / 2))
         self.panel = pyray.Rectangle(panel_x, panel_y, panel_width, panel_height)
 
-        self.btn_action = centered_rect(cx, int(panel_y + panel_height - 118), self.BTN_W, self.BTN_H)
+        self.btn_action = centered_rect(cx, int(panel_y + panel_height - 76), self.BTN_W, self.BTN_H)
 
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
@@ -259,9 +260,10 @@ class ResultScene(Scene):
         draw_panel(panel, "RUN REPORT", time_s=self.ctx.visual_time)
         result_text, result_color, button_text = self._result_header()
         intro_progress = min(1.0, 1.0 - self.intro_timer / 1.0) if self.intro_timer > 0.0 else 1.0
+        compact = panel.height < 720
 
-        draw_text_centered("RUN REPORT", center_x, int(panel.y + 24), 18, PANEL_ACCENT)
-        draw_text_centered(result_text, center_x, int(panel.y + 54), 42, result_color)
+        draw_text_centered("RUN REPORT", center_x, int(panel.y + 24), 16, PANEL_ACCENT)
+        draw_text_centered(result_text, center_x, int(panel.y + 54), 36 if compact else 42, result_color)
         if self.intro_timer > 0.0:
             draw_title_glitch_pass(center_x, int(panel.y + 70), 380, intro_progress, accent_color=result_color, time_s=self.ctx.visual_time)
         report_subtitle = "NEON DISTRICT REPORT"
@@ -274,49 +276,60 @@ class ResultScene(Scene):
             report_subtitle = f"{tier.title}  |  {tier.subtitle.upper()}"
         elif self.ctx.game_mode == "Time Attack":
             report_subtitle = f"TIME ATTACK  |  T-{max(0, math.ceil(self.ctx.time_attack_seconds)):02d} BANKED"
-        draw_text_centered(report_subtitle, center_x, int(panel.y + 98), 16, TEXT_DIM)
+        draw_text_centered(report_subtitle, center_x, int(panel.y + 98), 14, TEXT_DIM)
         draw_dashboard_rail(center_x, int(panel.y + 116), 280, label="RUN SUMMARY", accent_color=result_color, time_s=self.ctx.visual_time)
 
-        score_card = pyray.Rectangle(panel.x + 34, panel.y + 152, int(panel.width - 68), 118)
-        draw_glass_card(score_card, accent_color=result_color, glow_alpha=16, time_s=self.ctx.visual_time)
+        content_x = panel.x + 40
+        content_w = int(panel.width - 80)
+        score_y = int(panel.y + 146 if compact else panel.y + 150)
+        score_h = 138 if compact else 156
+        summary_y_pos = score_y + score_h + 12
+        summary_h = 104 if compact else 118
+        breakdown_y_pos = summary_y_pos + summary_h + 12
+        breakdown_h = 78 if compact else 92
+        profile_y_pos = breakdown_y_pos + breakdown_h + 12
+        profile_h = 68 if compact else 82
+
+        score_card = pyray.Rectangle(content_x, score_y, content_w, score_h)
+        draw_glass_card(score_card, accent_color=result_color, glow_alpha=10, time_s=self.ctx.visual_time)
         score_label = "CURRENT SCORE" if self.ctx.last_result == "level_complete" else "FINAL SCORE"
-        draw_text_centered(score_label, center_x, int(score_card.y + 18), 18, TEXT_DIM)
-        draw_text_centered(str(self.ctx.score), center_x, int(score_card.y + 48), 34, colors.WHITE)
-        draw_text_centered(f"HIGH SCORE {self.ctx.high_score}", center_x, int(score_card.y + 84), 20, LIVE_GOLD)
+        draw_text_centered(score_label, center_x, int(score_card.y + 16), 15, TEXT_DIM)
+        draw_text_centered(str(self.ctx.score), center_x, int(score_card.y + 40), 54 if compact else 64, colors.WHITE)
+        draw_text_centered(f"HIGH SCORE {self.ctx.high_score}", center_x, int(score_card.y + score_card.height - 34), 16, LIVE_GOLD)
         score_target = max(1, self.ctx.high_score, self.ctx.score)
         ProgressBar(
-            pyray.Rectangle(score_card.x + 34, score_card.y + 104, score_card.width - 68, 10),
+            pyray.Rectangle(score_card.x + 42, score_card.y + score_card.height - 18, score_card.width - 84, 10),
             self.ctx.score / score_target,
             result_color,
         ).draw()
 
-        summary_card = pyray.Rectangle(panel.x + 34, panel.y + 292, int(panel.width - 68), 132)
-        draw_glass_card(summary_card, accent_color=result_color, glow_alpha=14, time_s=self.ctx.visual_time)
-        draw_text_centered(self._status_label(), center_x, int(summary_card.y + 16), 18, TEXT_DIM)
+        summary_card = pyray.Rectangle(content_x, summary_y_pos, content_w, summary_h)
+        draw_glass_card(summary_card, accent_color=result_color, glow_alpha=8, time_s=self.ctx.visual_time)
+        draw_text_centered(self._status_label(), center_x, int(summary_card.y + 14), 16, TEXT_DIM)
 
-        summary_y = int(summary_card.y + 52)
-        for line in self._summary_lines():
-            draw_text_centered(line, center_x, summary_y, 16, TEXT_DIM)
-            summary_y += 24
+        summary_y = int(summary_card.y + 38)
+        for line in self._summary_lines()[:3]:
+            draw_text_centered(line, center_x, summary_y, 15, TEXT_DIM)
+            summary_y += 20 if compact else 22
 
-        breakdown_card = pyray.Rectangle(panel.x + 34, panel.y + 438, int(panel.width - 68), 94)
-        draw_glass_card(breakdown_card, accent_color=PANEL_ACCENT, glow_alpha=10, fill_alpha=150, time_s=self.ctx.visual_time)
-        draw_text_centered("RUN BREAKDOWN", center_x, int(breakdown_card.y + 12), 16, TEXT_DIM)
+        breakdown_card = pyray.Rectangle(content_x, breakdown_y_pos, content_w, breakdown_h)
+        draw_glass_card(breakdown_card, accent_color=PANEL_ACCENT, glow_alpha=6, fill_alpha=150, time_s=self.ctx.visual_time)
+        draw_text_centered("RUN BREAKDOWN", center_x, int(breakdown_card.y + 12), 15, TEXT_DIM)
         breakdown_y = int(breakdown_card.y + 34)
         for line in self._breakdown_lines():
-            draw_text_centered(line, center_x, breakdown_y, 15, colors.WHITE if breakdown_y == int(breakdown_card.y + 34) else TEXT_DIM)
-            breakdown_y += 18
+            draw_text_centered(line, center_x, breakdown_y, 14, colors.WHITE if breakdown_y == int(breakdown_card.y + 34) else TEXT_DIM)
+            breakdown_y += 15 if compact else 17
 
-        profile_card = pyray.Rectangle(panel.x + 34, panel.y + 546, int(panel.width - 68), 102)
-        draw_glass_card(profile_card, accent_color=self._progression_accent(), glow_alpha=12, time_s=self.ctx.visual_time)
-        draw_text_centered("PROGRESSION UPDATE", center_x, int(profile_card.y + 14), 18, TEXT_DIM)
+        profile_card = pyray.Rectangle(content_x, profile_y_pos, content_w, profile_h)
+        draw_glass_card(profile_card, accent_color=self._progression_accent(), glow_alpha=6, time_s=self.ctx.visual_time)
+        draw_text_centered("PROGRESSION UPDATE", center_x, int(profile_card.y + 12), 15, TEXT_DIM)
         StatusBadge(
-            pyray.Rectangle(profile_card.x + profile_card.width - 140, profile_card.y + 10, 110, 46),
+            pyray.Rectangle(profile_card.x + profile_card.width - 132, profile_card.y + 10, 102, 42),
             "Grade",
             self.ctx.current_run_grade(self.ctx.last_result),
             self._progression_accent(),
         ).draw(time_s=self.ctx.visual_time)
-        profile_y = int(profile_card.y + 46)
+        profile_y = int(profile_card.y + 34)
         mastery_gain = self.ctx.mode_mastery_gain(self.ctx.last_result)
         grade = self.ctx.current_run_grade(self.ctx.last_result)
         record_lines = self.ctx.record_book_summary_lines()
@@ -334,23 +347,11 @@ class ResultScene(Scene):
                 record_lines[0],
                 daily_lines[0],
             )
-        for line in profile_lines:
-            draw_text_centered(line, center_x, profile_y, 16, TEXT_DIM)
-            profile_y += 19
+        for line in profile_lines[:2 if compact else 3]:
+            draw_text_centered(line, center_x - 34, profile_y, 14, TEXT_DIM)
+            profile_y += 15 if compact else 17
 
-        unlock_card = pyray.Rectangle(panel.x + 34, panel.y + 664, int(panel.width - 68), 94)
-        reward_accent = LIVE_GOLD if self.ctx.last_unlocks_are_new else PANEL_ACCENT
-        reward_label = "NEW REWARDS" if self.ctx.last_unlocks_are_new else "NEXT REWARDS"
-        draw_glass_card(unlock_card, accent_color=reward_accent, glow_alpha=10, fill_alpha=148, time_s=self.ctx.visual_time)
-        draw_text_centered(reward_label, center_x, int(unlock_card.y + 12), 16, TEXT_DIM)
-        unlock_y = int(unlock_card.y + 34)
-        for line in self.ctx.reward_showcase_lines():
-            if not line:
-                continue
-            draw_text_centered(line, center_x, unlock_y, 14, colors.WHITE)
-            unlock_y += 18
-
-        draw_text_centered("CONTINUE", center_x, int(panel.y + panel.height - 136), 18, TEXT_DIM)
+        draw_text_centered("CONTINUE", center_x, int(self.btn_action.y - 24), 15, TEXT_DIM)
         draw_button(self.btn_action, button_text, focused=True, time_s=self.ctx.visual_time)
         if self.intro_timer > 0.0:
             draw_scene_scan_intro(cfg.window_width, cfg.window_height, intro_progress, accent_color=result_color, time_s=self.ctx.visual_time)

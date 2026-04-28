@@ -25,9 +25,11 @@ class PauseScene(Scene):
         self.btn_menu = None
         self.btn_exit = None
         self.panel = None
+        self.intro_timer = 0.0
 
     def enter_tree(self) -> None:
         self.navigator.reset(0)
+        self.intro_timer = 0.22
         cfg = self.ctx.cfg
         center_x = cfg.window_width // 2
         panel_width = min(520, cfg.window_width - 120)
@@ -36,13 +38,16 @@ class PauseScene(Scene):
         panel_y = max(48, int((cfg.window_height - panel_height) / 2))
         self.panel = pyray.Rectangle(panel_x, panel_y, panel_width, panel_height)
 
-        button_y = int(panel_y + panel_height - 200)
-        self.btn_resume = centered_rect(center_x, button_y, self.BTN_W, self.BTN_H)
-        self.btn_menu = centered_rect(center_x, button_y + 70, self.BTN_W, self.BTN_H)
-        self.btn_exit = centered_rect(center_x, button_y + 140, self.BTN_W, 46)
+        button_gap = 14
+        button_height = 46 if panel_height < 660 else self.BTN_H
+        button_y = int(panel_y + panel_height - (button_height * 3 + button_gap * 2) - 42)
+        self.btn_resume = centered_rect(center_x, button_y, self.BTN_W, button_height)
+        self.btn_menu = centered_rect(center_x, button_y + button_height + button_gap, self.BTN_W, button_height)
+        self.btn_exit = centered_rect(center_x, button_y + (button_height + button_gap) * 2, self.BTN_W, button_height)
 
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
+        self.intro_timer = max(0.0, self.intro_timer - dt)
         # ESC or P -> resume back to game
         if (
             pyray.is_key_pressed(pyray.KEY_ESCAPE)
@@ -117,6 +122,12 @@ class PauseScene(Scene):
         draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 2)
 
         draw_scene_footer(panel, "ESC OR P TO RESUME")
+        if self.intro_timer > 0.0:
+            alpha = int(160 * (self.intro_timer / 0.22))
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(0, 0, cfg.window_width, cfg.window_height),
+                with_alpha(colors.BLACK, alpha),
+            )
         draw_presentation_bars(cfg.window_width, cfg.window_height)
 
     def _draw_summary(self) -> None:
@@ -161,17 +172,19 @@ class PauseScene(Scene):
                 right_lines.append(("RETURN", f"{returning_ghosts}/{total_ghosts}", colors.WHITE))
 
         panel = self.panel
-        card_y = int(panel.y + 152)
+        compact = panel.height < 660
+        card_y = int(panel.y + 142 if compact else panel.y + 152)
         card_w = int((panel.width - 78) / 2)
-        left_card = pyray.Rectangle(panel.x + 26, card_y, card_w, 238)
-        right_card = pyray.Rectangle(panel.x + panel.width - 26 - card_w, card_y, card_w, 238)
+        card_height = 212 if compact else 238
+        left_card = pyray.Rectangle(panel.x + 26, card_y, card_w, card_height)
+        right_card = pyray.Rectangle(panel.x + panel.width - 26 - card_w, card_y, card_w, card_height)
         draw_glass_card(left_card, accent_color=PANEL_ACCENT, glow_alpha=16)
         draw_glass_card(right_card, accent_color=colors.MAGENTA, glow_alpha=16)
 
         self._draw_stat_card(left_card, "RUN", left_lines)
         self._draw_stat_card(right_card, "SYSTEM", right_lines)
 
-        badge_y = int(panel.y + 402)
+        badge_y = int(card_y + card_height + 12)
         badge_w = int((panel.width - 78) / 2)
         StatusBadge(
             pyray.Rectangle(panel.x + 26, badge_y, badge_w, 58),
