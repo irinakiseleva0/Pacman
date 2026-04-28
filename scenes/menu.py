@@ -5,9 +5,11 @@ from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE, MODES_SCENE, OPTIONS_SCENE
-from ui.layout import LAYOUT_PROFILES
+from ui.components import Button
+from ui.layout import LAYOUT_PROFILES, centered_vertical_stack
 from ui.navigation import ButtonNavigator
-from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, PANEL_ACCENT, TEXT_DIM, draw_arcade_background, draw_cinematic_menu_background, draw_cinematic_title_stack, draw_dashboard_rail, draw_glass_card, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_scan_intro, draw_street_terminal, draw_title_glitch_pass, button_clicked, centered_rect, draw_button, draw_shadowed_text_centered, draw_text_centered
+from ui.style import UI_STYLE
+from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, PANEL_ACCENT, TEXT_DIM, draw_arcade_background, draw_cinematic_menu_background, draw_cinematic_title_stack, draw_dashboard_rail, draw_glass_card, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_scan_intro, draw_street_terminal, draw_title_glitch_pass, button_clicked, centered_rect, draw_shadowed_text_centered, draw_text_centered
 
 
 class Menu(Scene):
@@ -33,13 +35,13 @@ class Menu(Scene):
         self.intro_timer = 0.0
 
     def enter_tree(self) -> None:
-        self.intro_timer = 0.9
+        self.intro_timer = UI_STYLE.motion.intro_seconds
         cfg = self.ctx.cfg
         cx = cfg.window_width // 2
         self.desktop_layout = cfg.layout_name == "desktop"
         if self.desktop_layout:
-            panel_width = min(408, cfg.window_width - 120)
-            panel_height = min(590, cfg.window_height - 160)
+            panel_width = min(UI_STYLE.sizes.menu_panel_width, cfg.window_width - 120)
+            panel_height = min(UI_STYLE.sizes.menu_panel_height, cfg.window_height - 160)
             panel_x = cfg.window_width - panel_width - 42
             panel_y = max(70, int((cfg.window_height - panel_height) / 2) + 10)
         else:
@@ -50,10 +52,10 @@ class Menu(Scene):
         self.main_panel = pyray.Rectangle(panel_x, panel_y, panel_width, panel_height)
 
         if self.desktop_layout:
-            panel_padding = 22
-            btn_h = 46
+            panel_padding = UI_STYLE.spacing.panel_pad
+            btn_h = UI_STYLE.sizes.button_height
             stacked_w = int(panel_width - panel_padding * 2)
-            split_gap = 8
+            split_gap = UI_STYLE.spacing.button_gap
             split_w = int((stacked_w - split_gap) / 2)
             layout_y = int(panel_y + 92)
             diff_y = int(panel_y + 178)
@@ -61,14 +63,26 @@ class Menu(Scene):
             self.btn_desktop = pyray.Rectangle(panel_x + panel_padding, layout_y, split_w, btn_h)
             self.btn_mobile = pyray.Rectangle(panel_x + panel_padding + split_w + split_gap, layout_y, split_w, btn_h)
 
-            self.btn_easy = pyray.Rectangle(panel_x + panel_padding, diff_y, stacked_w, btn_h)
-            self.btn_normal = pyray.Rectangle(panel_x + panel_padding, diff_y + 52, stacked_w, btn_h)
-            self.btn_hard = pyray.Rectangle(panel_x + panel_padding, diff_y + 104, stacked_w, btn_h)
+            self.btn_easy, self.btn_normal, self.btn_hard = centered_vertical_stack(
+                int(panel_x + panel_width / 2),
+                diff_y,
+                stacked_w,
+                [btn_h, btn_h, btn_h],
+                UI_STYLE.spacing.button_gap,
+            )
 
-            self.btn_start = pyray.Rectangle(panel_x + panel_padding, action_y, stacked_w, 50)
-            self.btn_modes = pyray.Rectangle(panel_x + panel_padding, action_y + 60, stacked_w, 40)
-            self.btn_options = pyray.Rectangle(panel_x + panel_padding, action_y + 108, stacked_w, 40)
-            self.btn_exit = pyray.Rectangle(panel_x + panel_padding, action_y + 156, stacked_w, 36)
+            self.btn_start, self.btn_modes, self.btn_options, self.btn_exit = centered_vertical_stack(
+                int(panel_x + panel_width / 2),
+                action_y,
+                stacked_w,
+                [
+                    UI_STYLE.sizes.button_height_primary,
+                    UI_STYLE.sizes.button_height_compact,
+                    UI_STYLE.sizes.button_height_compact,
+                    UI_STYLE.sizes.button_height_compact,
+                ],
+                UI_STYLE.spacing.button_gap,
+            )
         else:
             button_gap = 14
             btn_w = min(cfg.menu_button_width, int(panel_width * 0.42))
@@ -178,6 +192,9 @@ class Menu(Scene):
         self.ctx.apply_difficulty(self.difficulty)
         self.ctx.start_new_game()
 
+    def _draw_button(self, rect, text: str, focus_index: int) -> None:
+        Button(rect, text, self.navigator.focus_index == focus_index).draw(time_s=self.ctx.visual_time)
+
     def _difficulty_summary_lines(self) -> list[str]:
         return list(self.ctx.difficulty_summary_lines(self.difficulty))
 
@@ -201,11 +218,11 @@ class Menu(Scene):
             draw_shadowed_text_centered("PAC-MAN", center_x, int(main_panel.y + 40), title_size, colors.WHITE)
             draw_text_centered("CYBER DISTRICT", center_x, int(main_panel.y + 140), 18, colors.WHITE)
             if self.intro_timer > 0.0:
-                intro_progress = min(1.0, 1.0 - self.intro_timer / 0.9)
+                intro_progress = min(1.0, 1.0 - self.intro_timer / UI_STYLE.motion.intro_seconds)
                 draw_title_glitch_pass(center_x, int(main_panel.y + 58), 360, intro_progress, time_s=self.ctx.visual_time)
             self._draw_mobile_menu(main_panel)
         if self.intro_timer > 0.0:
-            intro_progress = min(1.0, 1.0 - self.intro_timer / 0.9)
+            intro_progress = min(1.0, 1.0 - self.intro_timer / UI_STYLE.motion.intro_seconds)
             draw_scene_scan_intro(cfg.window_width, cfg.window_height, intro_progress, accent_color=LIVE_PINK, time_s=self.ctx.visual_time)
         draw_presentation_bars(cfg.window_width, cfg.window_height)
 
@@ -228,7 +245,7 @@ class Menu(Scene):
             variant=self.ctx.title_variant_name(),
         )
         if self.intro_timer > 0.0:
-            intro_progress = min(1.0, 1.0 - self.intro_timer / 0.9)
+            intro_progress = min(1.0, 1.0 - self.intro_timer / UI_STYLE.motion.intro_seconds)
             draw_title_glitch_pass(title_center_x, title_y + 12, 420, intro_progress, time_s=self.ctx.visual_time)
         draw_text_centered(
             "Neon maze protocol armed. Ghost pressure is live.",
@@ -281,19 +298,19 @@ class Menu(Scene):
             )
 
         draw_text_centered("DISPLAY GRID", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 16), 14, TEXT_DIM)
-        draw_button(self.btn_desktop, "DESKTOP", focused=self.navigator.focus_index == 0, time_s=self.ctx.visual_time)
-        draw_button(self.btn_mobile, "MOBILE", focused=self.navigator.focus_index == 1, time_s=self.ctx.visual_time)
+        self._draw_button(self.btn_desktop, "DESKTOP", 0)
+        self._draw_button(self.btn_mobile, "MOBILE", 1)
 
         draw_text_centered("DIFFICULTY", int(main_panel.x + main_panel.width / 2), int(main_panel.y + 138), 14, TEXT_DIM)
-        draw_button(self.btn_easy, "EASY", focused=self.navigator.focus_index == 2, time_s=self.ctx.visual_time)
-        draw_button(self.btn_normal, "NORMAL", focused=self.navigator.focus_index == 3, time_s=self.ctx.visual_time)
-        draw_button(self.btn_hard, "HARD", focused=self.navigator.focus_index == 4, time_s=self.ctx.visual_time)
+        self._draw_button(self.btn_easy, "EASY", 2)
+        self._draw_button(self.btn_normal, "NORMAL", 3)
+        self._draw_button(self.btn_hard, "HARD", 4)
 
         draw_text_centered("RUN CONTROL", int(main_panel.x + main_panel.width / 2), int(self.btn_start.y - 22), 14, TEXT_DIM)
-        draw_button(self.btn_start, "START RUN", focused=self.navigator.focus_index == 5, time_s=self.ctx.visual_time)
-        draw_button(self.btn_modes, "MODES", focused=self.navigator.focus_index == 6, time_s=self.ctx.visual_time)
-        draw_button(self.btn_options, "OPTIONS", focused=self.navigator.focus_index == 7, time_s=self.ctx.visual_time)
-        draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 8, time_s=self.ctx.visual_time)
+        self._draw_button(self.btn_start, "START RUN", 5)
+        self._draw_button(self.btn_modes, "MODES", 6)
+        self._draw_button(self.btn_options, "OPTIONS", 7)
+        self._draw_button(self.btn_exit, "EXIT", 8)
         draw_scene_footer(main_panel)
 
     def _draw_mobile_menu(self, main_panel) -> None:
@@ -303,13 +320,13 @@ class Menu(Scene):
         draw_shadowed_text_centered("PAC-MAN", center_x, int(main_panel.y + 44), 42, colors.WHITE)
         draw_text_centered("CYBER DISTRICT", center_x, int(main_panel.y + 92), 16, TEXT_DIM)
         draw_text_centered("DISPLAY GRID", center_x, int(main_panel.y + 134), 20, TEXT_DIM)
-        draw_button(self.btn_desktop, "DESKTOP", focused=self.navigator.focus_index == 0, time_s=self.ctx.visual_time)
-        draw_button(self.btn_mobile, "MOBILE", focused=self.navigator.focus_index == 1, time_s=self.ctx.visual_time)
+        self._draw_button(self.btn_desktop, "DESKTOP", 0)
+        self._draw_button(self.btn_mobile, "MOBILE", 1)
         draw_text_centered(f"ACTIVE: {self.layout_name.upper()}", center_x, int(main_panel.y + 238), 20, TEXT_DIM)
         draw_text_centered("DIFFICULTY", center_x, int(main_panel.y + 270), 20, TEXT_DIM)
-        draw_button(self.btn_easy, "EASY", focused=self.navigator.focus_index == 2, time_s=self.ctx.visual_time)
-        draw_button(self.btn_normal, "NORMAL", focused=self.navigator.focus_index == 3, time_s=self.ctx.visual_time)
-        draw_button(self.btn_hard, "HARD", focused=self.navigator.focus_index == 4, time_s=self.ctx.visual_time)
+        self._draw_button(self.btn_easy, "EASY", 2)
+        self._draw_button(self.btn_normal, "NORMAL", 3)
+        self._draw_button(self.btn_hard, "HARD", 4)
 
         selected_color = LIVE_CYAN if self.difficulty == "Easy" else LIVE_GOLD if self.difficulty == "Normal" else LIVE_PINK
         draw_text_centered(f"Selected: {self.difficulty}", center_x, int(main_panel.y + 468), 22, selected_color)
@@ -318,8 +335,8 @@ class Menu(Scene):
         for line in self._difficulty_summary_lines():
             draw_text_centered(line, center_x, summary_y, 18, TEXT_DIM)
             summary_y += 24
-        draw_button(self.btn_start, "START GAME", focused=self.navigator.focus_index == 5, time_s=self.ctx.visual_time)
-        draw_button(self.btn_modes, "MODES", focused=self.navigator.focus_index == 6, time_s=self.ctx.visual_time)
-        draw_button(self.btn_options, "OPTIONS", focused=self.navigator.focus_index == 7, time_s=self.ctx.visual_time)
-        draw_button(self.btn_exit, "EXIT", focused=self.navigator.focus_index == 8, time_s=self.ctx.visual_time)
+        self._draw_button(self.btn_start, "START GAME", 5)
+        self._draw_button(self.btn_modes, "MODES", 6)
+        self._draw_button(self.btn_options, "OPTIONS", 7)
+        self._draw_button(self.btn_exit, "EXIT", 8)
         draw_scene_footer(main_panel)

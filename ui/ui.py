@@ -5,28 +5,29 @@ import math
 import core.raylib_api as pyray
 from raylib import colors
 
+from ui.style import UI_STYLE
 from utils.visual_effects import with_alpha
 
 
-BG_TOP = (8, 10, 26, 255)
-BG_BOTTOM = (1, 3, 10, 255)
-PANEL_OUTER = (7, 10, 22, 242)
-PANEL_INNER = (4, 8, 18, 230)
-PANEL_ACCENT = (52, 240, 255, 255)
-TEXT_DIM = (178, 204, 232, 255)
-BUTTON_IDLE = (10, 18, 34, 255)
-BUTTON_ACTIVE = (16, 34, 54, 255)
-BUTTON_HOVER = (28, 42, 66, 255)
-LIVE_CYAN = (32, 244, 255, 255)
-LIVE_PINK = (255, 46, 199, 255)
-LIVE_GOLD = (255, 211, 86, 255)
+BG_TOP = UI_STYLE.colors.bg_top
+BG_BOTTOM = UI_STYLE.colors.bg_bottom
+PANEL_OUTER = UI_STYLE.colors.panel_outer
+PANEL_INNER = UI_STYLE.colors.panel_inner
+PANEL_ACCENT = UI_STYLE.colors.panel_accent
+TEXT_DIM = UI_STYLE.colors.text_dim
+BUTTON_IDLE = UI_STYLE.colors.button_idle
+BUTTON_ACTIVE = UI_STYLE.colors.button_active
+BUTTON_HOVER = UI_STYLE.colors.button_hover
+LIVE_CYAN = UI_STYLE.colors.live_cyan
+LIVE_PINK = UI_STYLE.colors.live_pink
+LIVE_GOLD = UI_STYLE.colors.live_gold
 PRIMARY_GAMEPLAY = LIVE_CYAN
 SECONDARY_UI = LIVE_PINK
 ACCENT_IMPORTANT = LIVE_GOLD
 PANEL_PINK = (255, 86, 212, 255)
 NOIR_BLUE = (4, 6, 18, 255)
 STREET_BLUE = (10, 16, 38, 255)
-GLASS_EDGE = (138, 246, 255, 255)
+GLASS_EDGE = UI_STYLE.colors.glass_edge
 PRESENTATION_MODE = False
 THEME_PRESETS = {
     "Neon District": {

@@ -6,13 +6,15 @@ from raylib import colors
 from core.scene import Scene
 from core.scene_ids import EXIT_SCENE, GAME_SCENE, MENU_SCENE
 from ui import gamepad
+from ui.components import ScreenTitle, StatusBadge
 from ui.navigation import ButtonNavigator
-from ui.ui import PANEL_ACCENT, TEXT_DIM, button_clicked, centered_rect, draw_arcade_background, draw_button, draw_cinematic_menu_background, draw_glass_card, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_header, draw_text_centered
+from ui.style import UI_STYLE
+from ui.ui import LIVE_GOLD, PANEL_ACCENT, TEXT_DIM, button_clicked, centered_rect, draw_arcade_background, draw_button, draw_cinematic_menu_background, draw_glass_card, draw_panel, draw_presentation_bars, draw_scene_footer, draw_text_centered
 from utils.visual_effects import with_alpha
 
 
 class PauseScene(Scene):
-    BTN_W = 220
+    BTN_W = UI_STYLE.sizes.button_width
     BTN_H = 52
 
     def __init__(self, ctx):
@@ -105,8 +107,8 @@ class PauseScene(Scene):
         if self.panel is None:
             self.enter_tree()
         panel = self.panel
-        draw_panel(panel, "RUN PAUSED")
-        draw_scene_header(panel, "RUN PAUSED", "PAUSED", "NEON DISTRICT HOLD", title_size=50)
+        draw_panel(panel, "RUN PAUSED", time_s=self.ctx.visual_time)
+        ScreenTitle(panel, "RUN PAUSED", "PAUSED", "CYBER DISTRICT HOLD").draw()
         self._draw_summary()
 
         draw_text_centered("CONTINUE", cfg.window_width // 2, int(self.btn_resume.y - 28), 16, TEXT_DIM)
@@ -168,6 +170,21 @@ class PauseScene(Scene):
 
         self._draw_stat_card(left_card, "RUN", left_lines)
         self._draw_stat_card(right_card, "SYSTEM", right_lines)
+
+        badge_y = int(panel.y + 402)
+        badge_w = int((panel.width - 78) / 2)
+        StatusBadge(
+            pyray.Rectangle(panel.x + 26, badge_y, badge_w, 58),
+            "Mode",
+            self.ctx.mode_label(),
+            PANEL_ACCENT,
+        ).draw(time_s=self.ctx.visual_time)
+        StatusBadge(
+            pyray.Rectangle(panel.x + panel.width - 26 - badge_w, badge_y, badge_w, 58),
+            "Best",
+            str(self.ctx.high_score),
+            LIVE_GOLD,
+        ).draw(time_s=self.ctx.visual_time)
 
     def _draw_stat_card(self, rect, title: str, lines: list[tuple[str, str, object]]) -> None:
         pyray.draw_text(title, int(rect.x + 18), int(rect.y + 14), 18, TEXT_DIM)

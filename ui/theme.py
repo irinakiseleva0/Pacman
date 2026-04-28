@@ -1,27 +1,28 @@
 from __future__ import annotations
 
+from ui.style import UI_STYLE
 
-BG_TOP = (8, 10, 26, 255)
-BG_MID = (5, 8, 18, 255)
-BG_BOTTOM = (1, 3, 10, 255)
+BG_TOP = UI_STYLE.colors.bg_top
+BG_MID = UI_STYLE.colors.bg_mid
+BG_BOTTOM = UI_STYLE.colors.bg_bottom
 
-PANEL_OUTER = (7, 10, 22, 230)
-PANEL_INNER = (4, 8, 18, 210)
-PANEL_STRONG = (5, 10, 22, 242)
+PANEL_OUTER = UI_STYLE.colors.panel_outer
+PANEL_INNER = UI_STYLE.colors.panel_inner
+PANEL_STRONG = UI_STYLE.colors.panel_strong
 
 LINE_SOFT = (64, 242, 255, 130)
-TEXT_PRIMARY = (242, 250, 255, 255)
-TEXT_DIM = (178, 204, 232, 255)
-TEXT_MUTED = (105, 132, 164, 255)
+TEXT_PRIMARY = UI_STYLE.colors.text_primary
+TEXT_DIM = UI_STYLE.colors.text_dim
+TEXT_MUTED = UI_STYLE.colors.text_muted
 
-LIVE_CYAN = (32, 244, 255, 255)
-LIVE_PINK = (255, 46, 199, 255)
-LIVE_GOLD = (255, 211, 86, 255)
-LIVE_RED = (255, 82, 116, 255)
-LIVE_GREEN = (96, 255, 166, 255)
+LIVE_CYAN = UI_STYLE.colors.live_cyan
+LIVE_PINK = UI_STYLE.colors.live_pink
+LIVE_GOLD = UI_STYLE.colors.live_gold
+LIVE_RED = UI_STYLE.colors.live_red
+LIVE_GREEN = UI_STYLE.colors.live_green
 
-BUTTON_IDLE = (10, 18, 34, 230)
-BUTTON_ACTIVE = (16, 34, 54, 240)
-BUTTON_HOVER = (28, 42, 66, 246)
+BUTTON_IDLE = UI_STYLE.colors.button_idle
+BUTTON_ACTIVE = UI_STYLE.colors.button_active
+BUTTON_HOVER = UI_STYLE.colors.button_hover
 
 PANEL_ACCENT = LIVE_CYAN

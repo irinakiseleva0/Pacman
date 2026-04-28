@@ -7,6 +7,7 @@ from raylib import colors
 
 from core.scene import Scene
 from core.scene_ids import GAME_SCENE, MENU_SCENE
+from ui.components import ProgressBar, StatusBadge
 from ui.navigation import ButtonNavigator
 from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, PANEL_ACCENT, TEXT_DIM, button_clicked, centered_rect, draw_arcade_background, draw_button, draw_cinematic_menu_background, draw_dashboard_rail, draw_glass_card, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_scan_intro, draw_text_centered, draw_title_glitch_pass
 from utils.score_storage import save_high_score
@@ -282,6 +283,12 @@ class ResultScene(Scene):
         draw_text_centered(score_label, center_x, int(score_card.y + 18), 18, TEXT_DIM)
         draw_text_centered(str(self.ctx.score), center_x, int(score_card.y + 48), 34, colors.WHITE)
         draw_text_centered(f"HIGH SCORE {self.ctx.high_score}", center_x, int(score_card.y + 84), 20, LIVE_GOLD)
+        score_target = max(1, self.ctx.high_score, self.ctx.score)
+        ProgressBar(
+            pyray.Rectangle(score_card.x + 34, score_card.y + 104, score_card.width - 68, 10),
+            self.ctx.score / score_target,
+            result_color,
+        ).draw()
 
         summary_card = pyray.Rectangle(panel.x + 34, panel.y + 292, int(panel.width - 68), 132)
         draw_glass_card(summary_card, accent_color=result_color, glow_alpha=14, time_s=self.ctx.visual_time)
@@ -303,7 +310,13 @@ class ResultScene(Scene):
         profile_card = pyray.Rectangle(panel.x + 34, panel.y + 546, int(panel.width - 68), 102)
         draw_glass_card(profile_card, accent_color=self._progression_accent(), glow_alpha=12, time_s=self.ctx.visual_time)
         draw_text_centered("PROGRESSION UPDATE", center_x, int(profile_card.y + 14), 18, TEXT_DIM)
-        profile_y = int(profile_card.y + 40)
+        StatusBadge(
+            pyray.Rectangle(profile_card.x + profile_card.width - 140, profile_card.y + 10, 110, 46),
+            "Grade",
+            self.ctx.current_run_grade(self.ctx.last_result),
+            self._progression_accent(),
+        ).draw(time_s=self.ctx.visual_time)
+        profile_y = int(profile_card.y + 46)
         mastery_gain = self.ctx.mode_mastery_gain(self.ctx.last_result)
         grade = self.ctx.current_run_grade(self.ctx.last_result)
         record_lines = self.ctx.record_book_summary_lines()
@@ -323,7 +336,7 @@ class ResultScene(Scene):
             )
         for line in profile_lines:
             draw_text_centered(line, center_x, profile_y, 16, TEXT_DIM)
-            profile_y += 22
+            profile_y += 19
 
         unlock_card = pyray.Rectangle(panel.x + 34, panel.y + 664, int(panel.width - 68), 94)
         reward_accent = LIVE_GOLD if self.ctx.last_unlocks_are_new else PANEL_ACCENT

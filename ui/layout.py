@@ -4,6 +4,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+import core.raylib_api as pyray
+
 
 _CONFIG_DIR = Path(__file__).resolve().parent.parent / "data" / "config"
 
@@ -100,3 +102,20 @@ def _build_layout_profiles() -> dict[str, LayoutProfile]:
 
 LAYOUT_PROFILES: dict[str, LayoutProfile] = _build_layout_profiles()
 DEFAULT_LAYOUT = _LAYOUT_DATA.get("default_layout", "desktop")
+
+
+def centered_rect(center_x: int, y: int, width: int, height: int):
+    return pyray.Rectangle(center_x - width // 2, y, width, height)
+
+
+def vertical_stack(x: int, y: int, width: int, heights: list[int], gap: int) -> list[object]:
+    rects = []
+    current_y = y
+    for height in heights:
+        rects.append(pyray.Rectangle(x, current_y, width, height))
+        current_y += height + gap
+    return rects
+
+
+def centered_vertical_stack(center_x: int, y: int, width: int, heights: list[int], gap: int) -> list[object]:
+    return vertical_stack(center_x - width // 2, y, width, heights, gap)
