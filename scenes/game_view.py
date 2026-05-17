@@ -16,6 +16,7 @@ from scenes.game_view_overlays import (
     draw_transition_card,
     draw_tutorial_overlay,
 )
+from ui.hud import draw_floating_texts
 from ui.ui import draw_presentation_bars
 
 
@@ -57,5 +58,6 @@ def draw_scene(game_scene) -> None:
     if game_scene.tutorial_stage > 0 and not game_scene.ctx.capture_mode_enabled():
         draw_tutorial_overlay(game_scene)
 
+    draw_floating_texts()
     visual.screen_flash.draw()
     draw_presentation_bars(cfg.window_width, cfg.window_height)

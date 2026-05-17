@@ -30,6 +30,17 @@ class Rectangle:
         self.height = float(height)
 
 
+def create_camera_2d():
+    camera = rl.ffi.new("Camera2D *")
+    camera.offset.x = 0.0
+    camera.offset.y = 0.0
+    camera.target.x = 0.0
+    camera.target.y = 0.0
+    camera.rotation = 0.0
+    camera.zoom = 1.0
+    return camera
+
+
 def _is_cdata(obj) -> bool:
     # CFFI cdata usually has a nice repr like "<cdata 'Vector2' ...>"
     # This is a pragmatic check that works well in practice.
@@ -124,6 +135,24 @@ is_music_stream_playing = rl.IsMusicStreamPlaying
 begin_drawing = rl.BeginDrawing
 end_drawing = rl.EndDrawing
 clear_background = rl.ClearBackground
+begin_mode_2d = rl.BeginMode2D
+end_mode_2d = rl.EndMode2D
+load_render_texture = rl.LoadRenderTexture
+unload_render_texture = rl.UnloadRenderTexture
+begin_texture_mode = rl.BeginTextureMode
+end_texture_mode = rl.EndTextureMode
+unload_shader = rl.UnloadShader
+set_shader_value = rl.SetShaderValue
+begin_shader_mode = rl.BeginShaderMode
+end_shader_mode = rl.EndShaderMode
+
+
+def load_shader(vs_path, fs_path):
+    return rl.LoadShader(_b(vs_path) if vs_path else rl.ffi.NULL, _b(fs_path) if fs_path else rl.ffi.NULL)
+
+
+def get_shader_location(shader, name: str) -> int:
+    return int(rl.GetShaderLocation(shader, _b(name)))
 
 
 def draw_text(text, x: int, y: int, font_size: int, color):
@@ -137,6 +166,10 @@ def measure_text(text, font_size: int) -> int:
 def draw_texture_ex(texture, position, rotation=0.0, scale=1.0, tint=colors.WHITE):
     rl.DrawTextureEx(texture, _as_vec2(position),
                      float(rotation), float(scale), tint)
+
+
+def draw_texture_rec(texture, source, position, tint=colors.WHITE):
+    rl.DrawTextureRec(texture, _as_rect(source), _as_vec2(position), tint)
 
 
 def draw_rectangle_rec(rect, color):
@@ -198,11 +231,15 @@ is_gamepad_available = rl.IsGamepadAvailable
 is_gamepad_button_pressed = rl.IsGamepadButtonPressed
 is_gamepad_button_down = rl.IsGamepadButtonDown
 get_gamepad_axis_movement = rl.GetGamepadAxisMovement
+get_char_pressed = rl.GetCharPressed
 
 KEY_W = rl.KEY_W
 KEY_A = rl.KEY_A
 KEY_S = rl.KEY_S
 KEY_D = rl.KEY_D
+KEY_Q = rl.KEY_Q
+KEY_E = rl.KEY_E
+KEY_R = rl.KEY_R
 KEY_P = rl.KEY_P
 KEY_UP = rl.KEY_UP
 KEY_DOWN = rl.KEY_DOWN
@@ -213,6 +250,7 @@ KEY_F10 = rl.KEY_F10
 KEY_ENTER = rl.KEY_ENTER
 KEY_KP_ENTER = rl.KEY_KP_ENTER
 KEY_SPACE = rl.KEY_SPACE
+KEY_BACKSPACE = rl.KEY_BACKSPACE
 
 GAMEPAD_AXIS_LEFT_X = rl.GAMEPAD_AXIS_LEFT_X
 GAMEPAD_AXIS_LEFT_Y = rl.GAMEPAD_AXIS_LEFT_Y

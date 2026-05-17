@@ -7,3 +7,4 @@ profile.json
 scores.json
 data/saves/*.json
 !data/saves/.gitkeep
+web/vite-dev*.log

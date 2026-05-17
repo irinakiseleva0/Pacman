@@ -26,18 +26,21 @@ DEFAULT_PROFILE = {
         "Endless": 0,
         "Challenge": 0,
         "Time Attack": 0,
+        "DailyChallenge": 0,
     },
     "mode_mastery": {
         "Arcade": 0,
         "Endless": 0,
         "Challenge": 0,
         "Time Attack": 0,
+        "DailyChallenge": 0,
     },
     "challenge_credits": 0,
     "challenge_clears": 0,
     "challenge_streak": 0,
     "best_challenge_streak": 0,
     "challenge_rewards": {},
+    "unlocked_skins": {},
     "style_medals": {
         "No Panic Clear": 0,
         "Predator Run": 0,
@@ -62,15 +65,18 @@ DEFAULT_PROFILE = {
         "Endless": {"best_score": 0, "best_grade": "", "wins": 0},
         "Challenge": {"best_score": 0, "best_grade": "", "wins": 0},
         "Time Attack": {"best_score": 0, "best_grade": "", "wins": 0},
+        "DailyChallenge": {"best_score": 0, "best_grade": "", "wins": 0},
     },
     "district_records": {
-        "1": {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {"Arcade": 0, "Endless": 0, "Challenge": 0, "Time Attack": 0}},
-        "2": {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {"Arcade": 0, "Endless": 0, "Challenge": 0, "Time Attack": 0}},
-        "3": {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {"Arcade": 0, "Endless": 0, "Challenge": 0, "Time Attack": 0}},
-        "4": {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {"Arcade": 0, "Endless": 0, "Challenge": 0, "Time Attack": 0}},
-        "5": {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {"Arcade": 0, "Endless": 0, "Challenge": 0, "Time Attack": 0}},
+        "1": {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {"Arcade": 0, "Endless": 0, "Challenge": 0, "Time Attack": 0, "DailyChallenge": 0}},
+        "2": {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {"Arcade": 0, "Endless": 0, "Challenge": 0, "Time Attack": 0, "DailyChallenge": 0}},
+        "3": {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {"Arcade": 0, "Endless": 0, "Challenge": 0, "Time Attack": 0, "DailyChallenge": 0}},
+        "4": {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {"Arcade": 0, "Endless": 0, "Challenge": 0, "Time Attack": 0, "DailyChallenge": 0}},
+        "5": {"best_score": 0, "best_grade": "", "clears": 0, "best_mode_scores": {"Arcade": 0, "Endless": 0, "Challenge": 0, "Time Attack": 0, "DailyChallenge": 0}},
     },
     "run_history": [],
+    "last_seed": 0,
+    "daily_challenge_last_date": "",
     "settings": {
         "fx_intensity": "High",
         "screen_flash": 1,
@@ -112,6 +118,11 @@ def load_profile() -> dict:
                 for reward_name, reward_value in value.items():
                     rewards[str(reward_name)] = 1 if int(reward_value) else 0
                 profile["challenge_rewards"] = rewards
+            elif key == "unlocked_skins" and isinstance(value, dict):
+                skins: dict[str, int] = {}
+                for skin_name, skin_value in value.items():
+                    skins[str(skin_name)] = 1 if int(skin_value) else 0
+                profile["unlocked_skins"] = skins
             elif key == "style_medals" and isinstance(value, dict):
                 medals: dict[str, int] = {}
                 for medal_name in profile["style_medals"]:
@@ -167,6 +178,7 @@ def load_profile() -> dict:
                             "level": int(item.get("level", 1)),
                             "grade": str(item.get("grade", "")),
                             "map": int(item.get("map", 1)),
+                            "seed": int(item.get("seed", 0)),
                             "medals": [str(medal) for medal in item.get("medals", [])[:4]] if isinstance(item.get("medals", []), list) else [],
                         }
                     )
@@ -182,6 +194,8 @@ def load_profile() -> dict:
                 profile["settings"]["theme_name"] = str(value.get("theme_name", "Neon District"))
                 profile["settings"]["hud_pack_name"] = str(value.get("hud_pack_name", "Standard"))
                 profile["settings"]["title_variant_name"] = str(value.get("title_variant_name", "Standard"))
+            elif key == "daily_challenge_last_date":
+                profile[key] = str(value)
             elif key in profile:
                 profile[key] = int(value)
     return profile

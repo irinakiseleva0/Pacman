@@ -51,6 +51,7 @@ class ProgressionTests(unittest.TestCase):
         ctx.game_mode = "Arcade"
         ctx.score = 5200
         ctx.current_level = 3
+        ctx.start_seeded_run(2468)
         ctx.run_stats.ghosts_eaten = 6
         ctx.run_stats.line_bonuses = 3
         ctx.pre_run_unlock_snapshot = ctx.unlock_snapshot()
@@ -62,6 +63,28 @@ class ProgressionTests(unittest.TestCase):
         self.assertEqual(ctx.profile["mode_records"]["Arcade"]["wins"], 1)
         self.assertEqual(ctx.profile["district_records"]["5"]["best_mode_scores"]["Arcade"], 5200)
         self.assertEqual(ctx.profile["run_history"][0]["map"], 5)
+        self.assertEqual(ctx.profile["run_history"][0]["seed"], 2470)
+
+    def test_start_new_game_uses_requested_seed(self) -> None:
+        ctx = self._fresh_context()
+        ctx.set_requested_seed(123456)
+
+        ctx.start_new_game()
+
+        self.assertEqual(ctx.run.run_seed, 123456)
+        self.assertEqual(ctx.current_level_seed(), 123456)
+        self.assertEqual(ctx.profile["last_seed"], 123456)
+
+    def test_daily_challenge_consumes_one_attempt_per_day(self) -> None:
+        ctx = self._fresh_context()
+        ctx._today_iso = lambda: "2026-05-17"
+        ctx.game_mode = "DailyChallenge"
+
+        self.assertTrue(ctx.start_new_game())
+        self.assertEqual(ctx.run.run_seed, ctx.daily_seed())
+        self.assertEqual(ctx.profile["daily_challenge_last_date"], "2026-05-17")
+
+        self.assertFalse(ctx.start_new_game())
 
     def test_daily_directives_and_series_progress_update_on_finalize(self) -> None:
         ctx = self._fresh_context()

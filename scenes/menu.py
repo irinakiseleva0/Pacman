@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import datetime
+
 import core.raylib_api as pyray
 from raylib import colors
 
@@ -33,6 +35,7 @@ class Menu(Scene):
         self.main_panel = None
         self.desktop_layout = False
         self.intro_timer = 0.0
+        self.seed_text = ""
 
     def enter_tree(self) -> None:
         self.intro_timer = UI_STYLE.motion.intro_seconds
@@ -94,10 +97,12 @@ class Menu(Scene):
                 6,
             )
         self.navigator.reset(3)
+        self.seed_text = "" if self.ctx.run.requested_seed is None else f"{self.ctx.run.requested_seed:06d}"
 
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
         self.intro_timer = max(0.0, self.intro_timer - dt)
+        self._handle_seed_input()
         self._handle_keyboard_navigation()
 
         if button_clicked(self.btn_desktop):
@@ -117,7 +122,8 @@ class Menu(Scene):
             self.navigator.focus_index = 4
         if button_clicked(self.btn_start):
             self.navigator.focus_index = 5
-            self._apply_difficulty()
+            if not self._apply_difficulty():
+                return
             self.ctx.play_sfx("start_run")
             self.ctx.play_transition_effect(LIVE_GOLD, 0.3, 0.4)
             self.request_switch(GAME_SCENE)
@@ -150,7 +156,8 @@ class Menu(Scene):
             elif self.navigator.focus_index <= 4:
                 self.difficulty = self.FOCUS_ORDER[self.navigator.focus_index]
             elif self.navigator.focus_index == 5:
-                self._apply_difficulty()
+                if not self._apply_difficulty():
+                    return
                 self.ctx.play_sfx("start_run")
                 self.ctx.play_transition_effect(LIVE_GOLD, 0.3, 0.4)
                 self.request_switch(GAME_SCENE)
@@ -174,10 +181,33 @@ class Menu(Scene):
             pyray.set_window_size(self.ctx.cfg.window_width, self.ctx.cfg.window_height)
         self.enter_tree()
 
-    def _apply_difficulty(self) -> None:
+    def _apply_difficulty(self) -> bool:
         """Apply difficulty settings to the game config."""
         self.ctx.apply_difficulty(self.difficulty)
-        self.ctx.start_new_game()
+        self.ctx.set_requested_seed(int(self.seed_text) if self.seed_text else None)
+        if not self.ctx.start_new_game():
+            self.ctx.play_sfx("ui_back")
+            return False
+        return True
+
+    def _daily_countdown(self) -> str:
+        now = datetime.datetime.now()
+        tomorrow = now.date() + datetime.timedelta(days=1)
+        remaining = datetime.datetime.combine(tomorrow, datetime.time.min) - now
+        total_seconds = max(0, int(remaining.total_seconds()))
+        hours, rem = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(rem, 60)
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+    def _handle_seed_input(self) -> None:
+        char = pyray.get_char_pressed()
+        while char:
+            if 48 <= char <= 57 and len(self.seed_text) < 6:
+                self.seed_text += chr(char)
+            char = pyray.get_char_pressed()
+
+        if pyray.is_key_pressed(pyray.KEY_BACKSPACE) and self.seed_text:
+            self.seed_text = self.seed_text[:-1]
 
     def _draw_button(self, rect, text: str, focus_index: int) -> None:
         elapsed = UI_STYLE.motion.intro_seconds - self.intro_timer
@@ -236,6 +266,11 @@ class Menu(Scene):
 
         status_y = int(main_panel.y + 154)
         draw_text_centered(f"{self.ctx.rank_title().upper()}  |  HIGH SCORE {self.ctx.high_score}", center_x, status_y, 12, LIVE_GOLD)
+        seed_label = self.seed_text if self.seed_text else "RANDOM"
+        draw_text_centered(f"SEED {seed_label}  |  TYPE DIGITS / BACKSPACE", center_x, status_y + 18, 12, LIVE_CYAN)
+        if self.ctx.game_mode == "DailyChallenge":
+            daily_status = "AVAILABLE" if self.ctx.daily_challenge_available() else f"NEXT IN {self._daily_countdown()}"
+            draw_text_centered(f"DAILY {self.ctx.daily_seed()}  |  {daily_status}", center_x, status_y + 36, 12, LIVE_PINK)
 
         self._draw_button(self.btn_desktop, "DESKTOP", 0)
         self._draw_button(self.btn_mobile, "MOBILE", 1)
@@ -255,6 +290,11 @@ class Menu(Scene):
         draw_shadowed_text_centered("PAC-MAN", center_x, int(main_panel.y + 44), 42, colors.WHITE)
         draw_text_centered("CYBER DISTRICT", center_x, int(main_panel.y + 92), 16, TEXT_DIM)
         draw_text_centered(f"{self.layout_name.upper()}  |  {self.difficulty.upper()}  |  {self.ctx.mode_label().upper()}", center_x, int(main_panel.y + 124), 14, LIVE_GOLD)
+        seed_label = self.seed_text if self.seed_text else "RANDOM"
+        draw_text_centered(f"SEED {seed_label}", center_x, int(main_panel.y + 144), 13, LIVE_CYAN)
+        if self.ctx.game_mode == "DailyChallenge":
+            daily_status = "AVAILABLE" if self.ctx.daily_challenge_available() else f"NEXT {self._daily_countdown()}"
+            draw_text_centered(f"DAILY {daily_status}", center_x, int(main_panel.y + 160), 12, LIVE_PINK)
         self._draw_button(self.btn_desktop, "DESKTOP", 0)
         self._draw_button(self.btn_mobile, "MOBILE", 1)
         self._draw_button(self.btn_easy, "EASY", 2)

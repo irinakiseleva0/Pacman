@@ -8,6 +8,7 @@ from typing import Tuple
 
 from entities.cell import Actor
 from ui.ui import LIVE_CYAN, LIVE_PINK
+from utils.effects import shake_camera
 from utils.visual_effects import Particle, with_alpha
 
 
@@ -27,6 +28,7 @@ class Ghost(Actor):
         self.respawn_lock_ticks = 0
         self.release_delay_ticks = 0
         self.returning_home = False
+        self.slow_skip_tick = False
 
     def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
         return 0.0
@@ -297,6 +299,7 @@ class Ghost(Actor):
             self.target_y = pacman.y
 
     def on_eaten(self) -> None:
+        shake_camera(4, 0.15)
         self.returning_home = True
         self.respawn_lock_ticks = 0
         self.release_delay_ticks = 0
@@ -517,6 +520,13 @@ class Ghost(Actor):
 
         if getattr(pacman, "state", None) in ("DEATH", "NONE"):
             return
+
+        if getattr(pacman, "ghosts_are_slowed", lambda: False)() and not self.returning_home:
+            self.slow_skip_tick = not self.slow_skip_tick
+            if self.slow_skip_tick:
+                return
+        else:
+            self.slow_skip_tick = False
 
         if self.returning_home:
             self.mode = "home"

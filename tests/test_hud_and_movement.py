@@ -204,6 +204,59 @@ class MovementAndCollisionTests(unittest.TestCase):
         self.assertEqual((pacman.x, pacman.y), (5, 4))
         self.assertEqual(game_map.try_move_calls, [(1, 0), (0, -1)])
 
+    def test_abilities_unlock_from_career_rank_and_dash_moves_extra_steps(self) -> None:
+        ctx = self._fresh_context()
+        ctx.profile["best_score"] = 15000
+        pacman = self._make_pacman(ctx)
+        game_map = _MovementMapStub()
+        ctx.runtime.game_map = game_map
+
+        self.assertEqual([ability.name for ability in pacman.abilities], ["Dash", "Shield", "Slow"])
+        self.assertTrue(all(ability.unlocked for ability in pacman.abilities))
+
+        self.assertTrue(pacman.activate_ability_slot(0))
+        pacman.state = State.RIGHT
+        pacman.next_state = State.RIGHT
+        pacman.process()
+
+        self.assertEqual((pacman.x, pacman.y), (8, 5))
+        self.assertEqual(game_map.try_move_calls, [(1, 0), (1, 0), (1, 0)])
+
+    def test_shield_blocks_death_collision(self) -> None:
+        ctx = self._fresh_context()
+        ctx.profile["best_score"] = 15000
+        pacman = self._make_pacman(ctx)
+        ctx.runtime.pacman = pacman
+        ghost = Blinky(ctx)
+        ghost.set_spawn(5, 5)
+        pacman.activate_ability_slot(1)
+
+        game_map = Map.__new__(Map)
+        game_map.ctx = ctx
+        game_map.dynamic_actors = [pacman, ghost]
+
+        game_map._resolve_collision(pacman, ghost)
+
+        self.assertNotEqual(pacman.state, State.DEAD)
+
+    def test_slow_ability_skips_every_other_ghost_step(self) -> None:
+        ctx = self._fresh_context()
+        ctx.profile["best_score"] = 15000
+        pacman = self._make_pacman(ctx)
+        ctx.runtime.pacman = pacman
+        game_map = _MovementMapStub()
+        ctx.runtime.game_map = game_map
+        ghost = Blinky(ctx)
+        ghost.set_spawn(7, 5)
+
+        self.assertTrue(pacman.activate_ability_slot(2))
+        with patch.object(Blinky, "get_best_move", return_value=(-1, 0)):
+            ghost.process()
+            ghost.process()
+
+        self.assertEqual((ghost.x, ghost.y), (6, 5))
+        self.assertEqual(game_map.try_move_calls, [(-1, 0)])
+
     def test_collision_with_raging_pacman_scores_and_sends_ghost_home(self) -> None:
         ctx = self._fresh_context()
         pacman = self._make_pacman(ctx)

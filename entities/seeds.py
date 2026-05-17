@@ -24,7 +24,7 @@ class Seed(Cell):
             self.enabled = False
             self.ctx.score += score_value
             self.ctx.record_dot_eaten()
-            self.ctx.play_sfx("dot")
+            self.ctx.play_sfx("pellet_eat")
             route_chain_count, route_bonus = self.ctx.register_route_chain_dot()
             line_count, line_bonus = self.ctx.register_line_bonus_dot(
                 getattr(actor, "last_dx", 0),
@@ -142,7 +142,7 @@ class LargeSeed(Cell):
             self.ctx.run_stats.ghost_bonus_score += chain_bonus
             self.ctx.run_stats.risk_bonus_score += hunt_bonus
             self.ctx.record_power_seed_eaten()
-            self.ctx.play_sfx("power")
+            self.ctx.play_sfx("power_eat")
             actor.enable_rage(self.ctx.effective_rage_duration() + rage_bonus + hunt_rage_bonus, keep_combo=keep_combo)
 
             game_map = self.ctx.game_map
@@ -185,6 +185,7 @@ class LargeSeed(Cell):
                 )
             self.ctx.trigger_screen_shake(8.2, 0.5)
             self.ctx.trigger_screen_flash(palette["power_flash"], 0.34, 0.2)
+            self.ctx.trigger_freeze(2)
             self.ctx.trigger_action_juice(hitstop=0.055, slow_scale=0.58, slow_duration=0.12)
 
     def draw(self) -> None:

@@ -168,6 +168,19 @@ GAME_MODE_PRESETS: dict[str, GameModePreset] = {
         map_cycle=(4, 2, 5),
         reset_lives_each_level=True,
     ),
+    "DailyChallenge": GameModePreset(
+        title="DAILY CHALLENGE",
+        subtitle="One shared map per day",
+        summary_lines=(
+            "Same seed for every player today",
+            "One attempt is logged per calendar day",
+            "Daily scores use a separate leaderboard",
+        ),
+        accent=colors.GREEN,
+        max_levels=1,
+        map_cycle=(1,),
+        reset_lives_each_level=False,
+    ),
 }
 
 

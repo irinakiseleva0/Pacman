@@ -9,6 +9,7 @@ from core.context import GameContext
 from entities.bonus_gate import BonusGate
 from entities.hotspot_seed import HotspotSeed
 from entities.pulse_barrier import PulseBarrier
+from utils.effects import FloatingText
 from utils.profile_storage import DEFAULT_PROFILE
 
 
@@ -131,6 +132,15 @@ class ContentMechanicsTests(unittest.TestCase):
 
         self.assertGreater(route_bonuses[-1], 0)
         self.assertGreater(line_bonuses[-1], 0)
+
+    def test_floating_text_moves_up_and_fades(self) -> None:
+        text = FloatingText("+200", (100, 80), (0, 255, 255, 255), lifetime=1.0)
+
+        self.assertTrue(text.update(0.25))
+
+        self.assertEqual(text.pos.x, 100)
+        self.assertAlmostEqual(text.pos.y, 70)
+        self.assertAlmostEqual(text.alpha, 0.75)
 
 
 if __name__ == "__main__":

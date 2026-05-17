@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional
 
+from raylib import colors
+
 from core.context import GameContext
 from entities.cell import Cell, Actor
 from entities.empty_cell import EmptyCell
@@ -15,7 +17,9 @@ from entities.cherry import Cherry
 from entities.seeds import Seed, LargeSeed
 from entities.hotspot_seed import HotspotSeed
 from entities.pacman import Pacman
+from entities.boss_ghost import BossGhost
 from entities.ghost import Ghost, Blinky, Pinky, Inky, Clyde
+from ui.hud import spawn_floating_text
 
 
 @dataclass(frozen=True)
@@ -35,6 +39,7 @@ class Map:
         self.static_layer: List[List[Cell]] = []
         self.dynamic_actors: List[Actor] = []
         self.ghost_counter = 0  # Track ghost creation order
+        self.boss_spawned = False
         self.total_pickups = 0
         self.load(path)
 
@@ -83,8 +88,15 @@ class Map:
         for other in self.dynamic_actors:
             if other is actor:
                 continue
-            if other.x == actor.x and other.y == actor.y:
+            if self._actors_overlap(actor, other):
                 self._resolve_collision(actor, other)
+
+    def _actors_overlap(self, a: Actor, b: Actor) -> bool:
+        if isinstance(a, BossGhost):
+            return a.overlaps(b)
+        if isinstance(b, BossGhost):
+            return b.overlaps(a)
+        return a.x == b.x and a.y == b.y
 
     def _resolve_collision(self, a: Actor, b: Actor) -> None:
         kind_a = getattr(a, "kind", None)
@@ -99,6 +111,10 @@ class Map:
         if isinstance(ghost, Ghost) and ghost.is_harmless():
             return
 
+        if isinstance(ghost, BossGhost):
+            self._resolve_boss_collision(pacman, ghost)
+            return
+
         if getattr(pacman, "rage", False):
             palette = self.ctx.effect_palette()
             run = self.ctx.run
@@ -107,7 +123,7 @@ class Map:
             score_value = self.ctx.next_ghost_combo_score()
             run.ghost_combo += 1
             self.ctx.record_ghost_eaten()
-            self.ctx.play_sfx("ghost")
+            self.ctx.play_sfx("ghost_eat")
             combo_step = run.ghost_combo
             if isinstance(ghost, Ghost):
                 ghost.on_eaten()
@@ -126,6 +142,15 @@ class Map:
                 score_value, ghost.x, ghost.y)
             visual.floating_text.add_ghost_combo_text(
                 combo_step, score_value, ghost.x, ghost.y)
+            text = f"+{score_value}" if combo_step <= 1 else f"+{score_value} x{combo_step}!"
+            spawn_floating_text(
+                text,
+                (
+                    self.ctx.cfg.board_offset_x + ghost.x * self.ctx.cfg.tile_size + self.ctx.cfg.tile_size / 2,
+                    self.ctx.cfg.board_offset_y + ghost.y * self.ctx.cfg.tile_size - 8,
+                ),
+                colors.SKYBLUE,
+            )
             if rage_extension > 0:
                 visual.floating_text.add_text(
                     "OVERCLOCK",
@@ -139,6 +164,7 @@ class Map:
             shake_strength = 6.8 if combo_step <= 1 else min(10.5, 6.8 + combo_step * 1.15)
             self.ctx.trigger_screen_flash(palette["ghost"], flash_strength, 0.08)
             self.ctx.trigger_screen_shake(shake_strength, 0.26)
+            self.ctx.trigger_freeze()
             self.ctx.trigger_action_juice(
                 hitstop=0.07 if combo_step <= 1 else min(0.095, 0.07 + combo_step * 0.006),
                 slow_scale=0.48 if combo_step <= 1 else 0.42,
@@ -150,6 +176,49 @@ class Map:
             self.ctx.run.last_killer_name = getattr(type(ghost), "__name__", "Ghost")
             pacman.kill()
 
+    def _resolve_boss_collision(self, pacman: Actor, boss: BossGhost) -> None:
+        if boss.defeated:
+            return
+
+        if getattr(pacman, "rage", False):
+            palette = self.ctx.effect_palette()
+            score_value = boss.on_eaten(self)
+            self.ctx.run.score += score_value
+            self.ctx.run_stats.ghost_bonus_score += score_value
+            if boss.defeated:
+                self.ctx.record_ghost_eaten()
+                self.ctx.visual.floating_text.add_text(
+                    f"INTRUDER DOWN +{score_value}",
+                    boss.x * 16 - 34,
+                    boss.y * 16 - 34,
+                    colors.GOLD,
+                    1.35,
+                    14,
+                )
+                self.ctx.trigger_screen_flash(colors.GOLD, 0.34, 0.18)
+                self.ctx.trigger_screen_shake(9.0, 0.28)
+                self.dynamic_actors[:] = [
+                    actor for actor in self.dynamic_actors
+                    if not (isinstance(actor, BossGhost) and actor.defeated)
+                ]
+            else:
+                self.ctx.visual.floating_text.add_text(
+                    f"BOSS HIT +{score_value}",
+                    boss.x * 16 - 20,
+                    boss.y * 16 - 28,
+                    palette["ghost"],
+                    0.9,
+                    13,
+                )
+                self.ctx.trigger_screen_flash(palette["ghost"], 0.2, 0.08)
+                self.ctx.trigger_screen_shake(6.0, 0.16)
+            self.ctx.trigger_freeze(5)
+            return
+
+        self.ctx.reset_ghost_combo()
+        self.ctx.run.last_killer_name = "BossGhost"
+        pacman.kill()
+
     def frame(self) -> None:
         for actor in self.dynamic_actors:
             actor.frame(actor.x, actor.y)
@@ -159,8 +228,12 @@ class Map:
             for cell in row:
                 cell.tick()
 
-        for actor in self.dynamic_actors:
+        for actor in list(self.dynamic_actors):
             actor.process()
+        self.dynamic_actors[:] = [
+            actor for actor in self.dynamic_actors
+            if not (isinstance(actor, BossGhost) and actor.defeated)
+        ]
 
     def draw(self) -> None:
         for row in self.static_layer:
@@ -236,6 +309,9 @@ class Map:
 
         return returning_ghosts, total_ghosts
 
+    def boss_alive(self) -> bool:
+        return any(isinstance(actor, BossGhost) and not actor.defeated for actor in self.dynamic_actors)
+
     def stall_unreleased_ghosts(self, ticks: int) -> None:
         for actor in self.dynamic_actors:
             if isinstance(actor, Ghost):
@@ -272,6 +348,8 @@ class Map:
         self.static_layer.clear()
         self.dynamic_actors.clear()
         self.ctx.runtime.pacman = None
+        self.ghost_counter = 0
+        self.boss_spawned = False
 
         for y, line in enumerate(lines):
             row: List[Cell] = []
@@ -298,6 +376,20 @@ class Map:
 
         dots, large_seeds, _ = self.item_counts()
         self.total_pickups = dots + large_seeds
+        if self.boss_spawned:
+            self._announce_boss_spawn()
+
+    def _announce_boss_spawn(self) -> None:
+        self.ctx.trigger_screen_flash(colors.RED, 0.28, 0.18)
+        self.ctx.trigger_screen_shake(5.5, 0.2)
+        self.ctx.visual.floating_text.add_text(
+            "INTRUDER DETECTED",
+            int(self.ctx.cfg.board_width * 0.42),
+            28,
+            colors.RED,
+            1.8,
+            16,
+        )
 
     def _normalize_lines(self, lines: List[str]) -> List[str]:
         target_width = self.ctx.cfg.map_width
@@ -377,6 +469,11 @@ class Map:
         if symbol == "p":
             return Pacman(self.ctx)
         if symbol == "g":
+            if self._boss_level_active() and not self.boss_spawned:
+                self.boss_spawned = True
+                boss = BossGhost(self.ctx)
+                boss.set_release_delay(0)
+                return boss
             # Create different ghost personalities in order
             ghost_classes = [Blinky, Pinky, Inky, Clyde]
             ghost_index = self.ghost_counter
@@ -386,3 +483,6 @@ class Map:
             ghost.set_release_delay(ghost_index * self.ctx.effective_ghost_release_interval())
             return ghost
         return None
+
+    def _boss_level_active(self) -> bool:
+        return max(1, int(getattr(self.ctx, "current_level", 1))) % 5 == 0

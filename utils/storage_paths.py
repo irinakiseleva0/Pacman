@@ -10,6 +10,7 @@ APP_NAME = "Cyberpunk Pac-Man"
 LEGACY_SAVE_DIR = Path("data") / "saves"
 LEGACY_PROFILE_FILE = LEGACY_SAVE_DIR / "profile.json"
 LEGACY_SCORE_FILE = LEGACY_SAVE_DIR / "scores.json"
+LEGACY_DAILY_SCORE_FILE = LEGACY_SAVE_DIR / "daily_scores.json"
 
 
 def _user_data_root() -> Path:
@@ -28,6 +29,7 @@ def _user_data_root() -> Path:
 SAVE_DIR = _user_data_root() / APP_NAME / "saves"
 PROFILE_FILE = SAVE_DIR / "profile.json"
 SCORE_FILE = SAVE_DIR / "scores.json"
+DAILY_SCORE_FILE = SAVE_DIR / "daily_scores.json"
 
 
 def ensure_save_dir(directory: Path | None = None) -> Path:

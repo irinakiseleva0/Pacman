@@ -57,6 +57,9 @@ class RunState:
     last_killer_name: str = ""
     hunt_window_ticks: int = 0
     market_window_ticks: int = 0
+    requested_seed: int | None = None
+    run_seed: int | None = None
+    level_seed: int | None = None
 
 
 @dataclass
@@ -64,6 +67,7 @@ class RuntimeRefs:
     pacman: Optional[object] = None
     game_map: Optional[object] = None
     audio_manager: Optional[object] = None
+    camera: Optional[object] = None
 
 
 @dataclass
@@ -73,6 +77,7 @@ class VisualSystems:
     screen_shake: ScreenShake = field(default_factory=ScreenShake)
     floating_text: FloatingTextSystem = field(default_factory=FloatingTextSystem)
     screen_flash: ScreenFlash = field(default_factory=ScreenFlash)
+    freeze_frames: int = 0
     action_hitstop: float = 0.0
     action_slowdown: float = 0.0
     action_slow_scale: float = 1.0

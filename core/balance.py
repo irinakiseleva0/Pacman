@@ -53,6 +53,8 @@ _RUNTIME_FALLBACK = {
     "cherry_score": 500,
     "ghost_score": 200,
     "initial_lives": 3,
+    "music_volume": 0.45,
+    "sfx_volume": 0.75,
 }
 
 _DIFFICULTY_FALLBACK = {
@@ -193,6 +195,8 @@ class Config:
     cherry_score: int = _RUNTIME_DEFAULTS["cherry_score"]
     ghost_score: int = _RUNTIME_DEFAULTS["ghost_score"]
     initial_lives: int = _RUNTIME_DEFAULTS["initial_lives"]
+    music_volume: float = _RUNTIME_DEFAULTS["music_volume"]
+    sfx_volume: float = _RUNTIME_DEFAULTS["sfx_volume"]
 
     @property
     def board_width(self) -> int:

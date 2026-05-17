@@ -296,6 +296,7 @@ class ResultScene(Scene):
         draw_text_centered(score_label, center_x, int(score_card.y + 16), 15, TEXT_DIM)
         draw_text_centered(str(self.ctx.score), center_x, int(score_card.y + 40), 54 if compact else 64, colors.WHITE)
         draw_text_centered(f"HIGH SCORE {self.ctx.high_score}", center_x, int(score_card.y + score_card.height - 34), 16, LIVE_GOLD)
+        draw_text_centered(f"SEED {self.ctx.current_level_seed():06d}", center_x, int(score_card.y + score_card.height - 56), 14, LIVE_CYAN)
         score_target = max(1, self.ctx.high_score, self.ctx.score)
         ProgressBar(
             pyray.Rectangle(score_card.x + 42, score_card.y + score_card.height - 18, score_card.width - 84, 10),

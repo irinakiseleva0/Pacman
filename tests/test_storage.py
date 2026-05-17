@@ -8,7 +8,7 @@ from shutil import rmtree
 from unittest.mock import patch
 from uuid import uuid4
 
-from utils import profile_storage, score_storage
+from utils import profile_storage, score_storage, storage
 
 
 def _workspace_temp_root() -> Path:
@@ -114,3 +114,22 @@ class ScoreStorageTests(unittest.TestCase):
 
             self.assertEqual(loaded, 5555)
             self.assertTrue(score_file.exists())
+
+
+class DailyScoreStorageTests(unittest.TestCase):
+    def test_daily_score_save_and_load_roundtrip(self) -> None:
+        with WorkspaceTempDir() as tmp:
+            root = Path(tmp)
+            score_file = root / "daily_scores.json"
+            legacy_file = root / "legacy_daily_scores.json"
+
+            with (
+                patch.object(storage, "DAILY_SCORE_FILE", score_file),
+                patch.object(storage, "LEGACY_DAILY_SCORE_FILE", legacy_file),
+            ):
+                storage.record_daily_score("2026-05-17", 20260517, 4200, "A", "game_won")
+                loaded = storage.load_daily_scores()
+
+            self.assertEqual(loaded["scores"][0]["date"], "2026-05-17")
+            self.assertEqual(loaded["scores"][0]["seed"], 20260517)
+            self.assertEqual(loaded["scores"][0]["score"], 4200)

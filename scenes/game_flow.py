@@ -10,8 +10,10 @@ from core.scene_ids import EXIT_SCENE, MENU_SCENE, PAUSE_SCENE, RESULT_SCENE
 from entities.pacman import State
 from maps.class_map import Map
 from ui import gamepad
+from ui.hud import update_floating_texts
 from ui.mobile_controls import handle_mobile_controls
 from ui.ui import button_clicked
+from utils.effects import trigger_glitch
 
 if TYPE_CHECKING:
     from scenes.game_scene import GameScene, SceneTransition
@@ -41,6 +43,7 @@ def enter_tree(scene: "GameScene") -> None:
     scene.danger_chain_timer = 0.0
     scene.overtime_banner_timer = 0.0
     scene.overtime_announced = False
+    visual.freeze_frames = 0
     visual.action_hitstop = 0.0
     visual.action_slowdown = 0.0
     visual.action_slow_scale = 1.0
@@ -65,6 +68,10 @@ def update(scene: "GameScene", dt: float) -> None:
     runtime = scene.ctx.runtime
     game_map = runtime.game_map
     if game_map is None:
+        return
+
+    if visual.freeze_frames > 0:
+        visual.freeze_frames -= 1
         return
 
     mobile_action = _input_system(scene)
@@ -221,6 +228,7 @@ def _effects_update_system(scene: "GameScene") -> None:
     visual.screen_shake.update(frame_dt)
     visual.floating_text.update(frame_dt)
     visual.screen_flash.update(frame_dt)
+    update_floating_texts(frame_dt)
 
 
 def _combat_or_collision_system(scene: "GameScene", game_map) -> bool:
@@ -237,7 +245,7 @@ def _combat_or_collision_system(scene: "GameScene", game_map) -> bool:
         start_death_transition(scene)
         return True
 
-    if game_map.remaining_seeds() == 0 and scene.transition is None:
+    if game_map.remaining_seeds() == 0 and not getattr(game_map, "boss_alive", lambda: False)() and scene.transition is None:
         start_level_complete_transition(scene)
         return True
     return False
@@ -273,6 +281,7 @@ def start_death_transition(scene: "GameScene") -> None:
     run = scene.ctx.run
     scene.failure_reason = ""
     scene.ctx.play_sfx("death")
+    trigger_glitch(1.5)
     scene.ctx.play_transition_effect(scene.ctx.effect_palette()["death_flash"], 0.3, 0.2, 8.0, 0.5)
 
     run.lives -= 1
@@ -364,7 +373,7 @@ def start_level_complete_transition(scene: "GameScene") -> None:
             1.1,
             14,
         )
-    scene.ctx.play_sfx("win")
+    scene.ctx.play_sfx("level_clear")
     scene.ctx.record_level_cleared()
     scene.ctx.reset_ghost_combo()
     scene.ctx.play_transition_effect(scene.ctx.effect_palette()["win_flash"], 0.25, 0.2, 3.0, 0.2)

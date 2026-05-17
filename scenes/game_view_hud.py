@@ -4,7 +4,7 @@ import core.raylib_api as pyray
 from raylib import colors
 
 from core.gameplay_view_models import build_hud_model
-from ui.hud import draw_game_hud
+from ui.hud import draw_ability_slots, draw_game_hud
 from ui.mobile_controls import draw_mobile_controls
 from ui.ui import (
     LIVE_CYAN,
@@ -99,7 +99,7 @@ def draw_hud(game_scene) -> None:
 
 def _draw_control_dock(game_scene, hud_rect) -> None:
     cfg = game_scene.ctx.cfg
-    dock_h = 126
+    dock_h = 172
     dock_y = int(cfg.window_height - dock_h - 34)
     if dock_h < 104:
         return
@@ -110,6 +110,13 @@ def _draw_control_dock(game_scene, hud_rect) -> None:
     draw_glass_card(dock_rect, accent_color=LIVE_PINK, glow_alpha=12, fill_alpha=138, time_s=game_scene.visual_time)
     draw_text_centered("CONTROL", center_x, int(dock_rect.y + 8), 15, LIVE_CYAN)
     draw_text_centered("P = PAUSE  |  ESC = MENU", center_x, int(dock_rect.y + 24), 11, TEXT_DIM)
+    draw_ability_slots(
+        game_scene.ctx,
+        x=int(dock_rect.x + 10),
+        y=int(dock_rect.y + 40),
+        width=int(dock_rect.width - 20),
+        time_s=game_scene.visual_time,
+    )
 
     gap_x = 10
     gap_y = 8
@@ -119,7 +126,7 @@ def _draw_control_dock(game_scene, hud_rect) -> None:
     btn_h = 34
     left_x = inner_x
     right_x = inner_x + btn_w + gap_x
-    row1_y = int(dock_rect.y + 40)
+    row1_y = int(dock_rect.y + 86)
     row2_y = row1_y + btn_h + gap_y
 
     game_scene.btn_pause = pyray.Rectangle(left_x, row1_y, btn_w, btn_h)

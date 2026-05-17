@@ -5,11 +5,14 @@ import math
 import core.raylib_api as pyray
 from raylib import colors
 
+from core.progression import unlocked_abilities
+from entities.ability import Ability, default_abilities
 from entities.cell import Actor
 from ui import gamepad
 from utils.animated_sprite import Sprite
 from assets.assets import Assets
 from ui.ui import LIVE_CYAN, LIVE_GOLD
+from utils.effects import shake_camera
 from utils.visual_effects import Particle, with_alpha
 
 
@@ -41,6 +44,10 @@ class Pacman(Actor):
         self.turn_feedback_dir = (0, -1)
         self.turn_buffer_timer = 0.0
         self.turn_grace_timer = 0.0
+        self.abilities: list[Ability] = default_abilities(unlocked_abilities(ctx))[:3]
+        self.ability_speed_multiplier = 1.0
+        self.ability_invulnerable = False
+        self.ability_slow_ghosts = False
 
         # Track last movement direction for ghost AI
         self.last_dx = 0
@@ -77,14 +84,52 @@ class Pacman(Actor):
     def kill(self) -> None:
         if self.state in (State.DEAD, State.NONE):
             return
+        if self.is_invulnerable():
+            return
 
         self.rage = False
         self.rage_timer = 0
         self.ctx.reset_ghost_combo()
+        shake_camera(8, 0.3)
         self.death_timer = 0
         self.state = State.DEAD
         self.next_state = State.DEAD
         self.pacman_sprite.set_key(State.DEAD, True)
+
+    def is_invulnerable(self) -> bool:
+        return self.ability_invulnerable or any(
+            ability.name == "Shield" and ability.is_active()
+            for ability in self.abilities
+        )
+
+    def ghosts_are_slowed(self) -> bool:
+        return self.ability_slow_ghosts or any(
+            ability.name == "Slow" and ability.is_active()
+            for ability in self.abilities
+        )
+
+    def refresh_ability_modifiers(self) -> None:
+        self.ability_speed_multiplier = 1.0
+        self.ability_invulnerable = False
+        self.ability_slow_ghosts = False
+        for ability in self.abilities:
+            if ability.is_active():
+                ability.on_update(self, 0.0)
+
+    def activate_ability_slot(self, slot: int) -> bool:
+        if self.state in (State.NONE, State.DEAD):
+            return False
+        if slot < 0 or slot >= len(self.abilities):
+            return False
+        activated = self.abilities[slot].activate(self)
+        if activated:
+            self.ctx.trigger_screen_flash(self.ctx.effect_palette()["power_flash"], 0.06, 0.04)
+        return activated
+
+    def update_abilities(self, dt: float) -> None:
+        self.refresh_ability_modifiers()
+        for ability in self.abilities:
+            ability.update(self, dt)
 
     def draw(self) -> None:
         if self.state == State.NONE:
@@ -255,6 +300,7 @@ class Pacman(Actor):
         self._apply_buffered_turn()
 
         dx, dy = self._direction_to_delta(self.state)
+        steps = max(1, int(round(self.ability_speed_multiplier)))
         result = game_map.try_move(self, dx, dy)
 
         if result.moved:
@@ -271,6 +317,13 @@ class Pacman(Actor):
                 self.ctx.visual.particles.add_particle(
                     Particle(center_x, center_y, -dx * 10, -dy * 10, 0.14, trail_color, 2.0 if self.rage else 1.4)
                 )
+            for _index in range(1, steps):
+                if self.state in (State.NONE, State.DEAD) or not self._can_move_in_direction(self.state):
+                    break
+                dash_result = game_map.try_move(self, dx, dy)
+                if not dash_result.moved:
+                    break
+                self.pacman_sprite.move_forward()
         elif result.blocked:
             if self._attempt_turn_when_blocked():
                 ndx, ndy = self._direction_to_delta(self.state)
@@ -308,6 +361,8 @@ class Pacman(Actor):
             if self.turn_grace_timer == 0 and self.next_state != self.state:
                 self.next_state = self.state
 
+        self.update_abilities(pyray.get_frame_time())
+
         if self.rage_timer > 0:
             self.rage_timer -= 1
             if self.rage_timer == 0:
@@ -324,6 +379,16 @@ class Pacman(Actor):
             pyray.KEY_D: State.RIGHT,
             pyray.KEY_RIGHT: State.RIGHT,
         }
+
+        ability_keys = (
+            (pyray.KEY_Q, 0),
+            (pyray.KEY_E, 1),
+            (pyray.KEY_R, 2),
+        )
+        for key, slot in ability_keys:
+            if pyray.is_key_pressed(key):
+                self.activate_ability_slot(slot)
+                return
 
         for key, state in keys.items():
             if pyray.is_key_pressed(key):

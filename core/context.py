@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from datetime import date
 from dataclasses import dataclass, field
 from typing import Optional
@@ -32,8 +33,11 @@ from core.game_data import (
 )
 from core.services import ProfileService, ProgressionService, SettingsService
 from core.state import RunState, RunStats, RuntimeRefs, VisualSystems
+from maps.map_loader import write_generated_bsp_map
 from ui.layout import DEFAULT_LAYOUT, LAYOUT_PROFILES
 from utils.profile_storage import PROFILE_FILE
+from utils.storage import record_daily_score
+from utils.storage_paths import SAVE_DIR
 
 STYLE_MEDAL_ORDER: tuple[str, ...] = (
     "No Panic Clear",
@@ -222,6 +226,14 @@ class GameContext:
         return self.visual.screen_flash
 
     @property
+    def freeze_frames(self) -> int:
+        return self.visual.freeze_frames
+
+    @freeze_frames.setter
+    def freeze_frames(self, value: int) -> None:
+        self.visual.freeze_frames = max(0, int(value))
+
+    @property
     def visual_time(self) -> float:
         return self.visual.visual_time
 
@@ -252,6 +264,14 @@ class GameContext:
     @audio_manager.setter
     def audio_manager(self, value) -> None:
         self.runtime.audio_manager = value
+
+    @property
+    def camera(self):
+        return self.runtime.camera
+
+    @camera.setter
+    def camera(self, value) -> None:
+        self.runtime.camera = value
 
     @property
     def profile(self) -> dict:
@@ -328,6 +348,8 @@ class GameContext:
         self.reset_route_chain()
         self.reset_district_windows()
         self.time_attack_seconds = self.starting_time_attack_seconds()
+        self.run.run_seed = None
+        self.run.level_seed = None
         self.mark_level_baseline()
 
     def play_transition_effect(
@@ -345,14 +367,50 @@ class GameContext:
 
     def start_new_game(self) -> None:
         """Start a new game using the current config."""
+        if self.game_mode == "DailyChallenge" and not self.daily_challenge_available():
+            return False
         self._normalize_daily_progress()
         self.pre_run_unlock_snapshot = self.unlock_snapshot()
         self.reset_run_state()
+        if self.game_mode == "DailyChallenge":
+            self.start_seeded_run(self.daily_seed())
+            self.profile["daily_challenge_last_date"] = self._today_iso()
+        else:
+            self.start_seeded_run(self.run.requested_seed)
         self.profile["total_runs"] += 1
         self.profile["difficulty_runs"][self.difficulty] += 1
         self.profile["mode_runs"][self.game_mode] += 1
         self.mark_level_baseline()
         self.save_profile()
+        return True
+
+    def daily_seed(self) -> int:
+        return int(date.today().strftime("%Y%m%d"))
+
+    def daily_challenge_available(self) -> bool:
+        return str(self.profile.get("daily_challenge_last_date", "")) != self._today_iso()
+
+    def start_seeded_run(self, seed: Optional[int] = None) -> int:
+        self.run.run_seed = random.randint(0, 999999) if seed is None else max(0, int(seed))
+        self.run.level_seed = self.seed_for_level(self.current_level)
+        self.profile["last_seed"] = self.run.level_seed
+        return self.run.level_seed
+
+    def set_requested_seed(self, seed: Optional[int]) -> None:
+        self.run.requested_seed = None if seed is None else max(0, min(999999, int(seed)))
+
+    def seed_for_level(self, level: Optional[int] = None) -> int:
+        level = max(1, level or self.current_level)
+        if self.run.run_seed is None:
+            self.run.run_seed = random.randint(0, 999999)
+        if self.game_mode == "DailyChallenge":
+            return int(self.run.run_seed)
+        return (int(self.run.run_seed) + level - 1) % 1000000
+
+    def current_level_seed(self) -> int:
+        if self.run.level_seed is None:
+            self.run.level_seed = self.seed_for_level(self.current_level)
+        return int(self.run.level_seed)
 
     def set_game_mode(self, game_mode: str) -> None:
         if game_mode in GAME_MODE_PRESETS:
@@ -1389,6 +1447,11 @@ class GameContext:
     def get_map_path(self, level: Optional[int] = None) -> str:
         """Get the map file path for a given level (1-indexed)."""
         level = level or self.current_level
+        if self.game_mode == "DailyChallenge":
+            seed = self.current_level_seed() if self.run.level_seed is not None else self.daily_seed()
+            path = SAVE_DIR / f"daily_map_{seed}.txt"
+            write_generated_bsp_map(path, self.cfg.map_width, self.cfg.map_height, seed=seed)
+            return str(path)
         if self.game_mode == "Challenge":
             cycle = self.challenge_preset().map_cycle
         else:
@@ -1400,6 +1463,8 @@ class GameContext:
 
     def current_map_number(self, level: Optional[int] = None) -> int:
         level = level or self.current_level
+        if self.game_mode == "DailyChallenge":
+            return 1
         if self.game_mode == "Challenge":
             cycle = self.challenge_preset().map_cycle
         else:
@@ -1573,6 +1638,8 @@ class GameContext:
         if self.game_mode == "Time Attack":
             self.time_attack_seconds += self.time_attack_clear_bonus_seconds()
         self.current_level += 1
+        self.run.level_seed = self.seed_for_level(self.current_level)
+        self.profile["last_seed"] = self.run.level_seed
         if self.game_mode_preset().reset_lives_each_level:
             self.lives = self.starting_lives()
         self.mark_level_baseline()
@@ -1715,10 +1782,19 @@ class GameContext:
                 "level": self.current_level,
                 "grade": run_grade,
                 "map": self.current_map_number(),
+                "seed": self.current_level_seed(),
                 "medals": style_medals,
             },
         )
         self.profile["run_history"] = self.profile["run_history"][:12]
+        if self.game_mode == "DailyChallenge":
+            record_daily_score(
+                self._today_iso(),
+                self.current_level_seed(),
+                self.score,
+                run_grade,
+                result,
+            )
         self.last_unlock_lines = self.new_unlock_lines(before_snapshot)
         self.save_profile()
 
@@ -1945,6 +2021,9 @@ class GameContext:
             return
         scale = self.fx_multiplier()
         self.screen_flash.flash(color, intensity * scale, duration)
+
+    def trigger_freeze(self, frames: int = 4) -> None:
+        self.freeze_frames = max(self.freeze_frames, frames)
 
     def trigger_action_juice(self, *, hitstop: float = 0.0, slow_scale: float = 1.0, slow_duration: float = 0.0) -> None:
         if hitstop > 0:

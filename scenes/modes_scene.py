@@ -25,12 +25,12 @@ from ui.ui import (
 
 
 class ModesScene(Scene):
-    MODES = ("Arcade", "Endless", "Challenge", "Time Attack")
+    MODES = ("Arcade", "Endless", "Challenge", "Time Attack", "DailyChallenge")
 
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
-        self.navigator = ButtonNavigator(5)
+        self.navigator = ButtonNavigator(len(self.MODES) + 1)
         self.panel = None
         self.mode_buttons: list[pyray.Rectangle] = []
         self.btn_back = None
@@ -49,8 +49,8 @@ class ModesScene(Scene):
             card_gap = 18
             card_width = int((panel_width - 96 - card_gap) / 2)
             card_y = int(panel_y + 168)
-            card_height = 198
-            for index in range(4):
+            card_height = 166
+            for index in range(len(self.MODES)):
                 row = index // 2
                 col = index % 2
                 x = int(panel_x + 30 + col * (card_width + card_gap))
@@ -58,7 +58,7 @@ class ModesScene(Scene):
                 self.mode_buttons.append(pyray.Rectangle(x, y, card_width, card_height))
         else:
             card_y = int(panel_y + 140)
-            for index in range(4):
+            for index in range(len(self.MODES)):
                 self.mode_buttons.append(
                     pyray.Rectangle(panel_x + 20, card_y + index * 148, panel_width - 40, 126)
                 )
@@ -74,7 +74,7 @@ class ModesScene(Scene):
             return
 
         self.navigator.move_vertical()
-        if self.ctx.cfg.layout_name == "desktop" and self.navigator.focus_index < 4:
+        if self.ctx.cfg.layout_name == "desktop" and self.navigator.focus_index < len(self.MODES):
             self.navigator.move_horizontal_within(2)
 
         if self.navigator.confirm_pressed():
@@ -85,12 +85,12 @@ class ModesScene(Scene):
                 self.navigator.focus_index = index
                 self._select_mode(self.MODES[index])
         if button_clicked(self.btn_back):
-            self.navigator.focus_index = 4
+            self.navigator.focus_index = len(self.MODES)
             self.ctx.play_sfx("ui_back")
             self.request_switch(MENU_SCENE)
 
     def _activate_focused(self) -> None:
-        if self.navigator.focus_index < 4:
+        if self.navigator.focus_index < len(self.MODES):
             self._select_mode(self.MODES[self.navigator.focus_index])
             return
         self.ctx.play_sfx("ui_back")
@@ -118,7 +118,7 @@ class ModesScene(Scene):
         for index, mode in enumerate(self.MODES):
             self._draw_mode_card(self.mode_buttons[index], mode, focused=self.navigator.focus_index == index)
 
-        draw_button(self.btn_back, "BACK", focused=self.navigator.focus_index == 4)
+        draw_button(self.btn_back, "BACK", focused=self.navigator.focus_index == len(self.MODES))
         draw_scene_footer(panel, "ENTER OR CLICK")
 
     def _draw_mode_card(self, rect, mode: str, *, focused: bool) -> None:
@@ -134,8 +134,12 @@ class ModesScene(Scene):
         draw_text_centered(preset.subtitle.upper(), center_x, int(rect.y + 58), 14, accent)
 
         key_line = preset.summary_lines[0] if preset.summary_lines else ""
-        draw_text_centered(key_line, center_x, int(rect.y + 118), 16, colors.WHITE)
+        if mode == "DailyChallenge" and not self.ctx.daily_challenge_available():
+            key_line = "Already played today"
+        draw_text_centered(key_line, center_x, int(rect.y + 104), 15, colors.WHITE)
 
         footer = "ACTIVE MODE" if active else "PRESS ENTER"
+        if mode == "DailyChallenge" and not self.ctx.daily_challenge_available():
+            footer = "NEXT DAILY TOMORROW"
         footer_color = colors.WHITE if active else accent
         draw_text_centered(footer, center_x, int(rect.y + rect.height - 30), 14, footer_color)

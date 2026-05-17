@@ -1,5 +1,4 @@
 import {
-  ArrowDownToLine,
   CircleDot,
   Github,
   Keyboard,
@@ -25,6 +24,9 @@ import { features } from "@/data/features";
 import { modes } from "@/data/modes";
 import { careerStats } from "@/data/scores";
 import { cn } from "@/lib/utils";
+import Daily from "@/pages/Daily";
+import Leaderboard from "@/pages/Leaderboard";
+import Profile from "@/pages/Profile";
 
 const ScoreChartSection = lazy(() => import("@/components/ScoreChartSection"));
 
@@ -114,9 +116,15 @@ function HeroSection() {
               </a>
             </NeonButton>
             <NeonButton glow="cyan" asChild>
-              <a href="#download">
-                <ArrowDownToLine className="h-4 w-4" />
-                Download
+              <a href="/leaderboard">
+                <LayoutDashboard className="h-4 w-4" />
+                Leaderboard
+              </a>
+            </NeonButton>
+            <NeonButton glow="purple" asChild>
+              <a href="/daily">
+                <Trophy className="h-4 w-4" />
+                Daily
               </a>
             </NeonButton>
           </div>
@@ -461,6 +469,9 @@ function Footer() {
           <a className="rounded-sm transition hover:text-neon-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan" href="https://github.com/">
             GitHub
           </a>
+          <a className="rounded-sm transition hover:text-neon-yellow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-yellow" href="/leaderboard">
+            Leaderboard
+          </a>
           <a className="rounded-sm transition hover:text-neon-purple focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-purple" href="../README.md">
             Game README
           </a>
@@ -471,6 +482,18 @@ function Footer() {
 }
 
 export default function App() {
+  const path = window.location.pathname;
+  if (path === "/leaderboard") {
+    return <Leaderboard />;
+  }
+  if (path === "/daily") {
+    return <Daily />;
+  }
+  if (path.startsWith("/profile/")) {
+    const username = decodeURIComponent(path.replace("/profile/", "").split("/")[0] || "unknown");
+    return <Profile username={username} />;
+  }
+
   return (
     <main id="top" className="min-h-screen overflow-hidden bg-neon-ink text-foreground">
       <div className="fixed inset-0 -z-10 bg-radial-signal" />

@@ -1,11 +1,87 @@
 from __future__ import annotations
 
+import math
+
 import core.raylib_api as pyray
 from raylib import colors
 
 from core.gameplay_view_models import GameplayHudModel
 from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, TEXT_DIM, draw_glass_card
+from utils.effects import FloatingText
 from utils.visual_effects import with_alpha
+
+
+_floating_texts: list[FloatingText] = []
+
+
+def spawn_floating_text(text: str, pos, color, lifetime: float = 1.0) -> None:
+    _floating_texts.append(FloatingText(text, pos, color, lifetime))
+
+
+def update_floating_texts(dt: float) -> None:
+    _floating_texts[:] = [text for text in _floating_texts if text.update(dt)]
+
+
+def draw_floating_texts() -> None:
+    for text in _floating_texts:
+        font_size = 22 if "x" in text.text else 20
+        width = pyray.measure_text(text.text, font_size)
+        x = int(text.pos.x - width / 2)
+        y = int(text.pos.y)
+        pyray.draw_text(text.text, x + 1, y + 1, font_size, with_alpha(colors.BLACK, 150 * text.alpha))
+        pyray.draw_text(text.text, x, y, font_size, text.color)
+
+
+def draw_ability_slots(ctx, *, x: int, y: int, width: int, time_s: float = 0.0) -> None:
+    pacman = getattr(ctx.runtime, "pacman", None)
+    abilities = list(getattr(pacman, "abilities", []) or [])[:3]
+    if not abilities:
+        return
+
+    slot_size = 42
+    gap = 10
+    total_width = len(abilities) * slot_size + max(0, len(abilities) - 1) * gap
+    start_x = int(x + max(0, width - total_width) / 2)
+    for index, ability in enumerate(abilities):
+        sx = start_x + index * (slot_size + gap)
+        sy = y
+        cx = sx + slot_size // 2
+        cy = sy + slot_size // 2
+        unlocked = bool(getattr(ability, "unlocked", True))
+        active = ability.is_active()
+        ready = ability.is_ready()
+        progress = ability.cooldown_progress()
+        accent = LIVE_CYAN if ability.name == "Dash" else LIVE_GOLD if ability.name == "Shield" else LIVE_PINK
+        fill_alpha = 150 if ready else 88
+        if not unlocked:
+            fill_alpha = 52
+            accent = TEXT_DIM
+
+        rect = pyray.Rectangle(sx, sy, slot_size, slot_size)
+        pyray.draw_rectangle_rec(rect, with_alpha(colors.BLACK, 96))
+        pyray.draw_rectangle_lines_ex(rect, 1, with_alpha(accent, 150 if ready or active else 78))
+        pyray.draw_circle(cx, cy, 17, with_alpha(accent, 18 if ready else 9))
+        pyray.draw_circle(cx, cy, 13, with_alpha(accent, fill_alpha))
+
+        if active:
+            pulse = 0.5 + 0.5 * math.sin(time_s * 12.0)
+            pyray.draw_circle_lines(cx, cy, 20 + int(pulse * 2), with_alpha(colors.WHITE, 170))
+        elif progress > 0:
+            remaining_height = int(slot_size * progress)
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(sx, sy + slot_size - remaining_height, slot_size, remaining_height),
+                with_alpha(colors.BLACK, 126),
+            )
+            pyray.draw_circle_lines(cx, cy, 20, with_alpha(accent, 68))
+
+        icon = getattr(ability, "icon", "?")
+        key = getattr(ability, "key_label", "")
+        icon_size = 18
+        icon_w = pyray.measure_text(icon, icon_size)
+        pyray.draw_text(icon, int(cx - icon_w / 2), int(sy + 10), icon_size, colors.WHITE if unlocked else TEXT_DIM)
+        key_size = 10
+        key_w = pyray.measure_text(key, key_size)
+        pyray.draw_text(key, int(cx - key_w / 2), int(sy + slot_size - 13), key_size, with_alpha(colors.WHITE, 185))
 
 
 def _card_height(line_count: int, line_height: int) -> int:

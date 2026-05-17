@@ -54,6 +54,38 @@ class GameFlowTests(unittest.TestCase):
         self.assertEqual(scene.danger_chain_timer, 0.0)
         self.assertEqual(scene.danger_chain_count, 0)
 
+    def test_trigger_freeze_keeps_longest_frame_count(self) -> None:
+        ctx = GameContext()
+
+        ctx.trigger_freeze(2)
+        ctx.trigger_freeze(4)
+        ctx.trigger_freeze(1)
+
+        self.assertEqual(ctx.freeze_frames, 4)
+
+    def test_update_skips_gameplay_while_freeze_frames_remain(self) -> None:
+        ctx = GameContext()
+        scene = GameScene(ctx)
+        calls = []
+        map_stub = type(
+            "MapStub",
+            (),
+            {
+                "frame": lambda self: calls.append("frame"),
+                "process": lambda self: calls.append("process"),
+                "remaining_pickups": lambda self: 1,
+                "remaining_seeds": lambda self: 1,
+            },
+        )()
+        ctx.runtime.game_map = map_stub
+        ctx.freeze_frames = 2
+
+        game_flow.update(scene, 1 / 60)
+        game_flow.update(scene, 1 / 60)
+
+        self.assertEqual(ctx.freeze_frames, 0)
+        self.assertEqual(calls, [])
+
     def test_black_channel_near_miss_arms_hunt_window(self) -> None:
         ctx, scene = self._near_miss_scene(game_mode="Challenge")
 
