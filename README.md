@@ -54,6 +54,19 @@ pip install -r requirements-dev.txt
 python -m checks
 ```
 
+## Web Frontend
+
+A separate Vite/React/TypeScript showcase site lives in `web/`. It presents the game as a polished cyberpunk portfolio page with preview slots, feature cards, mock career stats, achievements, and score charts. The frontend is isolated from the Python/raylib game and does not change game logic.
+
+Run it from the `web/` folder:
+
+```powershell
+npm install
+npm run dev
+npm run build
+npm run preview
+```
+
 ## Controls
 
 - `WASD` or Arrow Keys: move
