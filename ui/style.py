@@ -5,25 +5,34 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class CyberColors:
-    bg_top: tuple[int, int, int, int] = (8, 10, 26, 255)
-    bg_mid: tuple[int, int, int, int] = (5, 8, 18, 255)
-    bg_bottom: tuple[int, int, int, int] = (1, 3, 10, 255)
-    panel_outer: tuple[int, int, int, int] = (7, 10, 22, 242)
-    panel_inner: tuple[int, int, int, int] = (4, 8, 18, 230)
-    panel_strong: tuple[int, int, int, int] = (5, 10, 22, 242)
-    panel_accent: tuple[int, int, int, int] = (52, 240, 255, 255)
-    glass_edge: tuple[int, int, int, int] = (138, 246, 255, 255)
-    text_primary: tuple[int, int, int, int] = (242, 250, 255, 255)
-    text_dim: tuple[int, int, int, int] = (178, 204, 232, 255)
-    text_muted: tuple[int, int, int, int] = (105, 132, 164, 255)
-    live_cyan: tuple[int, int, int, int] = (32, 244, 255, 255)
-    live_pink: tuple[int, int, int, int] = (255, 46, 199, 255)
-    live_gold: tuple[int, int, int, int] = (255, 211, 86, 255)
-    live_red: tuple[int, int, int, int] = (255, 82, 116, 255)
-    live_green: tuple[int, int, int, int] = (96, 255, 166, 255)
-    button_idle: tuple[int, int, int, int] = (10, 18, 34, 255)
-    button_active: tuple[int, int, int, int] = (16, 34, 54, 255)
-    button_hover: tuple[int, int, int, int] = (28, 42, 66, 255)
+    bg_top: tuple[int, int, int, int] = (6, 8, 18, 255)
+    bg_mid: tuple[int, int, int, int] = (4, 6, 14, 255)
+    bg_bottom: tuple[int, int, int, int] = (1, 2, 8, 255)
+
+    panel_outer: tuple[int, int, int, int] = (8, 12, 24, 220)
+    panel_inner: tuple[int, int, int, int] = (5, 9, 20, 200)
+    panel_strong: tuple[int, int, int, int] = (6, 11, 22, 220)
+
+    panel_accent: tuple[int, int, int, int] = (32, 200, 220, 90)
+
+    glass_edge: tuple[int, int, int, int] = (80, 180, 200, 70)
+
+    text_primary: tuple[int, int, int, int] = (210, 230, 245, 255)
+    text_dim: tuple[int, int, int, int] = (130, 165, 195, 255)
+    text_muted: tuple[int, int, int, int] = (70, 100, 130, 255)
+
+    live_cyan: tuple[int, int, int, int] = (0, 220, 245, 255)
+ 
+    live_pink: tuple[int, int, int, int] = (220, 40, 170, 255)
+
+    live_gold: tuple[int, int, int, int] = (240, 185, 60, 255)
+  
+    live_red: tuple[int, int, int, int] = (230, 70, 100, 255)
+    live_green: tuple[int, int, int, int] = (80, 230, 150, 255)
+
+    button_idle: tuple[int, int, int, int] = (8, 14, 26, 255)
+    button_active: tuple[int, int, int, int] = (0, 40, 60, 255)
+    button_hover: tuple[int, int, int, int] = (12, 32, 50, 255)
 
 
 @dataclass(frozen=True)
@@ -69,9 +78,9 @@ class CyberMotion:
     scanline_speed: float = 22.0
     hover_scale: float = 1.018
     focus_scale: float = 1.03
-    glow_idle: int = 4
-    glow_hover: int = 10
-    glow_focus: int = 18
+    glow_idle: int = 2   
+    glow_hover: int = 7     
+    glow_focus: int = 14    
 
 
 @dataclass(frozen=True)
