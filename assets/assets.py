@@ -30,6 +30,11 @@ class Assets:
             return tex
 
         tex = pyray.load_texture(cls._to_bytes(path))
+        # Bilinear filtering — убирает пиксельность на спрайтах
+        try:
+            pyray.rl.SetTextureFilter(tex, pyray.rl.TEXTURE_FILTER_BILINEAR)
+        except Exception:
+            pass
         cls._textures[path] = tex
         return tex
 

@@ -87,7 +87,6 @@ class Wall(Cell):
         tile = cfg.tile_size
         pulse = 0.5 + 0.5 * math.sin(time_s * 2.6 + self.x * 0.37 + self.y * 0.21)
 
-        # Subtle underglow — only closest layer, no pink bleed
         pyray.draw_rectangle_rec(
             pyray.Rectangle(px - 2, py - 2, tile + 4, tile + 4),
             with_alpha(LIVE_CYAN, int(12 + pulse * 8)),
@@ -102,18 +101,17 @@ class Wall(Cell):
             0,
             (px, py),
             scale=scale,
-            tint=(28, 52, 96, 255),  # темнее спрайт стены
+            tint=(28, 52, 96, 255),
         )
 
-        # Edge highlights — только на открытых гранях, менее интенсивно
         n_open = "1" not in self.cardinal_mask[:1]
         e_open = "1" not in self.cardinal_mask[1:2]
         s_open = "1" not in self.cardinal_mask[2:3]
         w_open = "1" not in self.cardinal_mask[3:4]
 
-        edge_glow = with_alpha(LIVE_CYAN, int(20 + pulse * 14))   # было 44+28
-        edge_main = with_alpha(LIVE_CYAN, int(90 + pulse * 30))   # было 168+56
-        edge_soft = with_alpha(LIVE_CYAN, int(30 + pulse * 12))   # было 66+22
+        edge_glow = with_alpha(LIVE_CYAN, int(20 + pulse * 14))  
+        edge_main = with_alpha(LIVE_CYAN, int(90 + pulse * 30)) 
+        edge_soft = with_alpha(LIVE_CYAN, int(30 + pulse * 12))   
 
         if n_open:
             pyray.draw_rectangle_rec(pyray.Rectangle(px - 1, py - 2, tile + 2, 7), edge_glow)

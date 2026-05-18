@@ -11,10 +11,10 @@ from ui.layout import DEFAULT_LAYOUT
 from utils.audio import AudioManager
 from utils.effects import glitch_effect, set_camera, update_camera_shake, update_glitch
 
-# Настройки шейдеров — меняй здесь
-BLOOM_INTENSITY    = 0.7   # 0.0 выкл, 0.5 мягко, 1.0 агрессивно
-SCANLINE_STRENGTH  = 0.08  # 0.0 выкл, 0.15 заметно
-VIGNETTE_STRENGTH  = 0.55  # 0.0 выкл, 0.8 очень тёмные края
+
+BLOOM_INTENSITY    = 0.45
+SCANLINE_STRENGTH  = 0.04
+VIGNETTE_STRENGTH  = 0.0
 
 
 class Game:
@@ -28,18 +28,15 @@ class Game:
         self.scenes = build_scene_table(self.ctx)
         self.scene_target = None
 
-        # Glitch shader (оригинальный)
         self.glitch_shader = None
         self.glitch_time_loc = -1
         self.glitch_intensity_loc = -1
 
-        # Bloom shader — применяется всегда, делает неон живым
         self.bloom_shader = None
         self.bloom_resolution_loc = -1
         self.bloom_intensity_loc = -1
-        self.bloom_target = None  # промежуточная текстура
+        self.bloom_target = None 
 
-        # Scanlines + vignette — финальный проход
         self.scanlines_shader = None
         self.scanlines_time_loc = -1
         self.scanlines_scan_loc = -1
@@ -58,7 +55,6 @@ class Game:
         set_camera(self.ctx.camera)
         self.ctx.screen_flash.set_size(cfg.window_width, cfg.window_height)
 
-        # Render textures: scene → bloom → scanlines → экран
         self.scene_target = pyray.load_render_texture(cfg.window_width, cfg.window_height)
         self.bloom_target  = pyray.load_render_texture(cfg.window_width, cfg.window_height)
 
@@ -89,7 +85,6 @@ class Game:
 
                 update_glitch(dt)
 
-                # Проход 1: рисуем игру в scene_target
                 pyray.begin_texture_mode(self.scene_target)
                 pyray.clear_background(pyray.BLACK)
                 update_camera_shake(dt)
@@ -98,10 +93,8 @@ class Game:
                 pyray.end_mode_2d()
                 pyray.end_texture_mode()
 
-                # Проход 2: bloom поверх scene_target → bloom_target
                 self._apply_bloom()
 
-                # Проход 3: scanlines + vignette → экран
                 pyray.begin_drawing()
                 pyray.clear_background(pyray.BLACK)
                 self._draw_final()
@@ -129,8 +122,6 @@ class Game:
     def _sync_scene_audio(self) -> None:
         scene_music = SCENE_MUSIC.get(self.current_scene_index, "menu")
         self.audio.set_scene_music(scene_music, self.ctx)
-
-    # ── Загрузка шейдеров ────────────────────────────────────────────
 
     def _load_glitch_shader(self) -> None:
         try:
@@ -160,7 +151,6 @@ class Game:
             print(f"[Shader] Scanlines unavailable: {exc}")
             self.scanlines_shader = None
 
-    # ── Рендер пайплайн ──────────────────────────────────────────────
 
     def _apply_bloom(self) -> None:
         """Проход bloom: scene_target → bloom_target."""
@@ -189,9 +179,7 @@ class Game:
         pyray.end_texture_mode()
 
     def _draw_final(self) -> None:
-        """Финальный проход: bloom_target + glitch/scanlines → экран."""
         cfg = self.ctx.cfg
-        # Берём bloom_target если есть, иначе оригинал
         src_texture = self.bloom_target if self.bloom_target is not None else self.scene_target
         if src_texture is None:
             return
@@ -199,7 +187,6 @@ class Game:
         source = pyray.Rectangle(0, 0, cfg.window_width, -cfg.window_height)
         pos = pyray.Vector2(0, 0)
 
-        # Glitch перекрывает scanlines если активен
         use_glitch = self.glitch_shader is not None and glitch_effect.is_active()
         use_scan   = self.scanlines_shader is not None and not use_glitch
 
