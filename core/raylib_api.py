@@ -291,20 +291,3 @@ def measure_text_ex(font, text: str, size: float, spacing: float) -> tuple[float
 
 def set_texture_filter_bilinear(texture) -> None:
     rl.SetTextureFilter(texture, rl.TEXTURE_FILTER_BILINEAR)
-
-def load_font_ex(path: str, size: int):
-    return rl.LoadFontEx(_b(path), int(size), rl.ffi.NULL, 0)
-
-def unload_font(font) -> None:
-    rl.UnloadFont(font)
-
-def draw_text_ex(font, text: str, x: float, y: float, size: float, spacing: float, color) -> None:
-    pos = rl.ffi.new("Vector2 *", [float(x), float(y)])
-    rl.DrawTextEx(font, _b(text), pos[0], float(size), float(spacing), color)
-
-def measure_text_ex(font, text: str, size: float, spacing: float) -> tuple[float, float]:
-    vec = rl.MeasureTextEx(font, _b(text), float(size), float(spacing))
-    return float(vec.x), float(vec.y)
-
-def set_texture_filter_bilinear(texture) -> None:
-    rl.SetTextureFilter(texture, rl.TEXTURE_FILTER_BILINEAR)
