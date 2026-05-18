@@ -62,6 +62,8 @@ class Game:
         self._load_bloom_shader()
         self._load_scanlines_shader()
         self.audio.initialize()
+        from utils.font_manager import FontManager
+        FontManager.initialize()
 
         self.current_scene_index = MENU_SCENE
         self.current_scene.enter_tree()
@@ -107,6 +109,8 @@ class Game:
             for rt in [self.scene_target, self.bloom_target]:
                 if rt is not None:
                     pyray.unload_render_texture(rt)
+            from utils.font_manager import FontManager
+            FontManager.shutdown()
             self.audio.shutdown()
             Assets.unload_all()
             pyray.close_window()

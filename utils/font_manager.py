@@ -16,8 +16,8 @@ class FontManager:
         if cls._initialized:
             return
         try:
-            cls._fonts[cls.TITLE] = pyray.load_font_ex("assets/fonts/Orbitron.ttf", 96)
-            cls._fonts[cls.MONO]  = pyray.load_font_ex("assets/fonts/ShareTechMono.ttf", 64)
+            cls._fonts[cls.TITLE] = pyray.load_font_ex("assets/fonts/Orbitron-VariableFont_wght.ttf", 96)
+            cls._fonts[cls.MONO]  = pyray.load_font_ex("assets/fonts/ShareTechMono-Regular.ttf", 64)
             pyray.set_texture_filter_bilinear(cls._fonts[cls.TITLE].texture)
             pyray.set_texture_filter_bilinear(cls._fonts[cls.MONO].texture)
         except Exception as e:
