@@ -1464,9 +1464,9 @@ def _draw_theme_background_overlays(width: int, height: int, time_s: float, *, l
 
 
 def draw_text_centered(text: str, center_x: int, y: int, font_size: int, color) -> None:
-    text_width = pyray.measure_text(text, font_size)
-    x = int(center_x - text_width / 2)
-    pyray.draw_text(text, x, y, font_size, color)
+    from utils.font_manager import FontManager
+    font_name = FontManager.TITLE if font_size >= 40 else FontManager.MONO
+    FontManager.draw_centered(font_name, text, center_x, y, font_size, color)
 
 
 def draw_shadowed_text_centered(
@@ -1478,8 +1478,10 @@ def draw_shadowed_text_centered(
     shadow_color=colors.BLACK,
     shadow_offset: int = 2,
 ) -> None:
-    draw_text_centered(text, center_x + shadow_offset, y + shadow_offset, font_size, shadow_color)
-    draw_text_centered(text, center_x, y, font_size, color)
+    from utils.font_manager import FontManager
+    font_name = FontManager.TITLE if font_size >= 40 else FontManager.MONO
+    FontManager.draw_centered(font_name, text, center_x + shadow_offset, y + shadow_offset, font_size, shadow_color)
+    FontManager.draw_centered(font_name, text, center_x, y, font_size, color)
 
 
 def draw_cinematic_title_stack(center_x: int, y: int, title: str, subtitle: str, kicker: str, time_s: float = 0.0, *, variant: str = "Standard") -> None:
