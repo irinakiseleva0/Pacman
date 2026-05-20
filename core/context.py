@@ -7,9 +7,9 @@ from typing import Optional
 
 from raylib import colors
 
-from core.balance import Config, DIFFICULTY_PRESETS, DifficultyPreset
+from core.achievements import AchievementManager
+from core.balance import Config, DIFFICULTY_PRESETS
 from core.game_data import (
-    ACHIEVEMENT_DEFS,
     ARCADE_CHAPTERS,
     CHALLENGE_PRESETS,
     CHALLENGE_TRACK_THRESHOLDS,
@@ -22,8 +22,10 @@ from core.game_data import (
     RANK_THRESHOLDS,
     THEME_PRESETS,
     TITLE_VARIANT_PRESETS,
+    ArcadeChapter,
     ChallengePreset,
     DistrictModifier,
+    EndlessTier,
     GameModePreset,
     HudPackPreset,
     MapTrait,
@@ -31,10 +33,11 @@ from core.game_data import (
     ThemePreset,
     TitleVariantPreset,
 )
+from core.progression import dialogue_for_level, serialize_dialogue
 from core.services import ProfileService, ProgressionService, SettingsService
 from core.state import RunState, RunStats, RuntimeRefs, VisualSystems
 from maps.map_loader import write_generated_bsp_map
-from ui.layout import DEFAULT_LAYOUT, LAYOUT_PROFILES
+from ui.layout import LAYOUT_PROFILES
 from utils.profile_storage import PROFILE_FILE
 from utils.storage import record_daily_score
 from utils.storage_paths import SAVE_DIR
@@ -54,6 +57,7 @@ class GameContext:
     runtime: RuntimeRefs = field(default_factory=RuntimeRefs)
     profile_service: ProfileService = field(default_factory=ProfileService)
     progression_service: ProgressionService = field(default_factory=ProgressionService)
+    achievement_manager: AchievementManager = field(default_factory=AchievementManager)
     settings: SettingsService = field(init=False)
 
     def __post_init__(self):
@@ -266,6 +270,38 @@ class GameContext:
         self.runtime.audio_manager = value
 
     @property
+    def notification_manager(self):
+        return self.runtime.notification_manager
+
+    @notification_manager.setter
+    def notification_manager(self, value) -> None:
+        self.runtime.notification_manager = value
+
+    @property
+    def replay_recorder(self):
+        return self.runtime.replay_recorder
+
+    @replay_recorder.setter
+    def replay_recorder(self, value) -> None:
+        self.runtime.replay_recorder = value
+
+    @property
+    def replay_player(self):
+        return self.runtime.replay_player
+
+    @replay_player.setter
+    def replay_player(self, value) -> None:
+        self.runtime.replay_player = value
+
+    @property
+    def selected_replay_path(self) -> str | None:
+        return self.runtime.selected_replay_path
+
+    @selected_replay_path.setter
+    def selected_replay_path(self, value: str | None) -> None:
+        self.runtime.selected_replay_path = value
+
+    @property
     def camera(self):
         return self.runtime.camera
 
@@ -381,6 +417,7 @@ class GameContext:
         self.profile["difficulty_runs"][self.difficulty] += 1
         self.profile["mode_runs"][self.game_mode] += 1
         self.mark_level_baseline()
+        self.check_achievements()
         self.save_profile()
         return True
 
@@ -538,6 +575,7 @@ class GameContext:
         self.run_stats.level_start_power_seeds = self.run_stats.power_seeds_eaten
         self.run_stats.level_start_cherries = self.run_stats.cherries_eaten
         self.run_stats.level_start_ghosts = self.run_stats.ghosts_eaten
+        self.run_stats.level_elapsed_seconds = 0.0
 
     def level_progress_snapshot(self) -> dict[str, int]:
         return {
@@ -1232,6 +1270,7 @@ class GameContext:
             bonus = 24 + max(0, self.run.line_chain_count - 6) * 8
             bonus = int(bonus * self.mode_score_multiplier())
             self.run_stats.line_bonuses += 1
+            self.check_achievements(save=False)
         return self.run.line_chain_count, bonus
 
     def risk_turn_bonus_value(self) -> int:
@@ -1644,8 +1683,19 @@ class GameContext:
             self.lives = self.starting_lives()
         self.mark_level_baseline()
 
+    def queue_dialogue_for_level_clear(self) -> bool:
+        entries = dialogue_for_level(self.current_level)
+        self.run.pending_dialogue = serialize_dialogue(entries)
+        return bool(entries)
+
+    def consume_pending_dialogue(self) -> list[dict[str, str | int]]:
+        entries = list(self.run.pending_dialogue)
+        self.run.pending_dialogue.clear()
+        return entries
+
     def record_dot_eaten(self) -> None:
         self.run_stats.dots_eaten += 1
+        self.check_achievements(save=False)
 
     def map_transit_escape_bonus(self) -> int:
         if self.current_map_number() != 1 or self.route_chain_count < 3:
@@ -1670,15 +1720,19 @@ class GameContext:
 
     def record_power_seed_eaten(self) -> None:
         self.run_stats.power_seeds_eaten += 1
+        self.check_achievements(save=False)
 
     def record_cherry_eaten(self) -> None:
         self.run_stats.cherries_eaten += 1
+        self.check_achievements(save=False)
 
     def record_ghost_eaten(self) -> None:
         self.run_stats.ghosts_eaten += 1
+        self.check_achievements()
 
     def record_bonus_gate(self) -> None:
         self.run_stats.bonus_gates += 1
+        self.check_achievements(save=False)
 
     def score_focus_summary_lines(self) -> tuple[str, str, str]:
         stats = self.run_stats
@@ -1721,6 +1775,7 @@ class GameContext:
         self.run_stats.levels_cleared += 1
         self.profile["total_levels_cleared"] += 1
         self.profile["highest_level"] = max(self.profile["highest_level"], self.current_level)
+        self.check_achievements()
         self.save_profile()
 
     def finalize_run_result(self, result: str) -> None:
@@ -1796,10 +1851,22 @@ class GameContext:
                 result,
             )
         self.last_unlock_lines = self.new_unlock_lines(before_snapshot)
+        self.check_achievements()
         self.save_profile()
 
     def save_profile(self) -> None:
         self.profile_service.save()
+
+    def check_achievements(self, *, save: bool = True) -> list:
+        unlocked = self.achievement_manager.check_all(self)
+        if unlocked:
+            notifier = self.notification_manager
+            if notifier is not None:
+                for achievement in unlocked:
+                    notifier.push(achievement.title, achievement.detail)
+            if save:
+                self.save_profile()
+        return unlocked
 
     def unlock_snapshot(self) -> dict:
         return {
@@ -2344,11 +2411,8 @@ class GameContext:
         return None
 
     def achievement_entries(self) -> list[tuple[str, str, bool]]:
-        profile = self.profile
-        return [
-            (title, detail, bool(check(profile)))
-            for title, detail, check in ACHIEVEMENT_DEFS
-        ]
+        self.check_achievements(save=False)
+        return self.achievement_manager.entries(self)
 
     def achievement_summary_lines(self) -> tuple[str, str, str]:
         entries = self.achievement_entries()

@@ -8,7 +8,6 @@ from core.scene_ids import CAREER_SCENE
 from ui import gamepad
 from ui.navigation import ButtonNavigator
 from ui.ui import (
-    PANEL_ACCENT,
     TEXT_DIM,
     button_clicked,
     centered_rect,
@@ -45,13 +44,13 @@ class AchievementsScene(Scene):
         self.ctx.visual_time += dt
         if pyray.is_key_pressed(pyray.KEY_ESCAPE) or gamepad.back_pressed():
             self.ctx.play_sfx("ui_back")
-            self.request_switch(CAREER_SCENE)
+            self.request_switch(getattr(self.ctx.run, "achievement_return_scene", CAREER_SCENE))
             return
 
         self.navigator.move_vertical()
         if self.navigator.confirm_pressed() or button_clicked(self.btn_back):
             self.ctx.play_sfx("ui_back")
-            self.request_switch(CAREER_SCENE)
+            self.request_switch(getattr(self.ctx.run, "achievement_return_scene", CAREER_SCENE))
 
     def draw(self) -> None:
         cfg = self.ctx.cfg

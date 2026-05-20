@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+import sys
+
 import core.raylib_api as pyray
 import ui.ui as ui_theme
 
@@ -8,8 +11,10 @@ from core.context import GameContext
 from core.scene_ids import EXIT_SCENE, MENU_SCENE
 from scenes.registry import SCENE_MUSIC, build_scene_table
 from ui.layout import DEFAULT_LAYOUT
+from ui.notifications import NotificationManager
 from utils.audio import AudioManager
 from utils.effects import glitch_effect, set_camera, update_camera_shake, update_glitch
+from utils.replay import ReplayRecorder
 
 
 BLOOM_INTENSITY    = 0.45
@@ -22,7 +27,11 @@ class Game:
         self.ctx = GameContext()
         self.ctx.apply_layout(DEFAULT_LAYOUT)
         self.audio = AudioManager()
+        self.notifications = NotificationManager()
+        self.replay_recorder = ReplayRecorder()
         self.ctx.audio_manager = self.audio
+        self.ctx.notification_manager = self.notifications
+        self.ctx.replay_recorder = self.replay_recorder
 
         self.current_scene_index = MENU_SCENE
         self.scenes = build_scene_table(self.ctx)
@@ -47,6 +56,25 @@ class Game:
         return self.scenes[self.current_scene_index]
 
     def run(self) -> None:
+        self._initialize()
+        try:
+            while not pyray.window_should_close():
+                if not self._tick():
+                    break
+        finally:
+            self._shutdown()
+
+    async def run_async(self) -> None:
+        self._initialize()
+        try:
+            while not pyray.window_should_close():
+                if not self._tick():
+                    break
+                await asyncio.sleep(0)
+        finally:
+            self._shutdown()
+
+    def _initialize(self) -> None:
         cfg = self.ctx.cfg
 
         pyray.init_window(cfg.window_width, cfg.window_height, "Pacman")
@@ -69,51 +97,54 @@ class Game:
         self.current_scene.enter_tree()
         self._sync_scene_audio()
 
-        try:
-            while not pyray.window_should_close():
-                dt = pyray.get_frame_time()
-                ui_theme.set_visual_theme(self.ctx.theme_name())
-                if pyray.is_key_pressed(pyray.KEY_F10):
-                    self.ctx.set_capture_mode_enabled(not self.ctx.capture_mode_enabled())
+    def _tick(self) -> bool:
+        cfg = self.ctx.cfg
+        dt = pyray.get_frame_time()
+        ui_theme.set_visual_theme(self.ctx.theme_name())
+        if pyray.is_key_pressed(pyray.KEY_F10):
+            self.ctx.set_capture_mode_enabled(not self.ctx.capture_mode_enabled())
 
-                self.current_scene.update(dt)
-                self.audio.update(self.ctx)
+        self.current_scene.update(dt)
+        self.audio.update(self.ctx)
+        self.notifications.update(dt)
 
-                nxt = self.current_scene.consume_switch_request()
-                if nxt is not None:
-                    if nxt == EXIT_SCENE:
-                        break
-                    self.switch_scene(nxt)
+        nxt = self.current_scene.consume_switch_request()
+        if nxt is not None:
+            if nxt == EXIT_SCENE:
+                return False
+            self.switch_scene(nxt)
 
-                update_glitch(dt)
+        update_glitch(dt)
 
-                pyray.begin_texture_mode(self.scene_target)
-                pyray.clear_background(pyray.BLACK)
-                update_camera_shake(dt)
-                pyray.begin_mode_2d(self.ctx.camera[0])
-                self.current_scene.draw()
-                pyray.end_mode_2d()
-                pyray.end_texture_mode()
+        pyray.begin_texture_mode(self.scene_target)
+        pyray.clear_background(pyray.BLACK)
+        update_camera_shake(dt)
+        pyray.begin_mode_2d(self.ctx.camera[0])
+        self.current_scene.draw()
+        pyray.end_mode_2d()
+        pyray.end_texture_mode()
 
-                self._apply_bloom()
+        self._apply_bloom()
 
-                pyray.begin_drawing()
-                pyray.clear_background(pyray.BLACK)
-                self._draw_final()
-                pyray.end_drawing()
+        pyray.begin_drawing()
+        pyray.clear_background(pyray.BLACK)
+        self._draw_final()
+        self.notifications.draw(cfg.window_width, cfg.window_height)
+        pyray.end_drawing()
+        return True
 
-        finally:
-            for shader in [self.glitch_shader, self.bloom_shader, self.scanlines_shader]:
-                if shader is not None:
-                    pyray.unload_shader(shader)
-            for rt in [self.scene_target, self.bloom_target]:
-                if rt is not None:
-                    pyray.unload_render_texture(rt)
-            from utils.font_manager import FontManager
-            FontManager.shutdown()
-            self.audio.shutdown()
-            Assets.unload_all()
-            pyray.close_window()
+    def _shutdown(self) -> None:
+        for shader in [self.glitch_shader, self.bloom_shader, self.scanlines_shader]:
+            if shader is not None:
+                pyray.unload_shader(shader)
+        for rt in [self.scene_target, self.bloom_target]:
+            if rt is not None:
+                pyray.unload_render_texture(rt)
+        from utils.font_manager import FontManager
+        FontManager.shutdown()
+        self.audio.shutdown()
+        Assets.unload_all()
+        pyray.close_window()
 
     def switch_scene(self, index: int) -> None:
         if index not in self.scenes:
@@ -216,7 +247,11 @@ class Game:
 
 
 def main() -> None:
-    Game().run()
+    game = Game()
+    if sys.platform == "emscripten":
+        asyncio.get_event_loop().create_task(game.run_async())
+        return
+    game.run()
 
 
 if __name__ == "__main__":

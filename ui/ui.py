@@ -872,7 +872,6 @@ def draw_pacman_title_sign(center_x: int, y: int, scale: float = 1.0, time_s: fl
 
 def draw_street_terminal(rect, title: str, value: str, accent_color, *, subline: str | None = None) -> None:
     draw_glass_card(rect, accent_color=accent_color, glow_alpha=16, fill_alpha=170)
-    pyl = int(rect.y + rect.height * 0.56)
     pyray.draw_rectangle_rec(
         pyray.Rectangle(rect.x + 10, rect.y + 10, int(rect.width * 0.42), int(rect.height - 20)),
         with_alpha((8, 12, 28, 255), 120),
@@ -997,10 +996,7 @@ def draw_cinematic_menu_background(width: int, height: int, time_s: float = 0.0)
         with_alpha(STREET_BLUE, 196),
     )
 
-    pulse = 0.5 + 0.5 * math.sin(time_s * 1.8)
     flicker = 0.5 + 0.5 * math.sin(time_s * 7.4)
-    cyan_alpha = int(18 + pulse * 20)
-    pink_alpha = int(14 + pulse * 18)
 
     pyray.draw_circle(int(width * 0.28), int(height * 0.26), 220, with_alpha(LIVE_CYAN, 7))
     pyray.draw_circle(int(width * 0.36), int(height * 0.22), 160, with_alpha(LIVE_PINK, 5))

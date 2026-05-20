@@ -16,7 +16,7 @@ from ui.ui import button_clicked
 from utils.effects import trigger_glitch
 
 if TYPE_CHECKING:
-    from scenes.game_scene import GameScene, SceneTransition
+    from scenes.game_scene import GameScene
 
 
 def _transition(scene: "GameScene", kind: str, ticks: float, result: str = ""):
@@ -58,12 +58,17 @@ def enter_tree(scene: "GameScene") -> None:
     map_path = scene.ctx.get_map_path()
     scene.ctx.reset_ghost_mode_cycle()
     runtime.game_map = Map(scene.ctx, path=map_path)
+    if scene.ctx.replay_recorder is not None and scene.ctx.last_result == "":
+        scene.ctx.replay_recorder.start(
+            seed=scene.ctx.current_level_seed(),
+            mode=scene.ctx.game_mode,
+            map_name=map_path,
+        )
     run.should_resume_game = False
     scene.transition = _transition(scene, "ready", scene.ctx.cfg.legacy_frames_to_seconds(scene.ctx.cfg.ready_duration_ticks))
 
 
 def update(scene: "GameScene", dt: float) -> None:
-    run = scene.ctx.run
     visual = scene.ctx.visual
     runtime = scene.ctx.runtime
     game_map = runtime.game_map
@@ -90,7 +95,10 @@ def update(scene: "GameScene", dt: float) -> None:
     if _time_attack_system(scene, effective_dt):
         return
 
+    scene.ctx.run_stats.level_elapsed_seconds += effective_dt
     _gameplay_step_system(scene, game_map, effective_dt)
+    if scene.ctx.replay_recorder is not None:
+        scene.ctx.replay_recorder.record_tick(scene.ctx)
     _effects_update_system(scene)
 
     if _combat_or_collision_system(scene, game_map):
@@ -311,6 +319,8 @@ def finish_transition(scene: "GameScene") -> None:
         return
 
     if scene.transition.kind == "death" and scene.transition.result == "lose":
+        if scene.ctx.replay_recorder is not None:
+            scene.ctx.replay_recorder.stop()
         scene.ctx.last_result = "lose"
         scene.request_switch(RESULT_SCENE)
         scene.transition = None
@@ -325,6 +335,8 @@ def finish_transition(scene: "GameScene") -> None:
         return
 
     if scene.transition.kind == "level_complete":
+        if scene.ctx.replay_recorder is not None:
+            scene.ctx.replay_recorder.stop()
         scene.ctx.last_result = scene.transition.result or "level_complete"
         scene.request_switch(RESULT_SCENE)
         scene.transition = None
@@ -421,6 +433,7 @@ def check_near_miss(scene: "GameScene") -> None:
     scene.near_miss_timer = 0.5
     scene.near_miss_cooldown = 1.35
     scene.ctx.run_stats.near_misses += 1
+    scene.ctx.check_achievements(save=False)
     scene.ctx.trigger_screen_flash(palette["ghost"], 0.12 if risk_turn else 0.09, 0.11 if risk_turn else 0.09)
     scene.ctx.trigger_screen_shake(3.6 if risk_turn else 2.6, 0.14 if risk_turn else 0.11)
     scene.ctx.trigger_action_juice(

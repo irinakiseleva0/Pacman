@@ -28,6 +28,7 @@ class RunStats:
     level_start_power_seeds: int = 0
     level_start_cherries: int = 0
     level_start_ghosts: int = 0
+    level_elapsed_seconds: float = 0.0
     finalized: bool = False
 
 
@@ -60,6 +61,8 @@ class RunState:
     requested_seed: int | None = None
     run_seed: int | None = None
     level_seed: int | None = None
+    pending_dialogue: list[dict[str, str | int]] = field(default_factory=list)
+    achievement_return_scene: int = 6
 
 
 @dataclass
@@ -67,6 +70,11 @@ class RuntimeRefs:
     pacman: Optional[object] = None
     game_map: Optional[object] = None
     audio_manager: Optional[object] = None
+    notification_manager: Optional[object] = None
+    replay_recorder: Optional[object] = None
+    replay_player: Optional[object] = None
+    replay_input: Optional[dict] = None
+    selected_replay_path: Optional[str] = None
     camera: Optional[object] = None
 
 

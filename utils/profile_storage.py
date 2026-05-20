@@ -41,6 +41,7 @@ DEFAULT_PROFILE = {
     "best_challenge_streak": 0,
     "challenge_rewards": {},
     "unlocked_skins": {},
+    "achievements": {},
     "style_medals": {
         "No Panic Clear": 0,
         "Predator Run": 0,
@@ -123,6 +124,11 @@ def load_profile() -> dict:
                 for skin_name, skin_value in value.items():
                     skins[str(skin_name)] = 1 if int(skin_value) else 0
                 profile["unlocked_skins"] = skins
+            elif key == "achievements" and isinstance(value, dict):
+                achievements: dict[str, int] = {}
+                for achievement_name, achievement_value in value.items():
+                    achievements[str(achievement_name)] = 1 if int(achievement_value) else 0
+                profile["achievements"] = achievements
             elif key == "style_medals" and isinstance(value, dict):
                 medals: dict[str, int] = {}
                 for medal_name in profile["style_medals"]:

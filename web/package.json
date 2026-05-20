@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build:game": "cd .. && .\\.venv\\Scripts\\python.exe -m pygbag --disable-sound-format-error --build main.py",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint ."

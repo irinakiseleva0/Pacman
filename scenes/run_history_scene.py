@@ -8,7 +8,6 @@ from core.scene_ids import CAREER_SCENE
 from ui import gamepad
 from ui.navigation import ButtonNavigator
 from ui.ui import (
-    PANEL_ACCENT,
     TEXT_DIM,
     button_clicked,
     centered_rect,

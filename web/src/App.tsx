@@ -116,9 +116,9 @@ function HeroSection() {
               </a>
             </NeonButton>
             <NeonButton glow="cyan" asChild>
-              <a href="/leaderboard">
-                <LayoutDashboard className="h-4 w-4" />
-                Leaderboard
+              <a href="/play">
+                <Play className="h-4 w-4" />
+                Play Web Build
               </a>
             </NeonButton>
             <NeonButton glow="purple" asChild>
@@ -140,6 +140,41 @@ function HeroSection() {
           </div>
         </motion.div>
         <HeroPreview />
+      </div>
+    </section>
+  );
+}
+
+function BrowserGameSection() {
+  return (
+    <section className="px-5 py-20 sm:px-8 lg:px-10">
+      <div className="mx-auto max-w-7xl">
+        <SectionTitle
+          eyebrow="WebAssembly port"
+          title="Browser Build Embedded In The Showcase"
+          description="The React shell now reserves a playable slot for the Pygbag-generated WebAssembly export, served from the Vite public game folder."
+        />
+        <div className="overflow-hidden rounded-lg border border-neon-cyan/25 bg-black shadow-[0_0_80px_rgba(51,246,255,0.16)]">
+          <iframe
+            className="block aspect-[16/10] w-full bg-black"
+            src="/game/index.html"
+            title="Cyberpunk Pac-Man browser build"
+          />
+        </div>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <NeonButton glow="cyan" asChild>
+            <a href="/play">
+              <Play className="h-4 w-4" />
+              Open Player
+            </a>
+          </NeonButton>
+          <NeonButton glow="yellow" asChild>
+            <a href="/leaderboard">
+              <LayoutDashboard className="h-4 w-4" />
+              Leaderboard
+            </a>
+          </NeonButton>
+        </div>
       </div>
     </section>
   );
@@ -457,6 +492,59 @@ function ControlsSection() {
   );
 }
 
+function PlayPage() {
+  return (
+    <main className="min-h-screen bg-neon-ink px-4 py-6 text-foreground sm:px-8 lg:px-10">
+      <div className="fixed inset-0 -z-10 bg-radial-signal" />
+      <div className="fixed inset-0 -z-10 bg-grid-neon bg-[length:54px_54px] opacity-25" />
+      <div className="mx-auto flex max-w-7xl flex-col gap-5">
+        <div className="rounded-lg border border-neon-cyan/25 bg-black/80 p-4 shadow-glow">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <a
+                className="rounded-sm font-display text-xs uppercase tracking-[0.18em] text-neon-cyan transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan"
+                href="/"
+              >
+                Cyberpunk Pac-Man
+              </a>
+              <p className="mt-2 text-sm text-slate-300">
+                Browser build runs from the generated Pygbag package.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <NeonButton glow="cyan" asChild>
+                <a href="/game/index.html">
+                  <Play className="h-4 w-4" />
+                  Direct Build
+                </a>
+              </NeonButton>
+              <NeonButton glow="yellow" asChild>
+                <a href="/leaderboard">
+                  <LayoutDashboard className="h-4 w-4" />
+                  Leaderboard
+                </a>
+              </NeonButton>
+              <NeonButton glow="purple" asChild>
+                <a href="/daily">
+                  <Trophy className="h-4 w-4" />
+                  Daily
+                </a>
+              </NeonButton>
+            </div>
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-lg border border-neon-cyan/30 bg-black shadow-glow">
+          <iframe
+            className="block h-[calc(100vh-196px)] min-h-[520px] w-full bg-black"
+            src="/game/index.html"
+            title="Cyberpunk Pac-Man browser build"
+          />
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function Footer() {
   return (
     <footer className="border-t border-white/10 px-5 py-10 sm:px-8 lg:px-10">
@@ -489,6 +577,9 @@ export default function App() {
   if (path === "/daily") {
     return <Daily />;
   }
+  if (path === "/play") {
+    return <PlayPage />;
+  }
   if (path.startsWith("/profile/")) {
     const username = decodeURIComponent(path.replace("/profile/", "").split("/")[0] || "unknown");
     return <Profile username={username} />;
@@ -499,6 +590,7 @@ export default function App() {
       <div className="fixed inset-0 -z-10 bg-radial-signal" />
       <div className="fixed inset-0 -z-10 bg-grid-neon bg-[length:54px_54px] opacity-30" />
       <HeroSection />
+      <BrowserGameSection />
       <GamePreviewSection />
       <FeaturesSection />
       <ModesSection />

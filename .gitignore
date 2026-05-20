@@ -8,3 +8,7 @@ scores.json
 data/saves/*.json
 !data/saves/.gitkeep
 web/vite-dev*.log
+build/
+web/game/build/
+web/public/game/*
+!web/public/game/index.html

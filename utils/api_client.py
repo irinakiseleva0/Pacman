@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
 import os
-from typing import Any
 
 import requests
 

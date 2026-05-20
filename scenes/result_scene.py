@@ -6,7 +6,7 @@ import core.raylib_api as pyray
 from raylib import colors
 
 from core.scene import Scene
-from core.scene_ids import GAME_SCENE, MENU_SCENE
+from core.scene_ids import DIALOGUE_SCENE, GAME_SCENE, MENU_SCENE, REPLAY_VIEWER_SCENE
 from ui.components import ProgressBar, StatusBadge
 from ui.navigation import ButtonNavigator
 from ui.style import UI_STYLE
@@ -21,6 +21,8 @@ class ResultScene(Scene):
         super().__init__()
         self.ctx = ctx
         self.btn_action = None
+        self.btn_save_replay = None
+        self.btn_watch_replay = None
         self.navigator = ButtonNavigator(1)
         self.panel = None
         self.intro_timer = 0.0
@@ -40,20 +42,68 @@ class ResultScene(Scene):
         panel_y = max(44, int((cfg.window_height - panel_height) / 2))
         self.panel = pyray.Rectangle(panel_x, panel_y, panel_width, panel_height)
 
-        self.btn_action = centered_rect(cx, int(panel_y + panel_height - 76), self.BTN_W, self.BTN_H)
+        button_y = int(panel_y + panel_height - 76)
+        action_w = min(220, self.BTN_W)
+        small_w = 150
+        gap = 12
+        self.btn_save_replay = pyray.Rectangle(cx - small_w - gap - action_w // 2, button_y, small_w, self.BTN_H)
+        self.btn_action = centered_rect(cx, button_y, action_w, self.BTN_H)
+        self.btn_watch_replay = pyray.Rectangle(cx + action_w // 2 + gap, button_y, small_w, self.BTN_H)
+        self.navigator = ButtonNavigator(3, initial_index=1)
 
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
         self.intro_timer = max(0.0, self.intro_timer - dt)
         self.navigator.move_vertical()
 
-        if button_clicked(self.btn_action) or self.navigator.confirm_pressed():
+        if button_clicked(self.btn_save_replay):
+            self.navigator.focus_index = 0
+            self._save_replay()
+        if button_clicked(self.btn_action):
+            self.navigator.focus_index = 1
             self._activate_primary_action()
+        if button_clicked(self.btn_watch_replay):
+            self.navigator.focus_index = 2
+            self._watch_replay()
+        if self.navigator.move_horizontal_within(3):
+            self.ctx.play_sfx("ui_confirm")
+        if self.navigator.confirm_pressed():
+            if self.navigator.focus_index == 0:
+                self._save_replay()
+            elif self.navigator.focus_index == 2:
+                self._watch_replay()
+            else:
+                self._activate_primary_action()
+
+    def _save_replay(self) -> None:
+        recorder = self.ctx.replay_recorder
+        if recorder is None or not recorder.frames:
+            self.ctx.play_sfx("ui_back")
+            return
+        path = recorder.save(score=self.ctx.score, seed=self.ctx.current_level_seed())
+        self.ctx.selected_replay_path = str(path)
+        self.ctx.play_sfx("ui_confirm")
+        if self.ctx.notification_manager is not None:
+            self.ctx.notification_manager.push("Replay Saved", path.name)
+
+    def _watch_replay(self) -> None:
+        recorder = self.ctx.replay_recorder
+        if self.ctx.selected_replay_path is None and recorder is not None and recorder.saved_path is not None:
+            self.ctx.selected_replay_path = str(recorder.saved_path)
+        if self.ctx.selected_replay_path is None:
+            self._save_replay()
+        if self.ctx.selected_replay_path is None:
+            return
+        self.ctx.play_sfx("ui_confirm")
+        self.request_switch(REPLAY_VIEWER_SCENE)
 
     def _activate_primary_action(self) -> None:
         if self.ctx.last_result == "level_complete":
             self.ctx.play_sfx("ui_confirm")
             self.ctx.play_transition_effect(LIVE_CYAN, 0.4, 0.5, 3.0, 0.4)
+            if self.ctx.queue_dialogue_for_level_clear():
+                self.request_switch(DIALOGUE_SCENE)
+                return
             self.ctx.next_level()
             self.request_switch(GAME_SCENE)
             return
@@ -64,6 +114,7 @@ class ResultScene(Scene):
             self.ctx.play_sfx("ui_back")
         self.ctx.reset_run_state()
         self.request_switch(MENU_SCENE)
+
 
     def _summary_lines(self) -> list[str]:
         if self.ctx.last_result == "level_complete":
@@ -205,7 +256,6 @@ class ResultScene(Scene):
         return LIVE_PINK
 
     def _breakdown_lines(self) -> tuple[str, str, str]:
-        stats = self.ctx.run_stats
         trait = self.ctx.current_map_trait()
         medals = self.ctx.earned_style_medals(self.ctx.last_result)
         score_line = self.ctx.score_focus_summary_lines()[0]
@@ -235,12 +285,6 @@ class ResultScene(Scene):
                 self.ctx.score_focus_summary_lines()[1],
                 medal_line,
             )
-        killer_map = {
-            "Blinky": "Blinky cut the route",
-            "Pinky": "Pinky held the front",
-            "Inky": "Inky slipped the flank",
-            "Clyde": "Clyde flipped the read",
-        }
         return (
             f"Run Lost  |  {self.ctx.mode_label()}  |  Grade {grade}",
             self.ctx.death_reason_detail(),
@@ -352,8 +396,10 @@ class ResultScene(Scene):
             draw_text_centered(line, center_x - 34, profile_y, 14, TEXT_DIM)
             profile_y += 15 if compact else 17
 
-        draw_text_centered("CONTINUE", center_x, int(self.btn_action.y - 24), 15, TEXT_DIM)
-        draw_button(self.btn_action, button_text, focused=True, time_s=self.ctx.visual_time)
+        draw_text_centered("REPLAY / CONTINUE", center_x, int(self.btn_action.y - 24), 15, TEXT_DIM)
+        draw_button(self.btn_save_replay, "SAVE REPLAY", focused=self.navigator.focus_index == 0, time_s=self.ctx.visual_time)
+        draw_button(self.btn_action, button_text, focused=self.navigator.focus_index == 1, time_s=self.ctx.visual_time)
+        draw_button(self.btn_watch_replay, "WATCH REPLAY", focused=self.navigator.focus_index == 2, time_s=self.ctx.visual_time)
         if self.intro_timer > 0.0:
             draw_scene_scan_intro(cfg.window_width, cfg.window_height, intro_progress, accent_color=result_color, time_s=self.ctx.visual_time)
         draw_scene_footer(panel)

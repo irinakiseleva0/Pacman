@@ -13,7 +13,6 @@ from scenes.game_view_overlays import (
     draw_level_complete_overlay,
     draw_live_feedback,
     draw_ready_overlay,
-    draw_transition_card,
     draw_tutorial_overlay,
 )
 from ui.hud import draw_floating_texts

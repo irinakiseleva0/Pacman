@@ -5,7 +5,7 @@ from raylib import colors
 
 from core.game_data import CHALLENGE_PRESETS, HUD_PACK_PRESETS
 from core.scene import Scene
-from core.scene_ids import ACHIEVEMENTS_SCENE, OPTIONS_SCENE, RUN_HISTORY_SCENE
+from core.scene_ids import ACHIEVEMENTS_SCENE, CAREER_SCENE, OPTIONS_SCENE, RUN_HISTORY_SCENE
 from ui import gamepad
 from ui.navigation import ButtonNavigator
 from ui.ui import (
@@ -62,6 +62,7 @@ class CareerScene(Scene):
         if button_clicked(self.btn_achievements):
             self.navigator.focus_index = 0
             self.ctx.play_sfx("ui_confirm")
+            self.ctx.run.achievement_return_scene = CAREER_SCENE
             self.request_switch(ACHIEVEMENTS_SCENE)
             return
         if button_clicked(self.btn_history):
@@ -77,6 +78,7 @@ class CareerScene(Scene):
         if self.navigator.confirm_pressed():
             if self.navigator.focus_index == 0:
                 self.ctx.play_sfx("ui_confirm")
+                self.ctx.run.achievement_return_scene = CAREER_SCENE
                 self.request_switch(ACHIEVEMENTS_SCENE)
             elif self.navigator.focus_index == 1:
                 self.ctx.play_sfx("ui_confirm")

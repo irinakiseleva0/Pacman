@@ -7,7 +7,7 @@ import core.raylib_api as pyray
 from entities.cell import Cell, Actor
 from utils.animated_sprite import Sprite
 from assets.assets import Assets
-from ui.ui import LIVE_CYAN, LIVE_PINK
+from ui.ui import LIVE_CYAN
 from utils.visual_effects import with_alpha
 
 

@@ -4,12 +4,14 @@ from core.scene_ids import (
     ACHIEVEMENTS_SCENE,
     CAREER_SCENE,
     CHALLENGE_SCENE,
+    DIALOGUE_SCENE,
     GAME_SCENE,
     JOURNAL_SCENE,
     MENU_SCENE,
     MODES_SCENE,
     OPTIONS_SCENE,
     PAUSE_SCENE,
+    REPLAY_VIEWER_SCENE,
     RESULT_SCENE,
     RUN_HISTORY_SCENE,
     THEMES_SCENE,
@@ -17,12 +19,14 @@ from core.scene_ids import (
 from scenes.achievements_scene import AchievementsScene
 from scenes.career_scene import CareerScene
 from scenes.challenge_scene import ChallengeScene
+from scenes.dialogue import DialogueScene
 from scenes.game_scene import GameScene
 from scenes.journal_scene import JournalScene
 from scenes.menu import Menu
 from scenes.modes_scene import ModesScene
 from scenes.options_scene import OptionsScene
 from scenes.pause_scene import PauseScene
+from scenes.replay_viewer import ReplayViewerScene
 from scenes.result_scene import ResultScene
 from scenes.run_history_scene import RunHistoryScene
 from scenes.themes_scene import ThemesScene
@@ -41,6 +45,8 @@ SCENE_FACTORIES = {
     RUN_HISTORY_SCENE: RunHistoryScene,
     THEMES_SCENE: ThemesScene,
     JOURNAL_SCENE: JournalScene,
+    DIALOGUE_SCENE: DialogueScene,
+    REPLAY_VIEWER_SCENE: ReplayViewerScene,
 }
 
 
@@ -57,6 +63,8 @@ SCENE_MUSIC = {
     RUN_HISTORY_SCENE: "options",
     THEMES_SCENE: "options",
     JOURNAL_SCENE: "options",
+    DIALOGUE_SCENE: "result",
+    REPLAY_VIEWER_SCENE: "result",
 }
 
 

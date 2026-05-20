@@ -1,0 +1,32 @@
+[
+  {
+    "level_trigger": 1,
+    "character": "SYSTEM_AI",
+    "text": "Route breach confirmed. District gate one is open, but Blinky Corp is already reading your path.",
+    "portrait": "system_ai"
+  },
+  {
+    "level_trigger": 3,
+    "character": "PAC",
+    "text": "I see the pattern now. Every pellet is a packet, every corner is a firewall rule. Keep the tunnel warm.",
+    "portrait": "pac_hacker"
+  },
+  {
+    "level_trigger": 5,
+    "character": "GHOST_01",
+    "text": "Unauthorized hunger signature detected. Blinky Corp. Security is escalating from patrol to pursuit.",
+    "portrait": "ghost_red"
+  },
+  {
+    "level_trigger": 8,
+    "character": "SYSTEM_AI",
+    "text": "Warning: market lights are masking hostile movement. Trust rhythm, not color. The maze is lying louder now.",
+    "portrait": "system_ai"
+  },
+  {
+    "level_trigger": "boss1",
+    "character": "GHOST_01",
+    "text": "You cracked the first executive shell. Enjoy the silence, hacker unit. The next security stack learns faster.",
+    "portrait": "ghost_red"
+  }
+]

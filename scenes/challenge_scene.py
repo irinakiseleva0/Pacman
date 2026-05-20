@@ -18,7 +18,6 @@ from ui.ui import (
     draw_arcade_background,
     draw_button,
     draw_cinematic_menu_background,
-    draw_glass_card,
     draw_dashboard_rail,
     draw_mission_frame,
     draw_panel,

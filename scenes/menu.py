@@ -6,16 +6,17 @@ import core.raylib_api as pyray
 from raylib import colors
 
 from core.scene import Scene
-from core.scene_ids import EXIT_SCENE, GAME_SCENE, MODES_SCENE, OPTIONS_SCENE
+from core.scene_ids import ACHIEVEMENTS_SCENE, EXIT_SCENE, GAME_SCENE, MENU_SCENE, MODES_SCENE, OPTIONS_SCENE, REPLAY_VIEWER_SCENE
 from ui.components import Button
 from ui.layout import LAYOUT_PROFILES, centered_vertical_stack
 from ui.navigation import ButtonNavigator
 from ui.style import UI_STYLE
 from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, PANEL_ACCENT, TEXT_DIM, draw_arcade_background, draw_cinematic_menu_background, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_scan_intro, draw_title_glitch_pass, button_clicked, draw_shadowed_text_centered, draw_text_centered
+from utils.replay import list_replays
 
 
 class Menu(Scene):
-    FOCUS_ORDER = ("Desktop", "Mobile", "Easy", "Normal", "Hard", "Start", "Modes", "Options", "Exit")
+    FOCUS_ORDER = ("Desktop", "Mobile", "Easy", "Normal", "Hard", "Start", "Modes", "Replays", "Achievements", "Options", "Exit")
 
     def __init__(self, ctx):
         super().__init__()
@@ -30,6 +31,8 @@ class Menu(Scene):
         self.btn_hard = None
         self.btn_start = None
         self.btn_modes = None
+        self.btn_replays = None
+        self.btn_achievements = None
         self.btn_options = None
         self.btn_exit = None
         self.main_panel = None
@@ -66,6 +69,8 @@ class Menu(Scene):
                 self.btn_hard,
                 self.btn_start,
                 self.btn_modes,
+                self.btn_replays,
+                self.btn_achievements,
                 self.btn_options,
                 self.btn_exit,
             ) = centered_vertical_stack(
@@ -87,6 +92,8 @@ class Menu(Scene):
                 self.btn_hard,
                 self.btn_start,
                 self.btn_modes,
+                self.btn_replays,
+                self.btn_achievements,
                 self.btn_options,
                 self.btn_exit,
             ) = centered_vertical_stack(
@@ -131,12 +138,20 @@ class Menu(Scene):
             self.navigator.focus_index = 6
             self.ctx.play_sfx("ui_confirm")
             self.request_switch(MODES_SCENE)
-        if button_clicked(self.btn_options):
+        if button_clicked(self.btn_replays):
             self.navigator.focus_index = 7
+            self._open_best_replay()
+        if button_clicked(self.btn_achievements):
+            self.navigator.focus_index = 8
+            self.ctx.play_sfx("ui_confirm")
+            self.ctx.run.achievement_return_scene = MENU_SCENE
+            self.request_switch(ACHIEVEMENTS_SCENE)
+        if button_clicked(self.btn_options):
+            self.navigator.focus_index = 9
             self.ctx.play_sfx("ui_confirm")
             self.request_switch(OPTIONS_SCENE)
         if button_clicked(self.btn_exit):
-            self.navigator.focus_index = 8
+            self.navigator.focus_index = 10
             self.ctx.play_sfx("ui_back")
             self.request_switch(EXIT_SCENE)
 
@@ -165,11 +180,26 @@ class Menu(Scene):
                 self.ctx.play_sfx("ui_confirm")
                 self.request_switch(MODES_SCENE)
             elif self.navigator.focus_index == 7:
+                self._open_best_replay()
+            elif self.navigator.focus_index == 8:
+                self.ctx.play_sfx("ui_confirm")
+                self.ctx.run.achievement_return_scene = MENU_SCENE
+                self.request_switch(ACHIEVEMENTS_SCENE)
+            elif self.navigator.focus_index == 9:
                 self.ctx.play_sfx("ui_confirm")
                 self.request_switch(OPTIONS_SCENE)
             else:
                 self.ctx.play_sfx("ui_back")
                 self.request_switch(EXIT_SCENE)
+
+    def _open_best_replay(self) -> None:
+        replays = list_replays(1)
+        if not replays:
+            self.ctx.play_sfx("ui_back")
+            return
+        self.ctx.selected_replay_path = str(replays[0].path)
+        self.ctx.play_sfx("ui_confirm")
+        self.request_switch(REPLAY_VIEWER_SCENE)
 
     def _set_layout(self, layout_name: str) -> None:
         if layout_name not in LAYOUT_PROFILES:
@@ -279,8 +309,11 @@ class Menu(Scene):
         self._draw_button(self.btn_hard, "HARD", 4)
         self._draw_button(self.btn_start, "START RUN", 5)
         self._draw_button(self.btn_modes, "MODES", 6)
-        self._draw_button(self.btn_options, "OPTIONS", 7)
-        self._draw_button(self.btn_exit, "EXIT", 8)
+        self._draw_button(self.btn_replays, "REPLAYS", 7)
+        self._draw_button(self.btn_achievements, "ACHIEVEMENTS", 8)
+        self._draw_button(self.btn_options, "OPTIONS", 9)
+        self._draw_button(self.btn_exit, "EXIT", 10)
+        self._draw_replay_hall(main_panel)
         draw_scene_footer(main_panel)
 
     def _draw_mobile_menu(self, main_panel) -> None:
@@ -302,6 +335,23 @@ class Menu(Scene):
         self._draw_button(self.btn_hard, "HARD", 4)
         self._draw_button(self.btn_start, "START GAME", 5)
         self._draw_button(self.btn_modes, "MODES", 6)
-        self._draw_button(self.btn_options, "OPTIONS", 7)
-        self._draw_button(self.btn_exit, "EXIT", 8)
+        self._draw_button(self.btn_replays, "REPLAYS", 7)
+        self._draw_button(self.btn_achievements, "ACHIEVEMENTS", 8)
+        self._draw_button(self.btn_options, "OPTIONS", 9)
+        self._draw_button(self.btn_exit, "EXIT", 10)
         draw_scene_footer(main_panel)
+
+    def _draw_replay_hall(self, main_panel) -> None:
+        replays = list_replays(5)
+        if not replays:
+            return
+        x = int(main_panel.x + main_panel.width + 18)
+        width = 300
+        if x + width > self.ctx.cfg.window_width - 18:
+            return
+        y = int(main_panel.y + 120)
+        pyray.draw_text("REPLAY HALL", x, y, 18, LIVE_GOLD)
+        y += 28
+        for index, replay in enumerate(replays, start=1):
+            pyray.draw_text(f"{index}. {replay.score}  seed {replay.seed:06d}", x, y, 14, colors.WHITE if index == 1 else TEXT_DIM)
+            y += 20
