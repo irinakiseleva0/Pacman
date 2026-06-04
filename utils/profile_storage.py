@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from utils.storage_paths import LEGACY_PROFILE_FILE, PROFILE_FILE, atomic_write_json, migrate_legacy_file
+from utils.storage_paths import LEGACY_PROFILE_FILE, PROFILE_FILE, atomic_write_json, migrate_legacy_file, read_json
 
 
 DEFAULT_PROFILE = {
@@ -96,10 +96,8 @@ DEFAULT_PROFILE = {
 
 def load_profile() -> dict:
     migrate_legacy_file(PROFILE_FILE, LEGACY_PROFILE_FILE)
-    try:
-        with PROFILE_FILE.open("r", encoding="utf-8") as file:
-            raw = json.load(file)
-    except (OSError, ValueError, json.JSONDecodeError):
+    raw = read_json(PROFILE_FILE)
+    if raw is None:
         return json.loads(json.dumps(DEFAULT_PROFILE))
 
     profile = json.loads(json.dumps(DEFAULT_PROFILE))

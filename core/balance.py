@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
-from pathlib import Path
 
+from utils.config_resources import load_config_json
 
 LEGACY_BALANCE_FPS = 16.0
-_CONFIG_DIR = Path(__file__).resolve().parent.parent / "data" / "config"
 
 _RUNTIME_FALLBACK = {
     "fps": 60,
@@ -116,15 +114,13 @@ _DIFFICULTY_FALLBACK = {
 
 
 def _load_json_config(filename: str, fallback: dict) -> dict:
-    path = _CONFIG_DIR / filename
+    data = load_config_json(filename)
     try:
-        with path.open("r", encoding="utf-8") as handle:
-            data = json.load(handle)
         if isinstance(data, dict):
             merged = dict(fallback)
             merged.update(data)
             return merged
-    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+    except (TypeError, ValueError):
         pass
     return dict(fallback)
 

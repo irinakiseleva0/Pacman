@@ -6,6 +6,7 @@ import core.raylib_api as pyray
 from raylib import colors
 
 from core.gameplay_view_models import GameplayHudModel
+from ui import pygame_primitives as pgui
 from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, TEXT_DIM, draw_glass_card
 from utils.effects import FloatingText
 from utils.visual_effects import with_alpha
@@ -25,11 +26,11 @@ def update_floating_texts(dt: float) -> None:
 def draw_floating_texts() -> None:
     for text in _floating_texts:
         font_size = 22 if "x" in text.text else 20
-        width = pyray.measure_text(text.text, font_size)
+        width = pgui.measure_text(text.text, font_size)
         x = int(text.pos.x - width / 2)
         y = int(text.pos.y)
-        pyray.draw_text(text.text, x + 1, y + 1, font_size, with_alpha(colors.BLACK, 150 * text.alpha))
-        pyray.draw_text(text.text, x, y, font_size, text.color)
+        pgui.draw_text(text.text, x + 1, y + 1, font_size, with_alpha(colors.BLACK, 150 * text.alpha))
+        pgui.draw_text(text.text, x, y, font_size, text.color)
 
 
 def draw_ability_slots(ctx, *, x: int, y: int, width: int, time_s: float = 0.0) -> None:
@@ -58,30 +59,30 @@ def draw_ability_slots(ctx, *, x: int, y: int, width: int, time_s: float = 0.0) 
             accent = TEXT_DIM
 
         rect = pyray.Rectangle(sx, sy, slot_size, slot_size)
-        pyray.draw_rectangle_rec(rect, with_alpha(colors.BLACK, 96))
-        pyray.draw_rectangle_lines_ex(rect, 1, with_alpha(accent, 150 if ready or active else 78))
-        pyray.draw_circle(cx, cy, 17, with_alpha(accent, 18 if ready else 9))
-        pyray.draw_circle(cx, cy, 13, with_alpha(accent, fill_alpha))
+        pgui.draw_rect(rect, with_alpha(colors.BLACK, 96))
+        pgui.draw_rect(rect, with_alpha(accent, 150 if ready or active else 78), 1)
+        pgui.draw_circle(cx, cy, 17, with_alpha(accent, 18 if ready else 9))
+        pgui.draw_circle(cx, cy, 13, with_alpha(accent, fill_alpha))
 
         if active:
             pulse = 0.5 + 0.5 * math.sin(time_s * 12.0)
-            pyray.draw_circle_lines(cx, cy, 20 + int(pulse * 2), with_alpha(colors.WHITE, 170))
+            pgui.draw_circle(cx, cy, 20 + int(pulse * 2), with_alpha(colors.WHITE, 170), 1)
         elif progress > 0:
             remaining_height = int(slot_size * progress)
-            pyray.draw_rectangle_rec(
+            pgui.draw_rect(
                 pyray.Rectangle(sx, sy + slot_size - remaining_height, slot_size, remaining_height),
                 with_alpha(colors.BLACK, 126),
             )
-            pyray.draw_circle_lines(cx, cy, 20, with_alpha(accent, 68))
+            pgui.draw_circle(cx, cy, 20, with_alpha(accent, 68), 1)
 
         icon = getattr(ability, "icon", "?")
         key = getattr(ability, "key_label", "")
         icon_size = 18
-        icon_w = pyray.measure_text(icon, icon_size)
-        pyray.draw_text(icon, int(cx - icon_w / 2), int(sy + 10), icon_size, colors.WHITE if unlocked else TEXT_DIM)
+        icon_w = pgui.measure_text(icon, icon_size)
+        pgui.draw_text(icon, int(cx - icon_w / 2), int(sy + 10), icon_size, colors.WHITE if unlocked else TEXT_DIM)
         key_size = 10
-        key_w = pyray.measure_text(key, key_size)
-        pyray.draw_text(key, int(cx - key_w / 2), int(sy + slot_size - 13), key_size, with_alpha(colors.WHITE, 185))
+        key_w = pgui.measure_text(key, key_size)
+        pgui.draw_text(key, int(cx - key_w / 2), int(sy + slot_size - 13), key_size, with_alpha(colors.WHITE, 185))
 
 
 def _card_height(line_count: int, line_height: int) -> int:
@@ -90,21 +91,21 @@ def _card_height(line_count: int, line_height: int) -> int:
 
 def _draw_card(title: str, lines: list[tuple[str, object]], rect, font_size: int, line_height: int, accent_color) -> None:
     draw_glass_card(rect, accent_color=accent_color, glow_alpha=18, fill_alpha=150)
-    pyray.draw_rectangle_rec(
+    pgui.draw_rect(
         pyray.Rectangle(rect.x - 7, rect.y - 7, rect.width + 14, rect.height + 14),
         with_alpha(accent_color, 9),
     )
     title_size = max(12, font_size - 10)
-    pyray.draw_text(title.upper(), int(rect.x + 18), int(rect.y + 8), title_size, with_alpha(TEXT_DIM, 216))
-    pyray.draw_rectangle_rec(
+    pgui.draw_text(title.upper(), int(rect.x + 18), int(rect.y + 8), title_size, with_alpha(TEXT_DIM, 216))
+    pgui.draw_rect(
         pyray.Rectangle(rect.x + 18, rect.y + 25, max(42, rect.width * 0.26), 2),
         with_alpha(accent_color, 152),
     )
-    pyray.draw_rectangle_rec(
+    pgui.draw_rect(
         pyray.Rectangle(rect.x + rect.width - 54, rect.y + 13, 34, 2),
         with_alpha(LIVE_CYAN if accent_color != LIVE_CYAN else LIVE_PINK, 70),
     )
-    pyray.draw_rectangle_rec(
+    pgui.draw_rect(
         pyray.Rectangle(rect.x + rect.width - 20, rect.y + 13, 2, 14),
         with_alpha(accent_color, 82),
     )
@@ -122,19 +123,19 @@ def _draw_card(title: str, lines: list[tuple[str, object]], rect, font_size: int
             elif key in {"best", "seeds"}:
                 value_boost = 2
             value_size = max(16, font_size + value_boost)
-            label_width = pyray.measure_text(f"{label}:", label_size)
+            label_width = pgui.measure_text(f"{label}:", label_size)
             value_text = value.strip()
-            value_width = pyray.measure_text(value_text, value_size)
+            value_width = pgui.measure_text(value_text, value_size)
             value_accent = LIVE_GOLD if key in {"score", "best"} else LIVE_CYAN if key in {"time", "seeds"} else accent_color
-            pyray.draw_rectangle_rec(
+            pgui.draw_rect(
                 pyray.Rectangle(rect.x + 18 + label_width + 4, content_y - 5, value_width + 12, value_size + 8),
                 with_alpha(value_accent, 8 if key not in {"score", "time", "lives", "level"} else 15),
             )
-            pyray.draw_text(f"{label}:", int(rect.x + 22), content_y + 1, label_size, label_color)
-            pyray.draw_text(value_text, int(rect.x + 22 + label_width + 10), content_y - 1, value_size, color)
+            pgui.draw_text(f"{label}:", int(rect.x + 22), content_y + 1, label_size, label_color)
+            pgui.draw_text(value_text, int(rect.x + 22 + label_width + 10), content_y - 1, value_size, color)
         else:
             draw_size = max(14, font_size + 2)
-            pyray.draw_text(text, int(rect.x + 22), content_y, draw_size, color)
+            pgui.draw_text(text, int(rect.x + 22), content_y, draw_size, color)
         content_y += line_height
 
 

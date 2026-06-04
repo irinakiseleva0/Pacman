@@ -1,19 +1,12 @@
 from __future__ import annotations
 
-import json
-
-from utils.storage_paths import DAILY_SCORE_FILE, LEGACY_DAILY_SCORE_FILE, atomic_write_json, migrate_legacy_file
+from utils.storage_paths import DAILY_SCORE_FILE, LEGACY_DAILY_SCORE_FILE, atomic_write_json, migrate_legacy_file, read_json
 
 
 def load_daily_scores() -> dict:
     migrate_legacy_file(DAILY_SCORE_FILE, LEGACY_DAILY_SCORE_FILE)
-    if not DAILY_SCORE_FILE.exists():
-        return {"scores": []}
-
-    try:
-        with DAILY_SCORE_FILE.open("r", encoding="utf-8") as file:
-            data = json.load(file)
-    except (OSError, ValueError, json.JSONDecodeError):
+    data = read_json(DAILY_SCORE_FILE)
+    if data is None:
         return {"scores": []}
 
     scores = data.get("scores", []) if isinstance(data, dict) else []

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import core.raylib_api as pyray
 from raylib import colors
 
+from ui import pygame_primitives as pgui
 from ui.style import UI_STYLE
 from ui.ui import (
     LIVE_CYAN,
@@ -56,7 +57,7 @@ class Label:
         if self.centered:
             draw_text_centered(self.text, self.x, self.y, self.size, self.color)
             return
-        pyray.draw_text(self.text, self.x, self.y, self.size, self.color)
+        pgui.draw_text(self.text, self.x, self.y, self.size, self.color)
 
 
 @dataclass(frozen=True)
@@ -99,10 +100,10 @@ class ProgressBar:
 
     def draw(self) -> None:
         clamped = max(0.0, min(1.0, self.value))
-        pyray.draw_rectangle_rec(self.rect, with_alpha(colors.BLACK, self.track_alpha))
-        pyray.draw_rectangle_lines_ex(self.rect, 1, with_alpha(PANEL_ACCENT, 80))
+        pgui.draw_rect(self.rect, with_alpha(colors.BLACK, self.track_alpha))
+        pgui.draw_rect(self.rect, with_alpha(PANEL_ACCENT, 80), 1)
         fill_width = max(0, int((self.rect.width - 4) * clamped))
-        pyray.draw_rectangle_rec(
+        pgui.draw_rect(
             pyray.Rectangle(self.rect.x + 2, self.rect.y + 2, fill_width, max(0, self.rect.height - 4)),
             with_alpha(self.accent, 188),
         )
@@ -110,4 +111,3 @@ class ProgressBar:
 
 def draw_button_component(rect, text: str, *, focused: bool = False, time_s: float | None = None) -> None:
     Button(rect, text, focused).draw(time_s=time_s)
-

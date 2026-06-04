@@ -4,7 +4,7 @@ import core.raylib_api as pyray
 from raylib import colors
 
 from entities.pacman import State
-from ui.ui import draw_text_centered
+from ui import pygame_primitives as pgui
 from utils.visual_effects import with_alpha
 
 
@@ -71,8 +71,8 @@ def draw_mobile_controls(ctx) -> None:
 
     rects = _button_rects(ctx.cfg)
     area = rects["area"]
-    pyray.draw_rectangle_rec(area, with_alpha(colors.BLACK, 40))
-    draw_text_centered("TOUCH", int(area.x + area.width / 2), int(area.y + 6), 16, colors.LIGHTGRAY)
+    pgui.draw_rect(area, with_alpha(colors.BLACK, 40))
+    pgui.draw_text_centered("TOUCH", int(area.x + area.width / 2), int(area.y + 6), 16, colors.LIGHTGRAY)
 
     mouse = pyray.get_mouse_position()
     direction_labels = {
@@ -87,9 +87,9 @@ def draw_mobile_controls(ctx) -> None:
         active = pyray.check_collision_point_rec(mouse, rect) and pyray.is_mouse_button_down(0)
         fill = colors.DARKBLUE if active else colors.DARKGRAY
         border = colors.YELLOW if active else colors.LIGHTGRAY
-        pyray.draw_rectangle_rec(rect, fill)
-        pyray.draw_rectangle_lines_ex(rect, 2, border)
-        draw_text_centered(
+        pgui.draw_rect(rect, fill)
+        pgui.draw_rect(rect, border, 2)
+        pgui.draw_text_centered(
             label,
             int(rect.x + rect.width / 2),
             int(rect.y + rect.height / 2 - 10),
@@ -101,9 +101,9 @@ def draw_mobile_controls(ctx) -> None:
     pause_active = pyray.check_collision_point_rec(mouse, pause_rect) and pyray.is_mouse_button_down(0)
     pause_fill = colors.MAROON if pause_active else colors.DARKGRAY
     pause_border = colors.YELLOW if pause_active else colors.WHITE
-    pyray.draw_rectangle_rec(pause_rect, pause_fill)
-    pyray.draw_rectangle_lines_ex(pause_rect, 2, pause_border)
-    draw_text_centered(
+    pgui.draw_rect(pause_rect, pause_fill)
+    pgui.draw_rect(pause_rect, pause_border, 2)
+    pgui.draw_text_centered(
         "PAUSE",
         int(pause_rect.x + pause_rect.width / 2),
         int(pause_rect.y + 8),

@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
-from pathlib import Path
 
 import core.raylib_api as pyray
+from utils.config_resources import load_config_json
 
-
-_CONFIG_DIR = Path(__file__).resolve().parent.parent / "data" / "config"
 
 _LAYOUT_FALLBACK = {
     "default_layout": "desktop",
@@ -47,13 +44,11 @@ _LAYOUT_FALLBACK = {
 
 
 def _load_layout_data() -> dict:
-    path = _CONFIG_DIR / "layouts.json"
+    data = load_config_json("layouts.json")
     try:
-        with path.open("r", encoding="utf-8") as handle:
-            data = json.load(handle)
         if isinstance(data, dict) and isinstance(data.get("profiles"), dict):
             return data
-    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+    except (TypeError, ValueError):
         pass
     return _LAYOUT_FALLBACK
 

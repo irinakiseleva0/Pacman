@@ -7,6 +7,7 @@ from raylib import colors
 
 from assets.assets import Assets
 from entities.cell import Actor, Cell
+from utils.animated_sprite import Sprite
 from utils.visual_effects import with_alpha
 
 
@@ -17,7 +18,8 @@ class Cherry(Cell):
         super().__init__(ctx)
         self.enabled = True
         self.timer = 0
-        self.image = Assets.texture(self.TEX)
+        self.sprite = Sprite({"cherry": [Assets.texture(self.TEX)]})
+        self.sprite.set_key("cherry", True)
 
     def on_enter(self, actor: Actor) -> None:
         if not self.enabled:
@@ -96,10 +98,4 @@ class Cherry(Cell):
         pulse = 0.5 + 0.5 * math.sin(getattr(self.ctx, "visual_time", 0.0) * 5.5 + self.x * 0.6)
         pyray.draw_circle(px, py, cfg.tile_size // 2 + 4 + pulse * 3, with_alpha(colors.RED, 14))
         pyray.draw_circle(px, py, cfg.tile_size // 2 - 1 + pulse * 4, with_alpha(colors.RED, 28))
-        pyray.draw_texture_ex(
-            self.image,
-            (base_x, base_y),
-            0.0,
-            scale,
-            colors.WHITE,
-        )
+        self.sprite.draw_specified("cherry", 0, (base_x, base_y), scale=scale)

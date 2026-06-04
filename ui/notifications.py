@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import core.raylib_api as pyray
 from raylib import colors
 
+from ui import pygame_primitives as pgui
 from ui.ui import LIVE_CYAN, LIVE_GOLD, TEXT_DIM, draw_glass_card
 from utils.visual_effects import with_alpha
 
@@ -43,11 +44,11 @@ class NotificationManager:
             x = width - margin - card_w + int((1.0 - ease) * (card_w + margin))
             rect = pyray.Rectangle(x, y, card_w, card_h)
             draw_glass_card(rect, accent_color=LIVE_GOLD, glow_alpha=18, fill_alpha=190)
-            pyray.draw_rectangle_rec(
+            pgui.draw_rect(
                 pyray.Rectangle(rect.x + 12, rect.y + 14, 4, rect.height - 28),
                 with_alpha(LIVE_CYAN, 210),
             )
-            pyray.draw_text("ACHIEVEMENT UNLOCKED", int(rect.x + 28), int(rect.y + 14), 13, LIVE_GOLD)
-            pyray.draw_text(item.title, int(rect.x + 28), int(rect.y + 34), 20, colors.WHITE)
-            pyray.draw_text(item.detail[:42], int(rect.x + 28), int(rect.y + 60), 13, TEXT_DIM)
+            pgui.draw_text("ACHIEVEMENT UNLOCKED", int(rect.x + 28), int(rect.y + 14), 13, LIVE_GOLD)
+            pgui.draw_text(item.title, int(rect.x + 28), int(rect.y + 34), 20, colors.WHITE)
+            pgui.draw_text(item.detail[:42], int(rect.x + 28), int(rect.y + 60), 13, TEXT_DIM)
             y -= card_h + 10

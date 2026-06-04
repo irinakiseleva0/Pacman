@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import math
 
+import pygame
+
 import core.raylib_api as pyray
 
 from entities.cell import Cell, Actor
@@ -9,6 +11,29 @@ from utils.animated_sprite import Sprite
 from assets.assets import Assets
 from ui.ui import LIVE_CYAN
 from utils.visual_effects import with_alpha
+
+
+def _draw_rect(x: float, y: float, width: float, height: float, color) -> None:
+    surface = pyray.get_drawing_surface()
+    rect = pygame.Rect(int(x), int(y), int(width), int(height))
+    if len(color) >= 4 and color[3] < 255:
+        layer = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        pygame.draw.rect(layer, color, rect)
+        surface.blit(layer, (0, 0))
+        return
+    pygame.draw.rect(surface, color, rect)
+
+
+def _draw_line(x1: float, y1: float, x2: float, y2: float, color, width: int) -> None:
+    surface = pyray.get_drawing_surface()
+    start = (int(x1), int(y1))
+    end = (int(x2), int(y2))
+    if len(color) >= 4 and color[3] < 255:
+        layer = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        pygame.draw.line(layer, color, start, end, max(1, int(width)))
+        surface.blit(layer, (0, 0))
+        return
+    pygame.draw.line(surface, color, start, end, max(1, int(width)))
 
 
 class Wall(Cell):
@@ -87,14 +112,8 @@ class Wall(Cell):
         tile = cfg.tile_size
         pulse = 0.5 + 0.5 * math.sin(time_s * 2.6 + self.x * 0.37 + self.y * 0.21)
 
-        pyray.draw_rectangle_rec(
-            pyray.Rectangle(px - 2, py - 2, tile + 4, tile + 4),
-            with_alpha(LIVE_CYAN, int(12 + pulse * 8)),
-        )
-        pyray.draw_rectangle_rec(
-            pyray.Rectangle(px + 2, py + 2, tile - 4, tile - 4),
-            with_alpha((6, 8, 22, 255), 240),
-        )
+        _draw_rect(px - 2, py - 2, tile + 4, tile + 4, with_alpha(LIVE_CYAN, int(12 + pulse * 8)))
+        _draw_rect(px + 2, py + 2, tile - 4, tile - 4, with_alpha((6, 8, 22, 255), 240))
 
         Wall._sprite().draw_specified(
             self.wall_key,
@@ -114,15 +133,15 @@ class Wall(Cell):
         edge_soft = with_alpha(LIVE_CYAN, int(30 + pulse * 12))   
 
         if n_open:
-            pyray.draw_rectangle_rec(pyray.Rectangle(px - 1, py - 2, tile + 2, 7), edge_glow)
-            pyray.draw_rectangle_rec(pyray.Rectangle(px + 2, py + 1, tile - 4, 2), edge_main)
-            pyray.draw_rectangle_rec(pyray.Rectangle(px + 4, py + 3, tile - 8, 1), edge_soft)
+            _draw_line(px - 1, py + 1, px + tile + 1, py + 1, edge_glow, 7)
+            _draw_line(px + 2, py + 2, px + tile - 2, py + 2, edge_main, 2)
+            _draw_line(px + 4, py + 3, px + tile - 4, py + 3, edge_soft, 1)
         if s_open:
-            pyray.draw_rectangle_rec(pyray.Rectangle(px - 1, py + tile - 5, tile + 2, 7), edge_glow)
-            pyray.draw_rectangle_rec(pyray.Rectangle(px + 2, py + tile - 3, tile - 4, 2), edge_main)
+            _draw_line(px - 1, py + tile - 2, px + tile + 1, py + tile - 2, edge_glow, 7)
+            _draw_line(px + 2, py + tile - 2, px + tile - 2, py + tile - 2, edge_main, 2)
         if w_open:
-            pyray.draw_rectangle_rec(pyray.Rectangle(px - 2, py - 1, 7, tile + 2), edge_glow)
-            pyray.draw_rectangle_rec(pyray.Rectangle(px + 1, py + 2, 2, tile - 4), edge_main)
+            _draw_line(px + 1, py - 1, px + 1, py + tile + 1, edge_glow, 7)
+            _draw_line(px + 2, py + 2, px + 2, py + tile - 2, edge_main, 2)
         if e_open:
-            pyray.draw_rectangle_rec(pyray.Rectangle(px + tile - 5, py - 1, 7, tile + 2), edge_glow)
-            pyray.draw_rectangle_rec(pyray.Rectangle(px + tile - 3, py + 2, 2, tile - 4), edge_main)
+            _draw_line(px + tile - 2, py - 1, px + tile - 2, py + tile + 1, edge_glow, 7)
+            _draw_line(px + tile - 2, py + 2, px + tile - 2, py + tile - 2, edge_main, 2)

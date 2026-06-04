@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import math
 
+import pygame
+
 import core.raylib_api as pyray
 from raylib import colors
 
@@ -370,35 +372,37 @@ class Pacman(Actor):
                 self.ctx.begin_power_chain_window()
 
         keys = {
-            pyray.KEY_W: State.UP,
-            pyray.KEY_UP: State.UP,
-            pyray.KEY_A: State.LEFT,
-            pyray.KEY_LEFT: State.LEFT,
-            pyray.KEY_S: State.DOWN,
-            pyray.KEY_DOWN: State.DOWN,
-            pyray.KEY_D: State.RIGHT,
-            pyray.KEY_RIGHT: State.RIGHT,
+            pygame.K_w: State.UP,
+            pygame.K_UP: State.UP,
+            pygame.K_a: State.LEFT,
+            pygame.K_LEFT: State.LEFT,
+            pygame.K_s: State.DOWN,
+            pygame.K_DOWN: State.DOWN,
+            pygame.K_d: State.RIGHT,
+            pygame.K_RIGHT: State.RIGHT,
         }
 
         ability_keys = (
-            (pyray.KEY_Q, 0),
-            (pyray.KEY_E, 1),
-            (pyray.KEY_R, 2),
+            (pygame.K_q, 0),
+            (pygame.K_e, 1),
+            (pygame.K_r, 2),
         )
+        pressed_events = pyray.get_pressed_key_events()
         for key, slot in ability_keys:
-            if pyray.is_key_pressed(key):
+            if key in pressed_events:
                 self.activate_ability_slot(slot)
                 return
 
         for key, state in keys.items():
-            if pyray.is_key_pressed(key):
+            if key in pressed_events:
                 self.queue_direction(state)
                 return
 
+        pressed = pyray.get_pressed_keys()
         held_states = {
             state
             for key, state in keys.items()
-            if pyray.is_key_down(key)
+            if pressed[key]
         }
         if len(held_states) == 1:
             self.queue_direction(next(iter(held_states)))

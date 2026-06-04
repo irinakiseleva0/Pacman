@@ -1,75 +1,59 @@
 from __future__ import annotations
 
-from typing import Dict, Any
-import core.raylib_api as pyray
+from pathlib import Path
+
+import pygame
 
 
 class Assets:
     """
-    Centralized asset cache.
+    Centralized pygame.Surface cache for image assets.
 
     Usage:
-        tex = Assets.texture("sprites/pacman/pacman_pos_1_up.png")
+        surface = Assets.texture("sprites/pacman/pacman_pos_1_up.png")
         ...
         Assets.unload_all()
     """
 
-    _textures: Dict[str, Any] = {}
+    _textures: dict[str, pygame.Surface] = {}
 
     @staticmethod
-    def _to_bytes(s: str | bytes) -> bytes:
-        return s.encode("utf-8") if isinstance(s, str) else s
+    def _to_path(path: str | bytes | Path) -> str:
+        if isinstance(path, bytes):
+            return path.decode("utf-8")
+        return str(path)
 
     @classmethod
-    def texture(cls, path: str) -> Any:
+    def texture(cls, path: str | bytes | Path) -> pygame.Surface:
         """
-        Load a texture once and return cached texture on next calls.
+        Load an image once as a pygame.Surface and return the cached surface.
         """
-        tex = cls._textures.get(path)
-        if tex is not None:
-            return tex
+        key = cls._to_path(path)
+        surface = cls._textures.get(key)
+        if surface is not None:
+            return surface
 
-        tex = pyray.load_texture(cls._to_bytes(path))
-        # Bilinear filtering — убирает пиксельность на спрайтах
+        surface = pygame.image.load(key)
         try:
-            pyray.rl.SetTextureFilter(tex, pyray.rl.TEXTURE_FILTER_BILINEAR)
-        except Exception:
-            pass
-        cls._textures[path] = tex
-        return tex
+            surface = surface.convert_alpha()
+        except pygame.error:
+            surface = surface.copy()
+        cls._textures[key] = surface
+        return surface
 
     @classmethod
-    def unload_texture(cls, path: str) -> None:
-        """
-        Unload one texture from cache.
-        """
-        tex = cls._textures.pop(path, None)
-        if tex is None:
-            return
-        try:
-            pyray.unload_texture(tex)
-        except Exception:
-            # If window already closed or raylib already freed resources
-            pass
+    def unload_texture(cls, path: str | bytes | Path) -> None:
+        cls._textures.pop(cls._to_path(path), None)
 
     @classmethod
     def unload_all(cls) -> None:
-        """
-        Unload all cached textures.
-        Call this BEFORE pyray.close_window().
-        """
-        for path in list(cls._textures.keys()):
-            cls.unload_texture(path)
+        cls._textures.clear()
 
     @classmethod
     def clear_cache(cls) -> None:
-        """
-        Clear cache without unloading (almost never needed).
-        """
         cls._textures.clear()
 
-    # ---- Compatibility helpers (optional) ----
     @classmethod
-    def load_texture(cls, path: str) -> Any:
-        """Alias to support old code style: Assets.load_texture(...)"""
+    def load_texture(cls, path: str | bytes | Path) -> pygame.Surface:
+        """Alias to support old code style: Assets.load_texture(...)."""
         return cls.texture(path)

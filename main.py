@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-import sys
+import math
+
+import pygame
 
 import core.raylib_api as pyray
 import ui.ui as ui_theme
@@ -17,9 +19,9 @@ from utils.effects import glitch_effect, set_camera, update_camera_shake, update
 from utils.replay import ReplayRecorder
 
 
-BLOOM_INTENSITY    = 0.45
-SCANLINE_STRENGTH  = 0.04
-VIGNETTE_STRENGTH  = 0.0
+BLOOM_INTENSITY = 0.18
+SCANLINE_ALPHA = 18
+VIGNETTE_ALPHA = 76
 
 
 class Game:
@@ -36,20 +38,8 @@ class Game:
         self.current_scene_index = MENU_SCENE
         self.scenes = build_scene_table(self.ctx)
         self.scene_target = None
-
-        self.glitch_shader = None
-        self.glitch_time_loc = -1
-        self.glitch_intensity_loc = -1
-
-        self.bloom_shader = None
-        self.bloom_resolution_loc = -1
-        self.bloom_intensity_loc = -1
-        self.bloom_target = None 
-
-        self.scanlines_shader = None
-        self.scanlines_time_loc = -1
-        self.scanlines_scan_loc = -1
-        self.scanlines_vig_loc = -1
+        self.scanline_overlay: pygame.Surface | None = None
+        self.vignette_overlay: pygame.Surface | None = None
 
     @property
     def current_scene(self):
@@ -84,11 +74,7 @@ class Game:
         self.ctx.screen_flash.set_size(cfg.window_width, cfg.window_height)
 
         self.scene_target = pyray.load_render_texture(cfg.window_width, cfg.window_height)
-        self.bloom_target  = pyray.load_render_texture(cfg.window_width, cfg.window_height)
-
-        self._load_glitch_shader()
-        self._load_bloom_shader()
-        self._load_scanlines_shader()
+        self._build_post_effect_surfaces()
         self.audio.initialize()
         from utils.font_manager import FontManager
         FontManager.initialize()
@@ -124,8 +110,6 @@ class Game:
         pyray.end_mode_2d()
         pyray.end_texture_mode()
 
-        self._apply_bloom()
-
         pyray.begin_drawing()
         pyray.clear_background(pyray.BLACK)
         self._draw_final()
@@ -134,12 +118,8 @@ class Game:
         return True
 
     def _shutdown(self) -> None:
-        for shader in [self.glitch_shader, self.bloom_shader, self.scanlines_shader]:
-            if shader is not None:
-                pyray.unload_shader(shader)
-        for rt in [self.scene_target, self.bloom_target]:
-            if rt is not None:
-                pyray.unload_render_texture(rt)
+        if self.scene_target is not None:
+            pyray.unload_render_texture(self.scene_target)
         from utils.font_manager import FontManager
         FontManager.shutdown()
         self.audio.shutdown()
@@ -158,101 +138,82 @@ class Game:
         scene_music = SCENE_MUSIC.get(self.current_scene_index, "menu")
         self.audio.set_scene_music(scene_music, self.ctx)
 
-    def _load_glitch_shader(self) -> None:
-        try:
-            self.glitch_shader = pyray.load_shader(None, "assets/shaders/glitch.fs")
-            self.glitch_time_loc = pyray.get_shader_location(self.glitch_shader, "time")
-            self.glitch_intensity_loc = pyray.get_shader_location(self.glitch_shader, "intensity")
-        except Exception as exc:
-            print(f"[Shader] Glitch unavailable: {exc}")
-            self.glitch_shader = None
-
-    def _load_bloom_shader(self) -> None:
-        try:
-            self.bloom_shader = pyray.load_shader(None, "assets/shaders/bloom.fs")
-            self.bloom_resolution_loc = pyray.get_shader_location(self.bloom_shader, "resolution")
-            self.bloom_intensity_loc  = pyray.get_shader_location(self.bloom_shader, "intensity")
-        except Exception as exc:
-            print(f"[Shader] Bloom unavailable: {exc}")
-            self.bloom_shader = None
-
-    def _load_scanlines_shader(self) -> None:
-        try:
-            self.scanlines_shader = pyray.load_shader(None, "assets/shaders/scanlines.fs")
-            self.scanlines_time_loc = pyray.get_shader_location(self.scanlines_shader, "time")
-            self.scanlines_scan_loc = pyray.get_shader_location(self.scanlines_shader, "scanline_strength")
-            self.scanlines_vig_loc  = pyray.get_shader_location(self.scanlines_shader, "vignette_strength")
-        except Exception as exc:
-            print(f"[Shader] Scanlines unavailable: {exc}")
-            self.scanlines_shader = None
-
-
-    def _apply_bloom(self) -> None:
-        """Проход bloom: scene_target → bloom_target."""
-        if self.bloom_target is None:
-            return
-
+    def _build_post_effect_surfaces(self) -> None:
         cfg = self.ctx.cfg
-        source = pyray.Rectangle(0, 0, cfg.window_width, -cfg.window_height)
-        pos = pyray.Vector2(0, 0)
+        size = (cfg.window_width, cfg.window_height)
+        self.scanline_overlay = pygame.Surface(size, pygame.SRCALPHA)
+        for y in range(0, cfg.window_height, 4):
+            pygame.draw.line(self.scanline_overlay, (0, 0, 0, SCANLINE_ALPHA), (0, y), (cfg.window_width, y), 1)
+        for y in range(2, cfg.window_height, 8):
+            pygame.draw.line(self.scanline_overlay, (255, 255, 255, 5), (0, y), (cfg.window_width, y), 1)
 
-        pyray.begin_texture_mode(self.bloom_target)
-        pyray.clear_background(pyray.BLACK)
-
-        if self.bloom_shader is not None:
-            res = pyray.rl.ffi.new("float[2]", [float(cfg.window_width), float(cfg.window_height)])
-            intensity = pyray.rl.ffi.new("float *", BLOOM_INTENSITY)
-            pyray.set_shader_value(self.bloom_shader, self.bloom_resolution_loc, res, pyray.rl.SHADER_UNIFORM_VEC2)
-            pyray.set_shader_value(self.bloom_shader, self.bloom_intensity_loc, intensity, pyray.rl.SHADER_UNIFORM_FLOAT)
-            pyray.begin_shader_mode(self.bloom_shader)
-
-        pyray.draw_texture_rec(self.scene_target.texture, source, pos, pyray.WHITE)
-
-        if self.bloom_shader is not None:
-            pyray.end_shader_mode()
-
-        pyray.end_texture_mode()
+        self.vignette_overlay = pygame.Surface(size, pygame.SRCALPHA)
+        cx = cfg.window_width / 2
+        cy = cfg.window_height / 2
+        max_distance = math.hypot(cx, cy)
+        for radius in range(int(max_distance), 0, -18):
+            t = 1.0 - radius / max_distance
+            alpha = int(VIGNETTE_ALPHA * t * t)
+            pygame.draw.circle(self.vignette_overlay, (0, 0, 0, alpha), (int(cx), int(cy)), radius, 18)
 
     def _draw_final(self) -> None:
-        cfg = self.ctx.cfg
-        src_texture = self.bloom_target if self.bloom_target is not None else self.scene_target
-        if src_texture is None:
+        if self.scene_target is None:
             return
 
-        source = pyray.Rectangle(0, 0, cfg.window_width, -cfg.window_height)
-        pos = pyray.Vector2(0, 0)
+        screen = pyray.get_drawing_surface()
+        scene = self.scene_target.surface
+        if glitch_effect.is_active():
+            self._draw_glitch_surface(screen, scene)
+        else:
+            screen.blit(scene, (0, 0))
+        self._apply_bloom_overlay(screen, scene)
+        if self.scanline_overlay is not None:
+            screen.blit(self.scanline_overlay, (0, 0))
+        if self.vignette_overlay is not None:
+            screen.blit(self.vignette_overlay, (0, 0))
 
-        use_glitch = self.glitch_shader is not None and glitch_effect.is_active()
-        use_scan   = self.scanlines_shader is not None and not use_glitch
+    def _apply_bloom_overlay(self, screen: pygame.Surface, scene: pygame.Surface) -> None:
+        width, height = scene.get_size()
+        small_size = (max(1, width // 3), max(1, height // 3))
+        bloom = pygame.transform.smoothscale(scene, small_size)
+        bloom = pygame.transform.smoothscale(bloom, (width, height))
+        bloom.set_alpha(int(255 * BLOOM_INTENSITY))
+        screen.blit(bloom, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
 
-        if use_glitch:
-            time_val = pyray.rl.ffi.new("float *", float(self.ctx.visual_time))
-            inten_val = pyray.rl.ffi.new("float *", float(glitch_effect.intensity))
-            pyray.set_shader_value(self.glitch_shader, self.glitch_time_loc, time_val, pyray.rl.SHADER_UNIFORM_FLOAT)
-            pyray.set_shader_value(self.glitch_shader, self.glitch_intensity_loc, inten_val, pyray.rl.SHADER_UNIFORM_FLOAT)
-            pyray.begin_shader_mode(self.glitch_shader)
-        elif use_scan:
-            time_val = pyray.rl.ffi.new("float *", float(self.ctx.visual_time))
-            scan_val = pyray.rl.ffi.new("float *", SCANLINE_STRENGTH)
-            vig_val  = pyray.rl.ffi.new("float *", VIGNETTE_STRENGTH)
-            pyray.set_shader_value(self.scanlines_shader, self.scanlines_time_loc, time_val, pyray.rl.SHADER_UNIFORM_FLOAT)
-            pyray.set_shader_value(self.scanlines_shader, self.scanlines_scan_loc, scan_val, pyray.rl.SHADER_UNIFORM_FLOAT)
-            pyray.set_shader_value(self.scanlines_shader, self.scanlines_vig_loc,  vig_val,  pyray.rl.SHADER_UNIFORM_FLOAT)
-            pyray.begin_shader_mode(self.scanlines_shader)
+    def _draw_glitch_surface(self, screen: pygame.Surface, scene: pygame.Surface) -> None:
+        screen.blit(scene, (0, 0))
+        width, height = scene.get_size()
+        amount = max(0.0, min(1.0, float(glitch_effect.intensity)))
+        time_s = float(self.ctx.visual_time)
+        for index in range(10):
+            y = int((index * height / 10 + math.sin(time_s * 22.0 + index * 2.1) * 10) % height)
+            band_h = max(2, int(4 + amount * 12 + (index % 3) * 2))
+            shift = int(math.sin(time_s * 35.0 + index * 1.7) * 18 * amount)
+            src = pygame.Rect(0, y, width, min(band_h, height - y))
+            if src.height <= 0:
+                continue
+            screen.blit(scene, (shift, y), src)
+            if shift > 0:
+                screen.blit(scene, (shift - width, y), src)
+            elif shift < 0:
+                screen.blit(scene, (shift + width, y), src)
 
-        pyray.draw_texture_rec(src_texture.texture, source, pos, pyray.WHITE)
+        red = scene.copy()
+        red.fill((255, 40, 90, int(42 * amount)), special_flags=pygame.BLEND_RGBA_MULT)
+        screen.blit(red, (int(3 * amount), 0), special_flags=pygame.BLEND_RGB_ADD)
+        cyan = scene.copy()
+        cyan.fill((40, 220, 255, int(36 * amount)), special_flags=pygame.BLEND_RGBA_MULT)
+        screen.blit(cyan, (int(-3 * amount), 0), special_flags=pygame.BLEND_RGB_ADD)
 
-        if use_glitch or use_scan:
-            pyray.end_shader_mode()
 
-
-def main() -> None:
+async def main() -> None:
     game = Game()
-    if sys.platform == "emscripten":
-        asyncio.get_event_loop().create_task(game.run_async())
-        return
-    game.run()
+    await game.run_async()
+
+
+def cli_main() -> None:
+    asyncio.run(main())
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
