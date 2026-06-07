@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from raylib import colors
+from core import colors
 
 
 @dataclass(frozen=True)

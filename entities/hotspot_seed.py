@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from raylib import colors
+from core import colors
 
 import core.raylib_api as pyray
 from entities.seeds import Seed

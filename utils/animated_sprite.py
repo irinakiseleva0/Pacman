@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import pygame
-from raylib import colors
+from core import colors
 
 import core.raylib_api as pyray
 

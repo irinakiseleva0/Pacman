@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from entities.cell import Actor, Cell
 from utils.visual_effects import with_alpha

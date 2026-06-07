@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from core.gameplay_view_models import build_live_feedback_model
 from ui.ui import (

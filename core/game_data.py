@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from raylib import colors
+from core import colors
 
 
 @dataclass(frozen=True)

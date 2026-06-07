@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import deque
 import math
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 from typing import Tuple
 
 from entities.cell import Actor

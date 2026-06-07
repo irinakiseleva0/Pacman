@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from entities.pacman import State
 from ui import pygame_primitives as pgui

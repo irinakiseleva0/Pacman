@@ -1,7 +1,9 @@
+# /// script
 from __future__ import annotations
 
 import asyncio
 import math
+import random
 
 import pygame
 
@@ -40,6 +42,9 @@ class Game:
         self.scene_target = None
         self.scanline_overlay: pygame.Surface | None = None
         self.vignette_overlay: pygame.Surface | None = None
+        self.glitch_shader = None
+        self.bloom_shader = None
+        self.scanlines_shader = None
 
     @property
     def current_scene(self):
@@ -74,6 +79,9 @@ class Game:
         self.ctx.screen_flash.set_size(cfg.window_width, cfg.window_height)
 
         self.scene_target = pyray.load_render_texture(cfg.window_width, cfg.window_height)
+        self.glitch_shader = self._load_glitch_shader()
+        self.bloom_shader = self._load_bloom_shader()
+        self.scanlines_shader = self._load_scanlines_shader()
         self._build_post_effect_surfaces()
         self.audio.initialize()
         from utils.font_manager import FontManager
@@ -142,10 +150,8 @@ class Game:
         cfg = self.ctx.cfg
         size = (cfg.window_width, cfg.window_height)
         self.scanline_overlay = pygame.Surface(size, pygame.SRCALPHA)
-        for y in range(0, cfg.window_height, 4):
+        for y in range(0, cfg.window_height, 2):
             pygame.draw.line(self.scanline_overlay, (0, 0, 0, SCANLINE_ALPHA), (0, y), (cfg.window_width, y), 1)
-        for y in range(2, cfg.window_height, 8):
-            pygame.draw.line(self.scanline_overlay, (255, 255, 255, 5), (0, y), (cfg.window_width, y), 1)
 
         self.vignette_overlay = pygame.Surface(size, pygame.SRCALPHA)
         cx = cfg.window_width / 2
@@ -166,13 +172,22 @@ class Game:
             self._draw_glitch_surface(screen, scene)
         else:
             screen.blit(scene, (0, 0))
-        self._apply_bloom_overlay(screen, scene)
+        self._apply_bloom(screen, scene)
         if self.scanline_overlay is not None:
             screen.blit(self.scanline_overlay, (0, 0))
         if self.vignette_overlay is not None:
             screen.blit(self.vignette_overlay, (0, 0))
 
-    def _apply_bloom_overlay(self, screen: pygame.Surface, scene: pygame.Surface) -> None:
+    def _load_glitch_shader(self):
+        return None
+
+    def _load_bloom_shader(self):
+        return None
+
+    def _load_scanlines_shader(self):
+        return None
+
+    def _apply_bloom(self, screen: pygame.Surface, scene: pygame.Surface) -> None:
         width, height = scene.get_size()
         small_size = (max(1, width // 3), max(1, height // 3))
         bloom = pygame.transform.smoothscale(scene, small_size)
@@ -181,22 +196,26 @@ class Game:
         screen.blit(bloom, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
 
     def _draw_glitch_surface(self, screen: pygame.Surface, scene: pygame.Surface) -> None:
-        screen.blit(scene, (0, 0))
+        glitched = scene.copy()
         width, height = scene.get_size()
         amount = max(0.0, min(1.0, float(glitch_effect.intensity)))
         time_s = float(self.ctx.visual_time)
-        for index in range(10):
-            y = int((index * height / 10 + math.sin(time_s * 22.0 + index * 2.1) * 10) % height)
-            band_h = max(2, int(4 + amount * 12 + (index % 3) * 2))
-            shift = int(math.sin(time_s * 35.0 + index * 1.7) * 18 * amount)
+        band_count = max(3, int(8 + amount * 10))
+        for index in range(band_count):
+            y = random.randrange(0, max(1, height))
+            band_h = max(2, int(3 + amount * 12 + (index % 3) * 2))
+            jitter = random.randint(-18, 18)
+            shift = int((jitter + math.sin(time_s * 35.0 + index * 1.7) * 10) * amount)
             src = pygame.Rect(0, y, width, min(band_h, height - y))
             if src.height <= 0:
                 continue
-            screen.blit(scene, (shift, y), src)
+            glitched.blit(scene, (shift, y), src)
             if shift > 0:
-                screen.blit(scene, (shift - width, y), src)
+                glitched.blit(scene, (shift - width, y), src)
             elif shift < 0:
-                screen.blit(scene, (shift + width, y), src)
+                glitched.blit(scene, (shift + width, y), src)
+
+        screen.blit(glitched, (0, 0))
 
         red = scene.copy()
         red.fill((255, 40, 90, int(42 * amount)), special_flags=pygame.BLEND_RGBA_MULT)

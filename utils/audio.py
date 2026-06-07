@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pygame
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _clamp_volume(value: object, default: float) -> float:
@@ -55,7 +59,8 @@ class AudioManager:
             if not pygame.mixer.get_init():
                 pygame.mixer.init()
             self.ready = True
-        except Exception:
+        except Exception as exc:
+            LOGGER.info("Audio disabled: pygame.mixer initialization failed: %s", exc)
             self.ready = False
 
         if not self.ready:
@@ -174,13 +179,16 @@ class AudioManager:
 
     def _safe_load_sound(self, path: str) -> pygame.mixer.Sound | None:
         if not Path(path).exists():
+            LOGGER.info("Skipping missing sound asset: %s", path)
             return None
         try:
             return pygame.mixer.Sound(path)
-        except Exception:
+        except Exception as exc:
+            LOGGER.info("Skipping sound asset %s: %s", path, exc)
             return None
 
     def _safe_load_music(self, path: str) -> str | None:
         if not Path(path).exists():
+            LOGGER.info("Skipping missing music asset: %s", path)
             return None
         return path

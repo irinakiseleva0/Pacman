@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from raylib import colors
+from core import colors
 
 from core.core_loop import current_core_loop_focus
 from entities.ghost import Ghost

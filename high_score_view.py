@@ -1,5 +1,5 @@
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from utils.score_storage import SCORE_FILE, load_high_score
 

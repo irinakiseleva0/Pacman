@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from core.scene import Scene
 from core.scene_ids import GAME_SCENE

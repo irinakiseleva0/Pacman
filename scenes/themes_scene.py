@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from core.game_data import THEME_PRESETS
 from core.scene import Scene

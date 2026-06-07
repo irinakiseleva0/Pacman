@@ -4,7 +4,7 @@ import math
 from typing import TYPE_CHECKING
 
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from core.scene_ids import EXIT_SCENE, MENU_SCENE, PAUSE_SCENE, RESULT_SCENE
 from entities.pacman import State

@@ -5,7 +5,7 @@ import math
 import pygame
 
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from core.progression import unlocked_abilities
 from entities.ability import Ability, default_abilities

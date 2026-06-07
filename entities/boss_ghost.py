@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from entities.ghost import Ghost
 from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional
 
-from raylib import colors
+from core import colors
 
 from core.context import GameContext
 from entities.cell import Cell, Actor

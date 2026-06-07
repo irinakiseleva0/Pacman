@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from core.scene import Scene
 from core.scene_ids import ACHIEVEMENTS_SCENE, EXIT_SCENE, GAME_SCENE, MENU_SCENE, MODES_SCENE, OPTIONS_SCENE, REPLAY_VIEWER_SCENE

@@ -5,7 +5,7 @@ from datetime import date
 from dataclasses import dataclass, field
 from typing import Optional
 
-from raylib import colors
+from core import colors
 
 from core.achievements import AchievementManager
 from core.balance import Config, DIFFICULTY_PRESETS

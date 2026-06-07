@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import core.raylib_api as pyray
-from raylib import colors
+from core import colors
 
 from ui import pygame_primitives as pgui
 from ui.ui import LIVE_CYAN, LIVE_GOLD, TEXT_DIM, draw_glass_card
