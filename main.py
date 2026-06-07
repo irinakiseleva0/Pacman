@@ -73,12 +73,15 @@ class Game:
         cfg = self.ctx.cfg
 
         pyray.init_window(cfg.window_width, cfg.window_height, "Pacman")
+        pygame.display.set_mode(
+            (cfg.window_width, cfg.window_height), pygame.RESIZABLE)
         pyray.set_target_fps(cfg.fps)
         self.ctx.camera = pyray.create_camera_2d()
         set_camera(self.ctx.camera)
         self.ctx.screen_flash.set_size(cfg.window_width, cfg.window_height)
 
-        self.scene_target = pyray.load_render_texture(cfg.window_width, cfg.window_height)
+        self.scene_target = pyray.load_render_texture(
+            cfg.window_width, cfg.window_height)
         self.glitch_shader = self._load_glitch_shader()
         self.bloom_shader = self._load_bloom_shader()
         self.scanlines_shader = self._load_scanlines_shader()
@@ -96,7 +99,8 @@ class Game:
         dt = pyray.get_frame_time()
         ui_theme.set_visual_theme(self.ctx.theme_name())
         if pyray.is_key_pressed(pyray.KEY_F10):
-            self.ctx.set_capture_mode_enabled(not self.ctx.capture_mode_enabled())
+            self.ctx.set_capture_mode_enabled(
+                not self.ctx.capture_mode_enabled())
 
         self.current_scene.update(dt)
         self.audio.update(self.ctx)
@@ -151,7 +155,8 @@ class Game:
         size = (cfg.window_width, cfg.window_height)
         self.scanline_overlay = pygame.Surface(size, pygame.SRCALPHA)
         for y in range(0, cfg.window_height, 2):
-            pygame.draw.line(self.scanline_overlay, (0, 0, 0, SCANLINE_ALPHA), (0, y), (cfg.window_width, y), 1)
+            pygame.draw.line(self.scanline_overlay, (0, 0, 0,
+                             SCANLINE_ALPHA), (0, y), (cfg.window_width, y), 1)
 
         self.vignette_overlay = pygame.Surface(size, pygame.SRCALPHA)
         cx = cfg.window_width / 2
@@ -160,7 +165,8 @@ class Game:
         for radius in range(int(max_distance), 0, -18):
             t = 1.0 - radius / max_distance
             alpha = int(VIGNETTE_ALPHA * t * t)
-            pygame.draw.circle(self.vignette_overlay, (0, 0, 0, alpha), (int(cx), int(cy)), radius, 18)
+            pygame.draw.circle(self.vignette_overlay,
+                               (0, 0, 0, alpha), (int(cx), int(cy)), radius, 18)
 
     def _draw_final(self) -> None:
         if self.scene_target is None:
@@ -205,7 +211,8 @@ class Game:
             y = random.randrange(0, max(1, height))
             band_h = max(2, int(3 + amount * 12 + (index % 3) * 2))
             jitter = random.randint(-18, 18)
-            shift = int((jitter + math.sin(time_s * 35.0 + index * 1.7) * 10) * amount)
+            shift = int(
+                (jitter + math.sin(time_s * 35.0 + index * 1.7) * 10) * amount)
             src = pygame.Rect(0, y, width, min(band_h, height - y))
             if src.height <= 0:
                 continue
@@ -218,11 +225,15 @@ class Game:
         screen.blit(glitched, (0, 0))
 
         red = scene.copy()
-        red.fill((255, 40, 90, int(42 * amount)), special_flags=pygame.BLEND_RGBA_MULT)
-        screen.blit(red, (int(3 * amount), 0), special_flags=pygame.BLEND_RGB_ADD)
+        red.fill((255, 40, 90, int(42 * amount)),
+                 special_flags=pygame.BLEND_RGBA_MULT)
+        screen.blit(red, (int(3 * amount), 0),
+                    special_flags=pygame.BLEND_RGB_ADD)
         cyan = scene.copy()
-        cyan.fill((40, 220, 255, int(36 * amount)), special_flags=pygame.BLEND_RGBA_MULT)
-        screen.blit(cyan, (int(-3 * amount), 0), special_flags=pygame.BLEND_RGB_ADD)
+        cyan.fill((40, 220, 255, int(36 * amount)),
+                  special_flags=pygame.BLEND_RGBA_MULT)
+        screen.blit(cyan, (int(-3 * amount), 0),
+                    special_flags=pygame.BLEND_RGB_ADD)
 
 
 async def main() -> None:
