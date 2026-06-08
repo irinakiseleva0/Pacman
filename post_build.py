@@ -57,16 +57,33 @@ html = re.sub(
     html, flags=re.DOTALL
 )
 
+canvas_rendering_style = '''        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+'''
+
+html = re.sub(r'\s*canvas\s*\{\s*image-rendering:\s*pixelated;\s*image-rendering:\s*crisp-edges;\s*\}\s*',
+              '\n', html, flags=re.DOTALL)
+html = html.replace("</style>", f"{canvas_rendering_style}    </style>", 1)
+
 resize_script = '''<script>
-var _orig_window_resize = window.window_resize || function(){};
+var _orig_window_resize = window._orig_window_resize ||
+                          window.window_resize || function(){};
+window._orig_window_resize = _orig_window_resize;
 window.window_resize = function() {
     _orig_window_resize.apply(this, arguments);
     var c = document.getElementById('canvas');
     if (!c) return;
+    var dpr = window.devicePixelRatio || 1;
     var sw = window.innerWidth, sh = window.innerHeight;
     var scale = Math.min(sw / 800, sh / 600);
     var cw = Math.round(800 * scale);
     var ch = Math.round(600 * scale);
+    // Set actual pixel size for sharpness
+    c.width  = Math.round(800 * scale * dpr);
+    c.height = Math.round(600 * scale * dpr);
     c.style.cssText = [
         'position:fixed',
         'left:' + Math.round((sw - cw) / 2) + 'px',
@@ -76,7 +93,9 @@ window.window_resize = function() {
         'margin:0',
         'transform:none',
         'z-index:5',
-        'border:0'
+        'border:0',
+        'image-rendering:pixelated',
+        'image-rendering:crisp-edges'
     ].join(';');
 };
 window.addEventListener('resize', window.window_resize);
@@ -85,8 +104,9 @@ setTimeout(window.window_resize, 1500);
 setTimeout(window.window_resize, 3000);
 </script>'''
 
-if "_orig_window_resize" not in html:
-    html = html.replace("</body>", f"{resize_script}\n</body>", 1)
+html = re.sub(r'\s*<script>\s*var _orig_window_resize = .*?</script>\s*',
+              '\n', html, flags=re.DOTALL)
+html = html.replace("</body>", f"{resize_script}\n</body>", 1)
 
 html_path.write_text(html, encoding="utf-8")
 print("post_build.py: patched build/web/index.html successfully")
