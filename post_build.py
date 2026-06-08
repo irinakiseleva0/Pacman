@@ -40,22 +40,27 @@ html = re.sub(
 html = re.sub(
     r'canvas\.emscripten\s*\{[^}]*\}',
     '''canvas.emscripten {
-            border: 0px none !important;
-            background-color: transparent !important;
-            z-index: 5 !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            width: min(100vw, calc(100vh * 1.3333333333)) !important;
-            height: auto !important;
+            border: 0px none;
+            background-color: transparent;
+            z-index: 5;
+            padding: 0;
+            margin: 0;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 100vw;
+            max-height: 100vh;
+            width: min(100vw, calc(100vh * 1.3333333333));
+            height: auto;
         }''',
     html, flags=re.DOTALL
 )
+
+viewport_meta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
+html = re.sub(r'\s*<meta name="viewport" content="width=device-width, initial-scale=1\.0,\s*maximum-scale=1\.0,\s*user-scalable=no">\s*',
+              '\n', html, flags=re.DOTALL)
+html = html.replace("</head>", f"    {viewport_meta}\n</head>", 1)
 
 canvas_rendering_style = '''        canvas {
             image-rendering: pixelated;
@@ -76,29 +81,52 @@ window.window_resize = function() {
     _orig_window_resize.apply(this, arguments);
     var c = document.getElementById('canvas');
     if (!c) return;
-    var dpr = window.devicePixelRatio || 1;
-    var sw = window.innerWidth, sh = window.innerHeight;
-    var scale = Math.min(sw / 800, sh / 600);
-    var cw = Math.round(800 * scale);
-    var ch = Math.round(600 * scale);
-    // Set actual pixel size for sharpness
-    c.width  = Math.round(800 * scale * dpr);
-    c.height = Math.round(600 * scale * dpr);
-    c.style.cssText = [
-        'position:fixed',
-        'left:' + Math.round((sw - cw) / 2) + 'px',
-        'top:' + Math.round((sh - ch) / 2) + 'px',
-        'width:' + cw + 'px',
-        'height:' + ch + 'px',
-        'margin:0',
-        'transform:none',
-        'z-index:5',
-        'border:0',
-        'image-rendering:pixelated',
-        'image-rendering:crisp-edges'
-    ].join(';');
+    var sw = window.innerWidth;
+    var sh = window.innerHeight;
+    var isMobile = sw < 768;
+    var isPortrait = sh > sw;
+    var cw, ch, tx, ty, rot;
+
+    if (isMobile && isPortrait) {
+        // Rotate 90deg and scale to fill portrait screen
+        var scale = Math.min(sh / 800, sw / 600);
+        cw = Math.round(800 * scale);
+        ch = Math.round(600 * scale);
+        tx = Math.round((sw - ch) / 2 + ch / 2);
+        ty = Math.round((sh - cw) / 2 + cw / 2);
+        c.style.cssText = [
+            'position:fixed',
+            'left:0', 'top:0',
+            'width:' + cw + 'px',
+            'height:' + ch + 'px',
+            'margin:0',
+            'transform-origin:0 0',
+            'transform:translate(' + tx + 'px,' + ty + 'px) rotate(90deg) translate(-50%,-50%)',
+            'z-index:5', 'border:0',
+            'image-rendering:pixelated'
+        ].join(';');
+    } else {
+        // Desktop / landscape: center with letterbox
+        var scale = Math.min(sw / 800, sh / 600);
+        cw = Math.round(800 * scale);
+        ch = Math.round(600 * scale);
+        c.style.cssText = [
+            'position:fixed',
+            'left:' + Math.round((sw - cw) / 2) + 'px',
+            'top:' + Math.round((sh - ch) / 2) + 'px',
+            'width:' + cw + 'px',
+            'height:' + ch + 'px',
+            'margin:0',
+            'transform:none',
+            'z-index:5', 'border:0',
+            'image-rendering:pixelated'
+        ].join(';');
+    }
 };
 window.addEventListener('resize', window.window_resize);
+window.addEventListener('orientationchange', function() {
+    setTimeout(window.window_resize, 300);
+});
 setTimeout(window.window_resize, 500);
 setTimeout(window.window_resize, 1500);
 setTimeout(window.window_resize, 3000);
