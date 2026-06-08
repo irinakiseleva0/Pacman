@@ -40,15 +40,19 @@ html = re.sub(
 html = re.sub(
     r'canvas\.emscripten\s*\{[^}]*\}',
     '''canvas.emscripten {
-            border: 0px none;
-            background-color: transparent;
-            z-index: 5;
-            padding: 0;
-            margin: 0;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            border: 0px none !important;
+            background-color: transparent !important;
+            z-index: 5 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            width: min(100vw, calc(100vh * 1.3333333333)) !important;
+            height: auto !important;
         }''',
     html, flags=re.DOTALL
 )
