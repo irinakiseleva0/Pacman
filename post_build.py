@@ -14,7 +14,34 @@ if not html_path.exists():
     log.error("build/web/index.html not found. Run pygbag --build first.")
     exit(1)
 
+build_dir = html_path.parent
+
+
+def _normalize_artifact(pattern: str, target_name: str) -> str:
+    target = build_dir / target_name
+    candidates = sorted(
+        path
+        for path in build_dir.glob(pattern)
+        if path.name != target_name and path.is_file()
+    )
+    if candidates:
+        if target.exists():
+            target.unlink()
+        candidates[0].replace(target)
+    if not target.exists():
+        log.error("build/web/%s not found after pygbag build.", target_name)
+        exit(1)
+    return target_name
+
+
+apk_name = _normalize_artifact("*.apk", "pacman.apk")
+archive_name = _normalize_artifact("*.tar.gz", "pacman.tar.gz")
+(build_dir / ".nojekyll").write_text("", encoding="utf-8")
+
 html = html_path.read_text(encoding="utf-8")
+html = re.sub(r'platform\.fopen\("[^"]+\.apk"', f'platform.fopen("{apk_name}"', html)
+html = re.sub(r'platform\.fopen\("[^"]+\.tar\.gz"', f'platform.fopen("{archive_name}"', html)
+html = re.sub(r'Loading [^<\n]+ from [^<\n]+', f'Loading pacman from {apk_name}', html)
 
 # 1. Restore exact canvas size
 html = re.sub(r'fb_width\s*:\s*"[^"]*"', 'fb_width : "800"', html)
@@ -64,15 +91,15 @@ html = re.sub(
 )
 
 viewport_meta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
-resource_hints = '''    <link rel="preconnect" href="https://pygame-web.github.io" crossorigin>
+resource_hints = f'''    <link rel="preconnect" href="https://pygame-web.github.io" crossorigin>
     <link rel="dns-prefetch" href="//pygame-web.github.io">
-    <link rel="preload" href="pacman-2023-main.tar.gz" as="fetch" crossorigin="anonymous">
+    <link rel="preload" href="{archive_name}" as="fetch" crossorigin="anonymous">
 '''
 html = re.sub(r'\s*<meta name="viewport" content="width=device-width, initial-scale=1\.0,\s*maximum-scale=1\.0,\s*user-scalable=no">\s*',
               '\n', html, flags=re.DOTALL)
 html = re.sub(r'\s*<link rel="preconnect" href="https://pygame-web\.github\.io" crossorigin>\s*', '\n', html)
 html = re.sub(r'\s*<link rel="dns-prefetch" href="//pygame-web\.github\.io">\s*', '\n', html)
-html = re.sub(r'\s*<link rel="preload" href="pacman-2023-main\.tar\.gz" as="fetch" crossorigin="anonymous">\s*', '\n', html)
+html = re.sub(r'\s*<link rel="preload" href="[^"]+\.tar\.gz" as="fetch" crossorigin="anonymous">\s*', '\n', html)
 html = html.replace("</head>", f"    {viewport_meta}\n{resource_hints}</head>", 1)
 
 canvas_rendering_style = '''        canvas {
