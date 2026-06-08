@@ -81,52 +81,29 @@ window.window_resize = function() {
     _orig_window_resize.apply(this, arguments);
     var c = document.getElementById('canvas');
     if (!c) return;
+    var dpr = window.devicePixelRatio || 1;
     var sw = window.innerWidth;
     var sh = window.innerHeight;
-    var isMobile = sw < 768;
-    var isPortrait = sh > sw;
-    var cw, ch, tx, ty, rot;
-
-    if (isMobile && isPortrait) {
-        // Rotate 90deg and scale to fill portrait screen
-        var scale = Math.min(sh / 800, sw / 600);
-        cw = Math.round(800 * scale);
-        ch = Math.round(600 * scale);
-        tx = Math.round((sw - ch) / 2 + ch / 2);
-        ty = Math.round((sh - cw) / 2 + cw / 2);
-        c.style.cssText = [
-            'position:fixed',
-            'left:0', 'top:0',
-            'width:' + cw + 'px',
-            'height:' + ch + 'px',
-            'margin:0',
-            'transform-origin:0 0',
-            'transform:translate(' + tx + 'px,' + ty + 'px) rotate(90deg) translate(-50%,-50%)',
-            'z-index:5', 'border:0',
-            'image-rendering:pixelated'
-        ].join(';');
-    } else {
-        // Desktop / landscape: center with letterbox
-        var scale = Math.min(sw / 800, sh / 600);
-        cw = Math.round(800 * scale);
-        ch = Math.round(600 * scale);
-        c.style.cssText = [
-            'position:fixed',
-            'left:' + Math.round((sw - cw) / 2) + 'px',
-            'top:' + Math.round((sh - ch) / 2) + 'px',
-            'width:' + cw + 'px',
-            'height:' + ch + 'px',
-            'margin:0',
-            'transform:none',
-            'z-index:5', 'border:0',
-            'image-rendering:pixelated'
-        ].join(';');
-    }
+    var scale = Math.min(sw / 800, sh / 600);
+    var cw = Math.round(800 * scale);
+    var ch = Math.round(600 * scale);
+    c.width  = Math.round(800 * scale * dpr);
+    c.height = Math.round(600 * scale * dpr);
+    c.style.cssText = [
+        'position:fixed',
+        'left:' + Math.round((sw - cw) / 2) + 'px',
+        'top:' + Math.round((sh - ch) / 2) + 'px',
+        'width:' + cw + 'px',
+        'height:' + ch + 'px',
+        'margin:0',
+        'transform:none',
+        'z-index:5',
+        'border:0',
+        'image-rendering:pixelated',
+        'image-rendering:crisp-edges'
+    ].join(';');
 };
 window.addEventListener('resize', window.window_resize);
-window.addEventListener('orientationchange', function() {
-    setTimeout(window.window_resize, 300);
-});
 setTimeout(window.window_resize, 500);
 setTimeout(window.window_resize, 1500);
 setTimeout(window.window_resize, 3000);
