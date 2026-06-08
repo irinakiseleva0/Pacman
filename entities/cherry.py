@@ -8,6 +8,7 @@ from core import colors
 from assets.assets import Assets
 from entities.cell import Actor, Cell
 from utils.animated_sprite import Sprite
+from utils.pickup_feedback import CHERRY_COLOR, PICKUP_FEEDBACK
 from utils.visual_effects import with_alpha
 
 
@@ -44,6 +45,7 @@ class Cherry(Cell):
             self.ctx.run_stats.cherry_bonus_score += market_window_bonus
 
         self.ctx.particles.create_cherry_eat_effect(self.x, self.y, palette["cherry"])
+        PICKUP_FEEDBACK.spawn_tile(self.ctx, self.x, self.y, score_value, CHERRY_COLOR, particle_count=10)
         self.ctx.floating_text.add_score_text(
             score_value, self.x, self.y
         )

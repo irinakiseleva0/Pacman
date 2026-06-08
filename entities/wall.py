@@ -17,9 +17,9 @@ def _draw_rect(x: float, y: float, width: float, height: float, color) -> None:
     surface = pyray.get_drawing_surface()
     rect = pygame.Rect(int(x), int(y), int(width), int(height))
     if len(color) >= 4 and color[3] < 255:
-        layer = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-        pygame.draw.rect(layer, color, rect)
-        surface.blit(layer, (0, 0))
+        layer = pygame.Surface((max(1, rect.width), max(1, rect.height)), pygame.SRCALPHA)
+        pygame.draw.rect(layer, color, layer.get_rect())
+        surface.blit(layer, rect.topleft)
         return
     pygame.draw.rect(surface, color, rect)
 
@@ -29,9 +29,15 @@ def _draw_line(x1: float, y1: float, x2: float, y2: float, color, width: int) ->
     start = (int(x1), int(y1))
     end = (int(x2), int(y2))
     if len(color) >= 4 and color[3] < 255:
-        layer = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-        pygame.draw.line(layer, color, start, end, max(1, int(width)))
-        surface.blit(layer, (0, 0))
+        line_width = max(1, int(width))
+        pad = line_width + 1
+        left = min(start[0], end[0]) - pad
+        top = min(start[1], end[1]) - pad
+        right = max(start[0], end[0]) + pad
+        bottom = max(start[1], end[1]) + pad
+        layer = pygame.Surface((max(1, right - left), max(1, bottom - top)), pygame.SRCALPHA)
+        pygame.draw.line(layer, color, (start[0] - left, start[1] - top), (end[0] - left, end[1] - top), line_width)
+        surface.blit(layer, (left, top))
         return
     pygame.draw.line(surface, color, start, end, max(1, int(width)))
 
@@ -54,6 +60,7 @@ class Wall(Cell):
     @classmethod
     def _sprite(cls) -> Sprite:
         if cls._shared_sprite is None:
+            # Assets.texture routes sprites/walls paths through sprites/walls_atlas.* when present.
             cls._shared_sprite = Sprite({
                 cls.BASE_KEY: [Assets.texture(cls.BASE_PATH)]
             })

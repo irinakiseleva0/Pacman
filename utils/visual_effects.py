@@ -6,6 +6,8 @@ from typing import List
 import random
 import math
 
+from utils.effect_budget import EFFECT_BUDGET
+
 
 def with_alpha(color, alpha: int):
     alpha = max(0, min(255, int(alpha)))
@@ -61,6 +63,8 @@ class ParticleSystem:
         self.particles: List[Particle] = []
 
     def add_particle(self, particle: Particle) -> None:
+        if not EFFECT_BUDGET.particles:
+            return
         self.particles.append(particle)
 
     def create_dot_eat_effect(self, x: int, y: int, color=colors.YELLOW) -> None:
@@ -201,6 +205,8 @@ class ParticleSystem:
 
     def draw(self, offset_x: float = 0, offset_y: float = 0, scale: float = 1.0) -> None:
         """Draw all particles."""
+        if not EFFECT_BUDGET.particles:
+            return
         for particle in self.particles:
             particle.draw_with_offset(offset_x, offset_y, scale)
 
@@ -409,6 +415,8 @@ class LightBurstSystem:
         self.bursts: List[LightBurst] = []
 
     def add_burst(self, x: float, y: float, radius: float, color, intensity: float = 1.0, lifetime: float = 0.22) -> None:
+        if not EFFECT_BUDGET.particles:
+            return
         self.bursts.append(LightBurst(x, y, radius, color, intensity, lifetime))
 
     def add_grid_burst(self, x: int, y: int, color, radius: float = 18.0, intensity: float = 1.0, lifetime: float = 0.22) -> None:
@@ -418,5 +426,7 @@ class LightBurstSystem:
         self.bursts = [burst for burst in self.bursts if burst.update(dt)]
 
     def draw(self, offset_x: float = 0, offset_y: float = 0, scale: float = 1.0) -> None:
+        if not EFFECT_BUDGET.particles:
+            return
         for burst in self.bursts:
             burst.draw_with_offset(offset_x, offset_y, scale)

@@ -1,8 +1,13 @@
 # /// script
 from __future__ import annotations
 
+from utils.logger import setup_logging
+
+setup_logging()
+
 import asyncio
 import math
+import os
 import random
 
 import pygame
@@ -13,11 +18,13 @@ import ui.ui as ui_theme
 from assets.assets import Assets
 from core.context import GameContext
 from core.scene_ids import EXIT_SCENE, MENU_SCENE
+from core.scene_transition import TRANSITION
 from scenes.registry import SCENE_MUSIC, build_scene_table
 from ui.layout import DEFAULT_LAYOUT
 from ui.notifications import NotificationManager
 from utils.audio import AudioManager
-from utils.effects import glitch_effect, set_camera, update_camera_shake, update_glitch
+from utils.effect_budget import EFFECT_BUDGET, EffectLevel
+from utils.effects import BLOOM_CACHE, glitch_effect, set_camera, update_camera_shake, update_glitch
 from utils.replay import ReplayRecorder
 
 
@@ -45,6 +52,8 @@ class Game:
         self.glitch_shader = None
         self.bloom_shader = None
         self.scanlines_shader = None
+        self._frame_count = 0
+        self._last_actual_fps = 60.0
 
     @property
     def current_scene(self):
@@ -65,7 +74,10 @@ class Game:
             while not pyray.window_should_close():
                 if not self._tick():
                     break
-                await asyncio.sleep(0)
+                self._frame_count += 1
+                yield_interval = 4 if self._last_actual_fps >= 50 else 2
+                if self._frame_count % yield_interval == 0:
+                    await asyncio.sleep(0)
         finally:
             self._shutdown()
 
@@ -73,8 +85,10 @@ class Game:
         cfg = self.ctx.cfg
 
         pyray.init_window(cfg.window_width, cfg.window_height, "Pacman")
-        pygame.display.set_mode(
-            (cfg.window_width, cfg.window_height), pygame.RESIZABLE)
+        real_w = int(os.environ.get("PYGBAG_WIDTH", 800))
+        real_h = int(os.environ.get("PYGBAG_HEIGHT", 600))
+        pygame.display.set_mode((real_w, real_h), pygame.RESIZABLE)
+        pyray.update_scale(real_w, real_h)
         pyray.set_target_fps(cfg.fps)
         self.ctx.camera = pyray.create_camera_2d()
         set_camera(self.ctx.camera)
@@ -86,6 +100,7 @@ class Game:
         self.bloom_shader = self._load_bloom_shader()
         self.scanlines_shader = self._load_scanlines_shader()
         self._build_post_effect_surfaces()
+        Assets.load_entity_atlas()
         self.audio.initialize()
         from utils.font_manager import FontManager
         FontManager.initialize()
@@ -96,21 +111,29 @@ class Game:
 
     def _tick(self) -> bool:
         cfg = self.ctx.cfg
+        for event in pygame.event.get(pygame.VIDEORESIZE):
+            pyray.update_scale(event.w, event.h)
+
         dt = pyray.get_frame_time()
         ui_theme.set_visual_theme(self.ctx.theme_name())
         if pyray.is_key_pressed(pyray.KEY_F10):
             self.ctx.set_capture_mode_enabled(
                 not self.ctx.capture_mode_enabled())
 
-        self.current_scene.update(dt)
+        if TRANSITION.is_busy:
+            TRANSITION.update(dt)
+        else:
+            self.current_scene.update(dt)
         self.audio.update(self.ctx)
         self.notifications.update(dt)
 
-        nxt = self.current_scene.consume_switch_request()
-        if nxt is not None:
-            if nxt == EXIT_SCENE:
-                return False
-            self.switch_scene(nxt)
+        if not TRANSITION.is_busy:
+            nxt = self.current_scene.consume_switch_request()
+            if nxt is not None:
+                if nxt == EXIT_SCENE:
+                    return False
+                self.switch_scene(nxt)
+                TRANSITION.update(dt)
 
         update_glitch(dt)
 
@@ -126,10 +149,16 @@ class Game:
         pyray.clear_background(pyray.BLACK)
         self._draw_final()
         self.notifications.draw(cfg.window_width, cfg.window_height)
+        TRANSITION.draw_overlay()
         pyray.end_drawing()
+        actual_fps = pyray.get_fps()
+        if actual_fps > 0:
+            self._last_actual_fps = actual_fps
+            EFFECT_BUDGET.tick(actual_fps)
         return True
 
     def _shutdown(self) -> None:
+        BLOOM_CACHE.unload_all()
         if self.scene_target is not None:
             pyray.unload_render_texture(self.scene_target)
         from utils.font_manager import FontManager
@@ -139,9 +168,15 @@ class Game:
         pyray.close_window()
 
     def switch_scene(self, index: int) -> None:
+        if index == self.current_scene_index:
+            return
+        TRANSITION.start(index, self._switch_scene_now)
+
+    def _switch_scene_now(self, index: int) -> None:
         if index not in self.scenes:
             raise IndexError(f"Scene index out of range: {index}")
         self.current_scene.exit_tree()
+        BLOOM_CACHE.unload_all()
         self.current_scene_index = index
         self.current_scene.enter_tree()
         self._sync_scene_audio()
@@ -174,15 +209,24 @@ class Game:
 
         screen = pyray.get_drawing_surface()
         scene = self.scene_target.surface
+        if EFFECT_BUDGET.level <= EffectLevel.NONE:
+            screen.blit(scene, (0, 0))
+            return
+
         if glitch_effect.is_active():
             self._draw_glitch_surface(screen, scene)
         else:
             screen.blit(scene, (0, 0))
-        self._apply_bloom(screen, scene)
-        if self.scanline_overlay is not None:
+        if EFFECT_BUDGET.bloom:
+            self._apply_bloom(screen, scene)
+        if EFFECT_BUDGET.scanlines and self.scanline_overlay is not None:
             screen.blit(self.scanline_overlay, (0, 0))
         if self.vignette_overlay is not None:
             screen.blit(self.vignette_overlay, (0, 0))
+
+    def _update_effect_budget(self, dt: float) -> None:
+        if dt > 0:
+            EFFECT_BUDGET.tick(1.0 / dt)
 
     def _load_glitch_shader(self):
         return None
@@ -195,10 +239,18 @@ class Game:
 
     def _apply_bloom(self, screen: pygame.Surface, scene: pygame.Surface) -> None:
         width, height = scene.get_size()
-        small_size = (max(1, width // 3), max(1, height // 3))
-        bloom = pygame.transform.smoothscale(scene, small_size)
-        bloom = pygame.transform.smoothscale(bloom, (width, height))
-        bloom.set_alpha(int(255 * BLOOM_INTENSITY))
+        source_size = (width, height)
+        small_size = (max(1, width // 4), max(1, height // 4))
+        bloom_alpha = int(255 * BLOOM_INTENSITY)
+        key = (width, height, 0, 0, 0, bloom_alpha)
+
+        def create_bloom() -> pygame.Surface:
+            small = pygame.transform.scale(scene, small_size)
+            bloom = pygame.transform.scale(small, source_size)
+            bloom.set_alpha(bloom_alpha)
+            return bloom
+
+        bloom = BLOOM_CACHE.get_or_create(key, create_bloom)
         screen.blit(bloom, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
 
     def _draw_glitch_surface(self, screen: pygame.Surface, scene: pygame.Surface) -> None:

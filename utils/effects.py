@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 import random
 
 
@@ -8,6 +10,52 @@ import random
 class Vec2:
     x: float
     y: float
+
+
+class BloomCache:
+    def __init__(self) -> None:
+        self._cache: dict[tuple, Any] = {}
+
+    def get_or_create(self, key: tuple, factory_fn: Callable[[], Any]) -> Any:
+        if key not in self._cache:
+            self._cache[key] = factory_fn()
+        return self._cache[key]
+
+    def invalidate(self, key: tuple | None = None) -> None:
+        if key is None:
+            self.unload_all()
+            return
+        item = self._cache.pop(key, None)
+        self._unload_item(item)
+
+    def unload_all(self) -> None:
+        for item in self._cache.values():
+            self._unload_item(item)
+        self._cache.clear()
+
+    def _unload_item(self, item: Any) -> None:
+        if item is None:
+            return
+        if isinstance(item, dict):
+            for value in item.values():
+                self._unload_item(value)
+            return
+        if isinstance(item, (list, tuple, set)):
+            for value in item:
+                self._unload_item(value)
+            return
+        unload = getattr(item, "unload", None)
+        if callable(unload):
+            unload()
+            return
+        try:
+            import core.raylib_api as pyray
+        except Exception:
+            return
+        if hasattr(item, "surface"):
+            pyray.unload_render_texture(item)
+        else:
+            pyray.unload_texture(item)
 
 
 def _with_alpha(color, alpha: float):
@@ -137,6 +185,7 @@ class GlitchEffect:
 
 camera_shake = CameraShake()
 glitch_effect = GlitchEffect()
+BLOOM_CACHE = BloomCache()
 
 
 def set_camera(camera) -> None:

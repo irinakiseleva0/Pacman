@@ -14,6 +14,7 @@ from ui.hud import update_floating_texts
 from ui.mobile_controls import handle_mobile_controls
 from ui.ui import button_clicked
 from utils.effects import trigger_glitch
+from utils.pickup_feedback import PICKUP_FEEDBACK
 
 if TYPE_CHECKING:
     from scenes.game_scene import GameScene
@@ -47,6 +48,7 @@ def enter_tree(scene: "GameScene") -> None:
     visual.action_hitstop = 0.0
     visual.action_slowdown = 0.0
     visual.action_slow_scale = 1.0
+    PICKUP_FEEDBACK.clear()
 
     if run.should_resume_game and runtime.game_map is not None:
         run.should_resume_game = False
@@ -233,6 +235,7 @@ def _effects_update_system(scene: "GameScene") -> None:
     frame_dt = pyray.get_frame_time()
     visual.particles.update(frame_dt)
     visual.light_bursts.update(frame_dt)
+    PICKUP_FEEDBACK.update(frame_dt)
     visual.screen_shake.update(frame_dt)
     visual.floating_text.update(frame_dt)
     visual.screen_flash.update(frame_dt)
@@ -289,6 +292,7 @@ def start_death_transition(scene: "GameScene") -> None:
     run = scene.ctx.run
     scene.failure_reason = ""
     scene.ctx.play_sfx("death")
+    PICKUP_FEEDBACK.clear()
     trigger_glitch(1.5)
     scene.ctx.play_transition_effect(scene.ctx.effect_palette()["death_flash"], 0.3, 0.2, 8.0, 0.5)
 
@@ -327,6 +331,7 @@ def finish_transition(scene: "GameScene") -> None:
         return
 
     if scene.transition.kind == "death":
+        PICKUP_FEEDBACK.clear()
         map_path = scene.ctx.get_map_path()
         scene.ctx.reset_ghost_mode_cycle()
         scene.ctx.runtime.game_map = Map(scene.ctx, path=map_path)
@@ -346,6 +351,7 @@ def start_level_complete_transition(scene: "GameScene") -> None:
     run = scene.ctx.run
     runtime = scene.ctx.runtime
     visual = scene.ctx.visual
+    PICKUP_FEEDBACK.clear()
     transition_result = "level_complete"
     if run.game_mode == "Challenge":
         transition_result = scene.ctx.challenge_result_on_clear()

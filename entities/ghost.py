@@ -6,6 +6,7 @@ import core.raylib_api as pyray
 from core import colors
 from typing import Tuple
 
+from assets.assets import Assets
 from entities.cell import Actor
 from ui.ui import LIVE_CYAN, LIVE_PINK
 from utils.effects import shake_camera
@@ -29,6 +30,15 @@ class Ghost(Actor):
         self.release_delay_ticks = 0
         self.returning_home = False
         self.slow_skip_tick = False
+        self._path: list[tuple[int, int]] = []
+        self._last_tile: tuple[int, int] = (-1, -1)
+        self._target_tile: tuple[int, int] = (-1, -1)
+        self._path_options: dict[tuple[int, int], int] = {}
+        self._path_cache_depth: int | None = None
+        self._intent_icon: str = ""
+        self._icon_timer: float = 0.0
+        self._blink_timer: float = 0.0
+        self._blink_alpha: int = 255
 
     def personality_score_adjustment(self, dx: int, dy: int, new_x: int, new_y: int, pacman) -> float:
         return 0.0
@@ -184,9 +194,92 @@ class Ghost(Actor):
         pyray.draw_circle(left_eye_x + pupil_dx, eye_y + pupil_dy, pupil_radius, colors.BLACK)
         pyray.draw_circle(right_eye_x + pupil_dx, eye_y + pupil_dy, pupil_radius, colors.BLACK)
 
+    def _atlas_direction(self) -> str:
+        if self.last_dx < 0:
+            return "left"
+        if self.last_dx > 0:
+            return "right"
+        if self.last_dy < 0:
+            return "up"
+        if self.last_dy > 0:
+            return "down"
+        return "down"
+
+    def _atlas_name(self) -> str:
+        class_name = type(self).__name__
+        if class_name == "Blinky":
+            return "red"
+        if class_name == "Pinky":
+            return "magenta"
+        if class_name == "Inky":
+            return "cyan"
+        if class_name == "Clyde":
+            return "orange"
+        if self.color == colors.MAGENTA:
+            return "magenta"
+        if self.color == colors.SKYBLUE:
+            return "cyan"
+        if self.color == colors.ORANGE:
+            return "orange"
+        return "red"
+
+    def _atlas_key(self, time_s: float) -> str:
+        frame = int(time_s * 8.0 + self.x + self.y) % 2
+        direction = self._atlas_direction()
+        if self.mode == "frightened" or self.respawn_lock_ticks > 0 or self.release_delay_ticks > 0:
+            return f"ghost_weak_{direction}_{frame}"
+        return f"ghost_{self._atlas_name()}_{direction}_{frame}"
+
+    def _draw_atlas_sprite(self, base_x: float, base_y: float, scale: float, time_s: float) -> bool:
+        spritesheet = Assets.entity_spritesheet()
+        if spritesheet is None:
+            return False
+        index = Assets.entity_sprite_index(self._atlas_key(time_s))
+        if index is None:
+            return False
+        spritesheet.draw(index, base_x, base_y, scale=scale, tint=with_alpha(colors.WHITE, self._blink_alpha))
+        return True
+
+    def _on_state_changed(self, new_state: str) -> None:
+        self._blink_timer = 0.0
+        if new_state == "chase":
+            self._intent_icon = "!"
+            self._icon_timer = 0.8
+        elif new_state == "scatter":
+            self._intent_icon = "?"
+            self._icon_timer = 0.6
+        else:
+            self._intent_icon = ""
+            self._icon_timer = 0.0
+
+    def _tick_visual_intent(self, dt: float) -> None:
+        if self._icon_timer > 0:
+            self._icon_timer = max(0.0, self._icon_timer - dt)
+            if self._icon_timer <= 0:
+                self._intent_icon = ""
+
+        if self.mode == "frightened" and not self.returning_home:
+            self._blink_timer += dt
+            rage_timer = getattr(self.ctx.pacman, "rage_timer", self.FRIGHTENED_BLINK_TICKS)
+            blink_rate = 8.0 if rage_timer <= self.FRIGHTENED_BLINK_TICKS else 3.0
+            self._blink_alpha = 255 if int(self._blink_timer * blink_rate) % 2 == 0 else 140
+        else:
+            self._blink_alpha = 255
+
+    def _draw_intent_icon(self, base_x: float, base_y: float, tile: int) -> None:
+        if not self._intent_icon:
+            return
+        icon_x = int(base_x + tile // 2 - 4)
+        icon_y = int(base_y - 14)
+        pyray.draw_rectangle(icon_x - 3, icon_y - 2, 14, 14, (10, 10, 30, 200))
+        color = (220, 50, 220, 255) if self._intent_icon == "!" else (0, 220, 200, 255)
+        pyray.draw_text(self._intent_icon, icon_x, icon_y, 12, color)
+
     def draw(self) -> None:
         cfg = self.ctx.cfg
         tile = cfg.tile_size
+        base_x = cfg.board_offset_x + self.x * tile
+        base_y = cfg.board_offset_y + self.y * tile
         px = cfg.board_offset_x + self.x * tile + tile // 2
         py = cfg.board_offset_y + self.y * tile + tile // 2
         base_color = self._get_draw_color()
@@ -194,6 +287,10 @@ class Ghost(Actor):
 
         if self.returning_home:
             self._draw_returning_home(px, py, tile)
+            return
+
+        if self._draw_atlas_sprite(base_x, base_y, tile / 16, time_s):
+            self._draw_intent_icon(base_x, base_y, tile)
             return
 
         pulse = 0.5 + 0.5 * math.sin(time_s * 5.0 + self.x + self.y)
@@ -246,7 +343,7 @@ class Ghost(Actor):
         pyray.draw_circle(px, py, glow_radius + 22, with_alpha(accent_glow, outer_alpha))
         pyray.draw_circle(px, py, glow_radius + 14, with_alpha(base_color, mid_alpha))
         pyray.draw_circle(px, py, glow_radius + 7, with_alpha(base_color, inner_alpha))
-        pyray.draw_circle(px, py, body_radius, with_alpha(base_color, 228))
+        pyray.draw_circle(px, py, body_radius, with_alpha(base_color, int(228 * self._blink_alpha / 255)))
         if not frightened and not respawning:
             self._draw_intent_cue(px, py, tile, body_radius, time_s)
         if frightened:
@@ -288,8 +385,9 @@ class Ghost(Actor):
 
         pyray.draw_rectangle_rec(
             pyray.Rectangle(px - body_radius + 3, py + body_radius - 4, max(4, body_radius * 2 - 6), 2),
-            with_alpha(base_color, 124),
+            with_alpha(base_color, int(124 * self._blink_alpha / 255)),
         )
+        self._draw_intent_icon(base_x, base_y, tile)
 
     def update_target(self) -> None:
         """Override in subclasses for different AI behaviors"""
@@ -301,13 +399,16 @@ class Ghost(Actor):
     def on_eaten(self) -> None:
         shake_camera(4, 0.15)
         self.returning_home = True
+        self._on_state_changed("home")
         self.respawn_lock_ticks = 0
         self.release_delay_ticks = 0
         self.last_dx = 0
         self.last_dy = 0
+        self._invalidate_path_cache()
 
     def set_release_delay(self, ticks: int) -> None:
         self.release_delay_ticks = max(0, ticks)
+        self._invalidate_path_cache()
 
     def stall_release(self, ticks: int) -> None:
         if self.release_delay_ticks > 0:
@@ -318,11 +419,33 @@ class Ghost(Actor):
 
     def _update_mode(self) -> None:
         pacman = self.ctx.pacman
+        previous_mode = self.mode
         if getattr(pacman, "rage", False):
             self.mode = "frightened"
-            return
+        else:
+            self.mode = self.ctx.ghost_mode
+        if self.mode != previous_mode:
+            self._invalidate_path_cache()
+            self._on_state_changed(self.mode)
 
-        self.mode = self.ctx.ghost_mode
+    def _get_current_tile(self) -> tuple[int, int]:
+        return int(self.x), int(self.y)
+
+    def _should_recalculate(self, new_target: tuple[int, int], max_depth: int | None = None) -> bool:
+        current_tile = self._get_current_tile()
+        return (
+            current_tile != self._last_tile
+            or new_target != self._target_tile
+            or max_depth != self._path_cache_depth
+            or len(self._path) == 0
+        )
+
+    def _invalidate_path_cache(self) -> None:
+        self._path = []
+        self._last_tile = (-1, -1)
+        self._target_tile = (-1, -1)
+        self._path_options = {}
+        self._path_cache_depth = None
 
     def _is_reverse_direction(self, dx: int, dy: int) -> bool:
         if self.returning_home:
@@ -433,6 +556,23 @@ class Ghost(Actor):
 
         return options
 
+    def _cached_shortest_path_options(
+        self,
+        game_map,
+        target_x: int,
+        target_y: int,
+        *,
+        max_depth: int | None = None,
+    ) -> dict[tuple[int, int], int]:
+        new_target = (int(target_x), int(target_y))
+        if self._should_recalculate(new_target, max_depth):
+            self._last_tile = self._get_current_tile()
+            self._target_tile = new_target
+            self._path_cache_depth = max_depth
+            self._path_options = self._shortest_path_options(game_map, target_x, target_y, max_depth=max_depth)
+            self._path = list(self._path_options.keys())
+        return self._path_options
+
     def _future_path_score(self, game_map, new_x: int, new_y: int, *, max_depth: int = 10) -> int:
         best = None
         for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
@@ -462,7 +602,7 @@ class Ghost(Actor):
         reverse_move = (0, 0)
         reverse_score = float('inf')
         pacman = self.ctx.pacman
-        shortest_paths = self._shortest_path_options(game_map, self.target_x, self.target_y)
+        shortest_paths = self._cached_shortest_path_options(game_map, self.target_x, self.target_y)
         frightened_paths = None
         if self.mode == "frightened" and pacman is not None:
             frightened_paths = self._shortest_path_options(game_map, pacman.x, pacman.y, max_depth=14)
@@ -504,6 +644,7 @@ class Ghost(Actor):
         return reverse_move
 
     def process(self) -> None:
+        self._tick_visual_intent(pyray.get_frame_time())
         game_map = self.ctx.game_map
         pacman = self.ctx.pacman
 
@@ -529,9 +670,13 @@ class Ghost(Actor):
             self.slow_skip_tick = False
 
         if self.returning_home:
+            previous_mode = self.mode
             self.mode = "home"
             self.target_x = self.spawn_x
             self.target_y = self.spawn_y
+            if self.mode != previous_mode:
+                self._invalidate_path_cache()
+                self._on_state_changed(self.mode)
         else:
             self._update_mode()
 
@@ -549,6 +694,7 @@ class Ghost(Actor):
         if result.moved:
             self.last_dx = dx
             self.last_dy = dy
+            self._path = self._path[1:] if self._path else []
             if dx != 0 or dy != 0:
                 trail_color = colors.WHITE if self.returning_home else self._get_draw_color()
                 intensity = 0.5 + self.ctx.run.pressure_stage * 0.12
@@ -564,6 +710,7 @@ class Ghost(Actor):
                 self.respawn_lock_ticks = self.EATEN_RESPAWN_TICKS
                 self.last_dx = 0
                 self.last_dy = 0
+                self._invalidate_path_cache()
 
 
 class Blinky(Ghost):

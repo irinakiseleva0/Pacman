@@ -62,7 +62,7 @@ class Sprite:
             return frame
         if hasattr(frame, "surface") and isinstance(frame.surface, pygame.Surface):
             return frame.surface
-        raise TypeError(f"Unsupported sprite frame: {frame!r}")
+        return pygame.Surface((1, 1), pygame.SRCALPHA)
 
     def has_animation(self, key: str) -> bool:
         return key in self.texture_dictionary and len(self.texture_dictionary[key]) > 0

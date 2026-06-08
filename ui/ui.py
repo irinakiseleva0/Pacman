@@ -3,10 +3,13 @@ from __future__ import annotations
 import math
 
 import core.raylib_api as pyray
+import pygame
 from core import colors
 
 from ui import pygame_primitives as pgui
 from ui.style import UI_STYLE
+from utils.effect_budget import EFFECT_BUDGET
+from utils.effects import BLOOM_CACHE
 from utils.visual_effects import with_alpha
 
 
@@ -224,6 +227,8 @@ def _rare_flicker(time_s: float, seed: float = 0.0, *, threshold: float = 0.985)
 
 
 def _draw_scanline_overlay(rect, *, alpha: int = 10, spacing: int = 6, time_s: float = 0.0) -> None:
+    if not EFFECT_BUDGET.scanlines:
+        return
     if rect.width <= 0 or rect.height <= 0:
         return
     offset = int((time_s * 22.0) % max(1, spacing))
@@ -238,6 +243,8 @@ def _draw_scanline_overlay(rect, *, alpha: int = 10, spacing: int = 6, time_s: f
 
 
 def _draw_grid_overlay(rect, *, alpha: int = 8, cell: int = 28) -> None:
+    if not EFFECT_BUDGET.animated_grid:
+        return
     if rect.width <= 0 or rect.height <= 0:
         return
     x = int(rect.x + cell)
@@ -637,20 +644,53 @@ def draw_dashboard_rail(center_x: int, y: int, width: int, *, label: str | None 
 
 
 def _draw_soft_rect_glow(rect, color, *, spread: int = 16, alpha: int = 18, layers: int = 3) -> None:
-    for index in range(layers, 0, -1):
-        pad = spread * 1.35 * index / layers
-        layer_alpha = max(1, int(alpha * 1.45 * index / (layers + 1)))
-        pgui.draw_rect(
-            pyray.Rectangle(rect.x - pad, rect.y - pad, rect.width + pad * 2, rect.height + pad * 2),
-            with_alpha(color, layer_alpha),
-        )
+    width = max(1, int(rect.width))
+    height = max(1, int(rect.height))
+    spread = max(0, int(spread))
+    alpha = max(0, int(alpha))
+    layers = max(1, int(layers))
+    pad_max = max(1, int(math.ceil(spread * 1.35)))
+    r, g, b, _ = pgui.color_rgba(color)
+    key = ("rect", width, height, r, g, b, alpha, spread, layers)
+
+    def create_glow() -> pygame.Surface:
+        surface = pygame.Surface((width + pad_max * 2, height + pad_max * 2), pygame.SRCALPHA)
+        for index in range(layers, 0, -1):
+            pad = spread * 1.35 * index / layers
+            layer_alpha = max(1, int(alpha * 1.45 * index / (layers + 1)))
+            draw_rect = pygame.Rect(
+                int(pad_max - pad),
+                int(pad_max - pad),
+                max(1, int(width + pad * 2)),
+                max(1, int(height + pad * 2)),
+            )
+            pygame.draw.rect(surface, (r, g, b, layer_alpha), draw_rect)
+        return surface
+
+    glow = BLOOM_CACHE.get_or_create(key, create_glow)
+    pyray.get_drawing_surface().blit(glow, (int(rect.x) - pad_max, int(rect.y) - pad_max))
 
 
 def _draw_soft_circle_glow(x: int, y: int, radius: float, color, *, alpha: int = 20, layers: int = 3) -> None:
-    for index in range(layers, 0, -1):
-        layer_radius = radius + index * 11
-        layer_alpha = max(1, int(alpha * 1.4 * index / (layers + 1)))
-        pyray.draw_circle(x, y, layer_radius, with_alpha(color, layer_alpha))
+    radius = max(0, int(radius))
+    alpha = max(0, int(alpha))
+    layers = max(1, int(layers))
+    pad_max = layers * 11 + 1
+    size = max(1, (radius + pad_max) * 2)
+    r, g, b, _ = pgui.color_rgba(color)
+    key = ("circle", radius, r, g, b, alpha, layers)
+
+    def create_glow() -> pygame.Surface:
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        center = size // 2
+        for index in range(layers, 0, -1):
+            layer_radius = radius + index * 11
+            layer_alpha = max(1, int(alpha * 1.4 * index / (layers + 1)))
+            pygame.draw.circle(surface, (r, g, b, layer_alpha), (center, center), layer_radius)
+        return surface
+
+    glow = BLOOM_CACHE.get_or_create(key, create_glow)
+    pyray.get_drawing_surface().blit(glow, (int(x) - size // 2, int(y) - size // 2))
 
 
 def _draw_deep_background_base(width: int, height: int, time_s: float, *, top_color, bottom_color) -> None:
@@ -718,6 +758,8 @@ def _draw_deep_background_base(width: int, height: int, time_s: float, *, top_co
 
 
 def _draw_background_motion_layer(width: int, height: int, time_s: float) -> None:
+    if not EFFECT_BUDGET.animated_grid:
+        return
     # Slow light streaks.
     for index in range(6):
         x = int(width * (0.08 + index * 0.14) + math.sin(time_s * (0.25 + index * 0.03) + index) * 16)
@@ -1150,7 +1192,8 @@ def draw_cinematic_menu_background(width: int, height: int, time_s: float = 0.0)
 
 def draw_live_game_background(width: int, height: int, time_s: float) -> None:
     _draw_deep_background_base(width, height, time_s, top_color=(8, 8, 18, 255), bottom_color=(2, 3, 10, 255))
-    _draw_background_motion_layer(width, height, time_s)
+    if EFFECT_BUDGET.animated_grid:
+        _draw_background_motion_layer(width, height, time_s)
     pyray.draw_rectangle_rec(
         pyray.Rectangle(0, int(height * 0.56), width, int(height * 0.44)),
         with_alpha(STREET_BLUE, 188),
@@ -1166,12 +1209,13 @@ def draw_live_game_background(width: int, height: int, time_s: float) -> None:
         pyray.draw_circle(cx, cy, radius, with_alpha(color, alpha))
     _draw_skyline_layers(width, height, time_s, live_mode=True)
 
-    for index in range(10):
-        y = int((index * 54 + time_s * 40) % (height + 40)) - 40
-        pyray.draw_rectangle_rec(
-            pyray.Rectangle(0, y, width, 2),
-            with_alpha(colors.WHITE, 8),
-        )
+    if EFFECT_BUDGET.animated_grid:
+        for index in range(10):
+            y = int((index * 54 + time_s * 40) % (height + 40)) - 40
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(0, y, width, 2),
+                with_alpha(colors.WHITE, 8),
+            )
 
     street_top = int(height * 0.68)
     pyray.draw_rectangle_rec(
@@ -1270,20 +1314,20 @@ def draw_live_board_backdrop(rect, time_s: float) -> None:
             with_alpha(colors.WHITE, 4),
         )
 
-    # Soft route-light pulses moving through the board stage.
-    for index in range(3):
-        ratio = (math.sin(time_s * (0.8 + index * 0.17) + index * 1.6) * 0.5 + 0.5)
-        lane_y = int(rect.y + rect.height * (0.22 + index * 0.24))
-        lane_x = int(rect.x + 20 + ratio * max(1, rect.width - 110))
-        lane_w = 84
-        pyray.draw_rectangle_rec(
-            pyray.Rectangle(lane_x, lane_y, lane_w, 3),
-            with_alpha(LIVE_CYAN if index % 2 == 0 else LIVE_PINK, 14 + int(pulse * 10)),
-        )
-        pyray.draw_rectangle_rec(
-            pyray.Rectangle(lane_x + 12, lane_y + 4, lane_w - 24, 1),
-            with_alpha(colors.WHITE, 8),
-        )
+    if EFFECT_BUDGET.animated_grid:
+        for index in range(3):
+            ratio = (math.sin(time_s * (0.8 + index * 0.17) + index * 1.6) * 0.5 + 0.5)
+            lane_y = int(rect.y + rect.height * (0.22 + index * 0.24))
+            lane_x = int(rect.x + 20 + ratio * max(1, rect.width - 110))
+            lane_w = 84
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(lane_x, lane_y, lane_w, 3),
+                with_alpha(LIVE_CYAN if index % 2 == 0 else LIVE_PINK, 14 + int(pulse * 10)),
+            )
+            pyray.draw_rectangle_rec(
+                pyray.Rectangle(lane_x + 12, lane_y + 4, lane_w - 24, 1),
+                with_alpha(colors.WHITE, 8),
+            )
 
     corner_radius = 20
     corners = (

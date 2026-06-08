@@ -17,6 +17,7 @@ from scenes.game_view_overlays import (
 )
 from ui.hud import draw_floating_texts
 from ui.ui import draw_presentation_bars
+from utils.pickup_feedback import PICKUP_FEEDBACK
 
 
 def draw_scene(game_scene) -> None:
@@ -40,6 +41,7 @@ def draw_scene(game_scene) -> None:
     visual.light_bursts.draw(cfg.board_offset_x + shake_x, cfg.board_offset_y + shake_y, effect_scale)
     visual.particles.draw(cfg.board_offset_x + shake_x, cfg.board_offset_y + shake_y, effect_scale)
     visual.floating_text.draw(cfg.board_offset_x + shake_x, cfg.board_offset_y + shake_y, effect_scale)
+    PICKUP_FEEDBACK.draw()
 
     if not game_scene.ctx.capture_mode_enabled():
         draw_hud(game_scene)

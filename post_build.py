@@ -3,9 +3,15 @@
 import re
 from pathlib import Path
 
+from utils.logger import get_logger, setup_logging
+
+
+setup_logging()
+log = get_logger(__name__)
+
 html_path = Path("build/web/index.html")
 if not html_path.exists():
-    print("ERROR: build/web/index.html not found. Run pygbag --build first.")
+    log.error("build/web/index.html not found. Run pygbag --build first.")
     exit(1)
 
 html = html_path.read_text(encoding="utf-8")
@@ -58,9 +64,16 @@ html = re.sub(
 )
 
 viewport_meta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
+resource_hints = '''    <link rel="preconnect" href="https://pygame-web.github.io" crossorigin>
+    <link rel="dns-prefetch" href="//pygame-web.github.io">
+    <link rel="preload" href="pacman-2023-main.tar.gz" as="fetch" crossorigin="anonymous">
+'''
 html = re.sub(r'\s*<meta name="viewport" content="width=device-width, initial-scale=1\.0,\s*maximum-scale=1\.0,\s*user-scalable=no">\s*',
               '\n', html, flags=re.DOTALL)
-html = html.replace("</head>", f"    {viewport_meta}\n</head>", 1)
+html = re.sub(r'\s*<link rel="preconnect" href="https://pygame-web\.github\.io" crossorigin>\s*', '\n', html)
+html = re.sub(r'\s*<link rel="dns-prefetch" href="//pygame-web\.github\.io">\s*', '\n', html)
+html = re.sub(r'\s*<link rel="preload" href="pacman-2023-main\.tar\.gz" as="fetch" crossorigin="anonymous">\s*', '\n', html)
+html = html.replace("</head>", f"    {viewport_meta}\n{resource_hints}</head>", 1)
 
 canvas_rendering_style = '''        canvas {
             image-rendering: pixelated;
@@ -71,7 +84,74 @@ canvas_rendering_style = '''        canvas {
 
 html = re.sub(r'\s*canvas\s*\{\s*image-rendering:\s*pixelated;\s*image-rendering:\s*crisp-edges;\s*\}\s*',
               '\n', html, flags=re.DOTALL)
-html = html.replace("</style>", f"{canvas_rendering_style}    </style>", 1)
+
+loader_style = '''        #transfer {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            background:
+                linear-gradient(rgba(0, 238, 255, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 238, 255, 0.08) 1px, transparent 1px),
+                #02030b;
+            background-size: 28px 28px;
+            color: #f7fbff;
+            z-index: 20;
+        }
+
+        #transfer::before {
+            content: "PACMAN";
+            color: #ffe66d;
+            font: bold 42px arial, sans-serif;
+            letter-spacing: 0;
+            text-shadow: 0 0 14px rgba(255, 230, 109, 0.55);
+        }
+
+        #status {
+            display: block;
+            margin: 0;
+            color: #7df9ff;
+            font: bold 16px arial, sans-serif;
+            text-transform: uppercase;
+        }
+
+        #progress {
+            width: min(72vw, 420px);
+            height: 18px;
+            border: 2px solid #1cf7ff;
+            border-radius: 0;
+            background: #080b18;
+            box-shadow: 0 0 18px rgba(28, 247, 255, 0.28);
+        }
+
+        #progress::-webkit-progress-bar {
+            background: #080b18;
+        }
+
+        #progress::-webkit-progress-value {
+            background: linear-gradient(90deg, #ffe66d, #ff4d8d);
+        }
+
+        #progress::-moz-progress-bar {
+            background: linear-gradient(90deg, #ffe66d, #ff4d8d);
+        }
+
+        #infobox {
+            background: #050817;
+            border: 2px solid #1cf7ff;
+            color: #ffe66d;
+            box-shadow: 0 0 24px rgba(28, 247, 255, 0.35);
+            text-transform: uppercase;
+        }
+
+'''
+
+html = re.sub(r'\s*#transfer\s*\{.*?\}\s*#transfer::before\s*\{.*?\}\s*#status\s*\{.*?\}\s*#progress\s*\{.*?\}\s*#progress::-webkit-progress-bar\s*\{.*?\}\s*#progress::-webkit-progress-value\s*\{.*?\}\s*#progress::-moz-progress-bar\s*\{.*?\}\s*#infobox\s*\{.*?\}\s*',
+              '\n', html, flags=re.DOTALL)
+html = html.replace("</style>", f"{canvas_rendering_style}{loader_style}    </style>", 1)
 
 resize_script = '''<script>
 var _orig_window_resize = window._orig_window_resize ||
@@ -114,4 +194,4 @@ html = re.sub(r'\s*<script>\s*var _orig_window_resize = .*?</script>\s*',
 html = html.replace("</body>", f"{resize_script}\n</body>", 1)
 
 html_path.write_text(html, encoding="utf-8")
-print("post_build.py: patched build/web/index.html successfully")
+log.info("patched build/web/index.html successfully")

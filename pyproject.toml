@@ -9,7 +9,8 @@ description = "A cyberpunk-styled Pac-Man reinterpretation built with Python and
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
-    "pygame>=2.6,<3.0",
+    "pygame>=2.5.0",
+    "pygbag>=0.9.0",
     "requests>=2.32,<3.0",
 ]
 
@@ -25,3 +26,18 @@ cyberpunk-pacman-check = "checks:main"
 
 [tool.setuptools.package-data]
 "data.config" = ["*.json"]
+
+[tool.pytest.ini_options]
+addopts = "-p no:cacheprovider"
+testpaths = ["tests"]
+norecursedirs = [
+    ".git",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "build",
+    "data/saves",
+    "data/replays",
+    "docs",
+    "web",
+]

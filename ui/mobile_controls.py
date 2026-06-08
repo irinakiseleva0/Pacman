@@ -9,26 +9,27 @@ from utils.visual_effects import with_alpha
 
 
 def _button_rects(cfg) -> dict[str, object]:
-    panel_x = cfg.hud_x
-    panel_y = cfg.hud_y
-    panel_w = cfg.hud_width
-    panel_h = cfg.hud_height
-
-    controls_w = min(220, max(180, panel_w // 2))
-    area_x = panel_x + panel_w - controls_w + 10
-    area_y = panel_y + 12
-    size = min(56, max(44, cfg.tile_size * 2))
-    gap = 12
-    center_x = area_x + controls_w // 2
-    mid_y = area_y + 58
+    screen_w = int(cfg.window_width)
+    screen_h = int(cfg.window_height)
+    safe_pad = max(16, int(cfg.tile_size * 0.75))
+    size = min(72, max(52, int(cfg.tile_size * 2.25)))
+    gap = max(10, int(size * 0.22))
+    cluster_w = size * 3 + gap * 2
+    cluster_h = size * 3 + gap * 2
+    area_x = safe_pad
+    area_y = max(safe_pad, screen_h - cluster_h - safe_pad)
+    center_x = area_x + cluster_w // 2
+    mid_y = area_y + cluster_h // 2
+    pause_w = max(72, int(size * 1.25))
+    pause_h = max(42, int(size * 0.72))
 
     return {
         "up": pyray.Rectangle(center_x - size // 2, mid_y - size - gap, size, size),
         "left": pyray.Rectangle(center_x - size - gap, mid_y, size, size),
         "right": pyray.Rectangle(center_x + gap, mid_y, size, size),
         "down": pyray.Rectangle(center_x - size // 2, mid_y + size + gap, size, size),
-        "pause": pyray.Rectangle(area_x + controls_w - 74, area_y, 62, 36),
-        "area": pyray.Rectangle(area_x, panel_y, controls_w, panel_h),
+        "pause": pyray.Rectangle(screen_w - pause_w - safe_pad, screen_h - pause_h - safe_pad, pause_w, pause_h),
+        "area": pyray.Rectangle(area_x - 8, area_y - 8, cluster_w + 16, cluster_h + 16),
     }
 
 

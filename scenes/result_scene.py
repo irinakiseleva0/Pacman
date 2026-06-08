@@ -12,6 +12,7 @@ from ui.navigation import ButtonNavigator
 from ui.style import UI_STYLE
 from ui.ui import LIVE_CYAN, LIVE_GOLD, LIVE_PINK, PANEL_ACCENT, TEXT_DIM, button_clicked, centered_rect, draw_arcade_background, draw_button, draw_cinematic_menu_background, draw_dashboard_rail, draw_glass_card, draw_panel, draw_presentation_bars, draw_scene_footer, draw_scene_scan_intro, draw_text_centered, draw_title_glitch_pass
 from utils.score_storage import save_high_score
+from utils.visual_effects import with_alpha
 
 
 class ResultScene(Scene):
@@ -26,6 +27,13 @@ class ResultScene(Scene):
         self.navigator = ButtonNavigator(1)
         self.panel = None
         self.intro_timer = 0.0
+        self._display_score = 0
+        self._target_score = 0
+        self._anim_progress = 0.0
+        self._anim_duration = 1.5
+        self._tick_sound_interval = 0.04
+        self._next_tick = 0.0
+        self._anim_done = False
 
     def enter_tree(self) -> None:
         # Save high score when entering result screen
@@ -33,6 +41,7 @@ class ResultScene(Scene):
         if self.ctx.last_result in {"game_won", "lose", "challenge_failed", "abandon"}:
             self.ctx.finalize_run_result(self.ctx.last_result)
         self.intro_timer = 1.0
+        self._reset_score_animation()
 
         cfg = self.ctx.cfg
         cx = cfg.window_width // 2
@@ -54,6 +63,7 @@ class ResultScene(Scene):
     def update(self, dt: float) -> None:
         self.ctx.visual_time += dt
         self.intro_timer = max(0.0, self.intro_timer - dt)
+        self._update_score_animation(dt)
         self.navigator.move_vertical()
 
         if button_clicked(self.btn_save_replay):
@@ -74,6 +84,34 @@ class ResultScene(Scene):
                 self._watch_replay()
             else:
                 self._activate_primary_action()
+
+    def _reset_score_animation(self) -> None:
+        self._target_score = max(0, int(self.ctx.score))
+        self._display_score = 0
+        self._anim_progress = 0.0
+        self._next_tick = 0.0
+        self._anim_done = self._target_score == 0
+
+    def _update_score_animation(self, dt: float) -> None:
+        if self._anim_done:
+            return
+
+        self._anim_progress += dt / self._anim_duration
+        if self._anim_progress >= 1.0 - 1e-9:
+            self._anim_progress = 1.0
+            self._anim_done = True
+
+        t = self._anim_progress
+        eased = 1.0 - (1.0 - t) ** 3
+        self._display_score = int(eased * self._target_score)
+        if self._anim_done:
+            self._display_score = self._target_score
+            return
+
+        self._next_tick -= dt
+        if self._next_tick <= 0:
+            self._next_tick = self._tick_sound_interval
+            self.ctx.play_sfx("score_tick")
 
     def _save_replay(self) -> None:
         recorder = self.ctx.replay_recorder
@@ -338,13 +376,26 @@ class ResultScene(Scene):
         draw_glass_card(score_card, accent_color=result_color, glow_alpha=10, time_s=self.ctx.visual_time)
         score_label = "CURRENT SCORE" if self.ctx.last_result == "level_complete" else "FINAL SCORE"
         draw_text_centered(score_label, center_x, int(score_card.y + 16), 15, TEXT_DIM)
-        draw_text_centered(str(self.ctx.score), center_x, int(score_card.y + 40), 54 if compact else 64, colors.WHITE)
+        score_text = str(self._display_score)
+        score_font = 54 if compact else 64
+        score_text_y = int(score_card.y + 40)
+        if self._anim_done:
+            pulse = 0.5 + 0.5 * math.sin(self.ctx.visual_time * 8.0)
+            glow_alpha = int(52 + pulse * 48)
+            for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2)):
+                draw_text_centered(score_text, center_x + dx, score_text_y + dy, score_font, with_alpha(result_color, glow_alpha))
+            pyray.draw_rectangle_lines_ex(
+                pyray.Rectangle(score_card.x + 34, score_card.y + 32, score_card.width - 68, 76 if compact else 86),
+                1,
+                with_alpha(result_color, int(76 + pulse * 48)),
+            )
+        draw_text_centered(score_text, center_x, score_text_y, score_font, colors.WHITE)
         draw_text_centered(f"HIGH SCORE {self.ctx.high_score}", center_x, int(score_card.y + score_card.height - 34), 16, LIVE_GOLD)
         draw_text_centered(f"SEED {self.ctx.current_level_seed():06d}", center_x, int(score_card.y + score_card.height - 56), 14, LIVE_CYAN)
         score_target = max(1, self.ctx.high_score, self.ctx.score)
         ProgressBar(
             pyray.Rectangle(score_card.x + 42, score_card.y + score_card.height - 18, score_card.width - 84, 10),
-            self.ctx.score / score_target,
+            self._display_score / score_target,
             result_color,
         ).draw()
 

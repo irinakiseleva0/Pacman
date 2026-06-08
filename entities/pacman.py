@@ -63,6 +63,17 @@ class Pacman(Actor):
 
     @staticmethod
     def _load_images():
+        if Assets.entity_spritesheet() is not None:
+            blank = pygame.Surface((1, 1), pygame.SRCALPHA)
+            return {
+                "UP": [blank, blank],
+                "DOWN": [blank, blank],
+                "LEFT": [blank, blank],
+                "RIGHT": [blank, blank],
+                "DEATH": [blank for _ in range(10)],
+                "NONE": [],
+            }
+
         base = "sprites/pacman/"
         paths = {
             "UP": [f"{base}pacman_pos_1_up.png", f"{base}pacman_pos_2_up.png"],
@@ -73,6 +84,29 @@ class Pacman(Actor):
             "NONE": [],
         }
         return {key: [Assets.texture(path) for path in value] for key, value in paths.items()}
+
+    def _atlas_key(self) -> str | None:
+        frame = self.pacman_sprite.frame_index
+        if self.state == State.DEAD:
+            return f"pacman_death_{frame}"
+        if self.state == State.RIGHT:
+            return f"pacman_right_{frame % 2}"
+        if self.state == State.LEFT:
+            return f"pacman_left_{frame % 2}"
+        if self.state == State.UP:
+            return f"pacman_up_{frame % 2}"
+        if self.state == State.DOWN:
+            return f"pacman_down_{frame % 2}"
+        return None
+
+    def _draw_sprite(self, x: float, y: float, scale: float) -> None:
+        key = self._atlas_key()
+        spritesheet = Assets.entity_spritesheet()
+        index = Assets.entity_sprite_index(key) if key is not None else None
+        if spritesheet is not None and index is not None:
+            spritesheet.draw(index, x, y, scale=scale)
+            return
+        self.pacman_sprite.draw((x, y), scale=scale)
 
     def enable_rage(self, ticks: int, *, keep_combo: bool = False) -> None:
         if self.state in (State.DEAD, State.NONE):
@@ -172,10 +206,7 @@ class Pacman(Actor):
                     pyray.Rectangle(dash_x, dash_y, dash_w, dash_h),
                     with_alpha(colors.WHITE, 210 * turn_alpha),
                 )
-        self.pacman_sprite.draw(
-            (base_x, base_y),
-            scale=scale,
-        )
+        self._draw_sprite(base_x, base_y, scale)
         highlight_x = px - dir_dx * 2 - dir_dy
         highlight_y = py - dir_dy * 2 + dir_dx
         pyray.draw_circle(highlight_x, highlight_y, max(4, cfg.tile_size // 4), with_alpha(colors.WHITE, 36))

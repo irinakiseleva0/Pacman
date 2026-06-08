@@ -20,6 +20,11 @@ from entities.pacman import Pacman
 from entities.boss_ghost import BossGhost
 from entities.ghost import Ghost, Blinky, Pinky, Inky, Clyde
 from ui.hud import spawn_floating_text
+from utils.logger import get_logger
+from utils.pickup_feedback import GHOST_COLOR, PICKUP_FEEDBACK
+
+
+log = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -137,6 +142,7 @@ class Map:
 
             # Add visual effects
             visual.particles.create_ghost_eat_effect(ghost.x, ghost.y, palette["ghost"])
+            PICKUP_FEEDBACK.spawn_tile(self.ctx, ghost.x, ghost.y, score_value, GHOST_COLOR, particle_count=12)
             visual.light_bursts.add_grid_burst(ghost.x, ghost.y, palette["ghost"], 26, 1.4, 0.22)
             visual.floating_text.add_score_text(
                 score_value, ghost.x, ghost.y)
@@ -405,9 +411,9 @@ class Map:
                 normalized.append(line[:target_width])
 
         if adjusted:
-            print(
-                f"[Map] Normalized map rows to width {target_width}. "
-                "Consider cleaning the source map file."
+            log.warning(
+                "Normalized map rows to width %s. Consider cleaning the source map file.",
+                target_width,
             )
 
         return normalized

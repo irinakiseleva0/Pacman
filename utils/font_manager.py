@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import core.raylib_api as pyray
+from utils.logger import get_logger
+
+
+log = get_logger(__name__)
 
 
 class FontManager:
@@ -20,8 +24,8 @@ class FontManager:
             cls._fonts[cls.MONO]  = pyray.load_font_ex("assets/fonts/ShareTechMono-Regular.ttf", 64)
             pyray.set_texture_filter_bilinear(cls._fonts[cls.TITLE].texture)
             pyray.set_texture_filter_bilinear(cls._fonts[cls.MONO].texture)
-        except Exception as e:
-            print(f"[FontManager] Failed to load custom fonts: {e}")
+        except Exception as exc:
+            log.warning("Failed to load custom fonts: %s", exc)
         cls._initialized = True
 
     @classmethod

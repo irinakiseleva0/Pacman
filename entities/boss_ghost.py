@@ -37,7 +37,7 @@ class BossGhost(Ghost):
             return "split"
         return "chase"
 
-    def footprint(self) -> set[tuple[int, int]]:
+    def occupied_tiles(self) -> set[tuple[int, int]]:
         return {
             (self.x, self.y),
             (self.x + 1, self.y),
@@ -46,7 +46,7 @@ class BossGhost(Ghost):
         }
 
     def overlaps(self, actor) -> bool:
-        return (getattr(actor, "x", None), getattr(actor, "y", None)) in self.footprint()
+        return (getattr(actor, "x", None), getattr(actor, "y", None)) in self.occupied_tiles()
 
     def hit_score(self) -> int:
         return self.DEFEAT_SCORE if self.hp <= 1 and not self.split_clone else self.HIT_SCORE

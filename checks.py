@@ -4,12 +4,18 @@ import argparse
 import subprocess
 import sys
 
+from utils.logger import get_logger, setup_logging
+
+
+setup_logging()
+log = get_logger(__name__)
+
 
 def _run_step(label: str, command: list[str]) -> int:
-    print(f"[checks] {label}: {' '.join(command)}")
+    log.info("%s: %s", label, " ".join(command))
     completed = subprocess.run(command, check=False)
     if completed.returncode != 0:
-        print(f"[checks] {label} failed with exit code {completed.returncode}")
+        log.error("%s failed with exit code %s", label, completed.returncode)
     return completed.returncode
 
 
@@ -51,7 +57,7 @@ def main() -> int:
         if exit_code != 0:
             return exit_code
 
-    print("[checks] All checks passed.")
+    log.info("All checks passed.")
     return 0
 
 

@@ -4,6 +4,7 @@ import core.raylib_api as pyray
 from core import colors
 
 from entities.cell import Cell
+from utils.pickup_feedback import PICKUP_FEEDBACK, PELLET_COLOR, POWER_COLOR
 from utils.visual_effects import with_alpha
 
 
@@ -33,6 +34,7 @@ class Seed(Cell):
 
             # Add visual effects
             self.ctx.particles.create_dot_eat_effect(self.x, self.y, palette["dot"])
+            PICKUP_FEEDBACK.spawn_tile(self.ctx, self.x, self.y, score_value, PELLET_COLOR, particle_count=4)
             self.ctx.visual.light_bursts.add_grid_burst(self.x, self.y, palette["dot"], 16, 0.9, 0.16)
             self.ctx.floating_text.add_score_text(
                 score_value, self.x, self.y)
@@ -153,6 +155,7 @@ class LargeSeed(Cell):
 
             # Add visual effects
             self.ctx.particles.create_large_seed_eat_effect(self.x, self.y, (palette["power"], colors.WHITE))
+            PICKUP_FEEDBACK.spawn_tile(self.ctx, self.x, self.y, score_value, POWER_COLOR, particle_count=8)
             self.ctx.visual.light_bursts.add_grid_burst(self.x, self.y, palette["power_flash"], 36, 1.65, 0.28)
             self.ctx.floating_text.add_score_text(
                 score_value, self.x, self.y)

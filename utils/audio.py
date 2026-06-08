@@ -19,11 +19,11 @@ def _clamp_volume(value: object, default: float) -> float:
 
 class AudioManager:
     MUSIC_FILES = {
-        "menu": "assets/audio/music/menu_loop.ogg",
-        "game": "assets/audio/music/game_loop.ogg",
-        "result": "assets/audio/music/result_loop.ogg",
-        "pause": "assets/audio/music/pause_loop.ogg",
-        "options": "assets/audio/music/options_loop.ogg",
+        "menu": "assets/audio/music/menu_loop.wav",
+        "game": "assets/audio/music/game_loop.wav",
+        "result": "assets/audio/music/result_loop.wav",
+        "pause": "assets/audio/music/pause_loop.wav",
+        "options": "assets/audio/music/options_loop.wav",
     }
 
     SFX_FILES = {
@@ -41,6 +41,7 @@ class AudioManager:
         "ui_confirm": "assets/sfx/pellet_eat.ogg",
         "ui_back": "assets/sfx/death.ogg",
         "start_run": "assets/sfx/power_eat.ogg",
+        "score_tick": "assets/sfx/pellet_eat.ogg",
     }
 
     def __init__(self) -> None:
@@ -126,12 +127,15 @@ class AudioManager:
         music = self.music_streams.get(name)
         if music is None:
             return
+        if not Path(music).exists():
+            LOGGER.info("Skipping missing music asset: %s", music)
+            return
         try:
             pygame.mixer.music.load(music)
             pygame.mixer.music.set_volume(self._music_volume)
             pygame.mixer.music.play(-1)
-        except Exception:
-            pass
+        except Exception as exc:
+            LOGGER.info("Skipping music asset %s: %s", music, exc)
 
     def stop_music(self) -> None:
         if not self.ready:
