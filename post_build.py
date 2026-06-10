@@ -220,5 +220,9 @@ html = re.sub(r'\s*<script>\s*var _orig_window_resize = .*?</script>\s*',
               '\n', html, flags=re.DOTALL)
 html = html.replace("</body>", f"{resize_script}\n</body>", 1)
 
+favicon_tag = '<link rel="icon" href="data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'50\' r=\'48\' fill=\'%23000\'/><circle cx=\'50\' cy=\'50\' r=\'36\' fill=\'%23FFE66D\'/><polygon points=\'50,50 98,30 98,70\' fill=\'%23000\'/></svg>" type="image/svg+xml">'
+if '<link rel="icon"' not in html:
+    html = html.replace("</head>", f"    {favicon_tag}\n</head>", 1)
+
 html_path.write_text(html, encoding="utf-8")
 log.info("patched build/web/index.html successfully")

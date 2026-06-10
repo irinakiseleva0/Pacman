@@ -41,6 +41,26 @@ jobs:
         run: |
           python post_build.py
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Build web showcase
+        working-directory: web
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+        run: npm run build
+
+      - name: Copy showcase into build/web/showcase
+        run: |
+          mkdir -p build/web/showcase
+          cp -r web/dist/. build/web/showcase/
+
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:

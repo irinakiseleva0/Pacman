@@ -16,6 +16,7 @@ from scenes.game_view_overlays import (
     draw_tutorial_overlay,
 )
 from ui.hud import draw_floating_texts
+from ui.mobile_controls import draw_mobile_controls
 from ui.ui import draw_presentation_bars
 from utils.pickup_feedback import PICKUP_FEEDBACK
 
@@ -61,4 +62,5 @@ def draw_scene(game_scene) -> None:
 
     draw_floating_texts()
     visual.screen_flash.draw()
+    draw_mobile_controls(game_scene.ctx)
     draw_presentation_bars(cfg.window_width, cfg.window_height)
