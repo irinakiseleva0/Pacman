@@ -29,6 +29,15 @@ import Leaderboard from "@/pages/Leaderboard";
 import Profile from "@/pages/Profile";
 
 const ScoreChartSection = lazy(() => import("@/components/ScoreChartSection"));
+const basePath = import.meta.env.BASE_URL;
+const appPath = (path: string) => `${basePath.replace(/\/$/, "")}${path}`;
+const assetPath = (path: string) => `${basePath}${path.replace(/^\//, "")}`;
+const routePath = () => {
+  const pathname = window.location.pathname;
+  return pathname.startsWith(basePath)
+    ? `/${pathname.slice(basePath.length).replace(/^\/+/, "")}`
+    : pathname;
+};
 
 const reveal = {
   hidden: { opacity: 0, y: 24 },
@@ -116,13 +125,13 @@ function HeroSection() {
               </a>
             </NeonButton>
             <NeonButton glow="cyan" asChild>
-              <a href="/play">
+              <a href={appPath("/play")}>
                 <Play className="h-4 w-4" />
                 Play Web Build
               </a>
             </NeonButton>
             <NeonButton glow="purple" asChild>
-              <a href="/daily">
+              <a href={appPath("/daily")}>
                 <Trophy className="h-4 w-4" />
                 Daily
               </a>
@@ -157,19 +166,19 @@ function BrowserGameSection() {
         <div className="overflow-hidden rounded-lg border border-neon-cyan/25 bg-black shadow-[0_0_80px_rgba(51,246,255,0.16)]">
           <iframe
             className="block aspect-[16/10] w-full bg-black"
-            src="/game/index.html"
+            src={assetPath("/game/index.html")}
             title="Cyberpunk Pac-Man browser build"
           />
         </div>
         <div className="mt-5 flex flex-wrap gap-3">
           <NeonButton glow="cyan" asChild>
-            <a href="/play">
+            <a href={appPath("/play")}>
               <Play className="h-4 w-4" />
               Open Player
             </a>
           </NeonButton>
           <NeonButton glow="yellow" asChild>
-            <a href="/leaderboard">
+            <a href={appPath("/leaderboard")}>
               <LayoutDashboard className="h-4 w-4" />
               Leaderboard
             </a>
@@ -185,7 +194,7 @@ function GamePreviewSection() {
     {
       title: "Gameplay capture",
       subtitle: "Live raylib screen",
-      image: "/qa_screen.png",
+      image: assetPath("/qa_screen.png"),
       tone: "cyan",
     },
     {
@@ -503,7 +512,7 @@ function PlayPage() {
             <div>
               <a
                 className="rounded-sm font-display text-xs uppercase tracking-[0.18em] text-neon-cyan transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan"
-                href="/"
+                href={appPath("/")}
               >
                 Cyberpunk Pac-Man
               </a>
@@ -513,19 +522,19 @@ function PlayPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <NeonButton glow="cyan" asChild>
-                <a href="/game/index.html">
+                <a href={assetPath("/game/index.html")}>
                   <Play className="h-4 w-4" />
                   Direct Build
                 </a>
               </NeonButton>
               <NeonButton glow="yellow" asChild>
-                <a href="/leaderboard">
+                <a href={appPath("/leaderboard")}>
                   <LayoutDashboard className="h-4 w-4" />
                   Leaderboard
                 </a>
               </NeonButton>
               <NeonButton glow="purple" asChild>
-                <a href="/daily">
+                <a href={appPath("/daily")}>
                   <Trophy className="h-4 w-4" />
                   Daily
                 </a>
@@ -536,7 +545,7 @@ function PlayPage() {
         <div className="overflow-hidden rounded-lg border border-neon-cyan/30 bg-black shadow-glow">
           <iframe
             className="block h-[calc(100vh-196px)] min-h-[520px] w-full bg-black"
-            src="/game/index.html"
+            src={assetPath("/game/index.html")}
             title="Cyberpunk Pac-Man browser build"
           />
         </div>
@@ -557,7 +566,7 @@ function Footer() {
           <a className="rounded-sm transition hover:text-neon-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan" href="https://github.com/">
             GitHub
           </a>
-          <a className="rounded-sm transition hover:text-neon-yellow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-yellow" href="/leaderboard">
+          <a className="rounded-sm transition hover:text-neon-yellow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-yellow" href={appPath("/leaderboard")}>
             Leaderboard
           </a>
           <a className="rounded-sm transition hover:text-neon-purple focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-purple" href="../README.md">
@@ -570,7 +579,7 @@ function Footer() {
 }
 
 export default function App() {
-  const path = window.location.pathname;
+  const path = routePath();
   if (path === "/leaderboard") {
     return <Leaderboard />;
   }
