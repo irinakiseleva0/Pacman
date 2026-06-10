@@ -61,6 +61,29 @@ jobs:
           mkdir -p build/web/showcase
           cp -r web/dist/. build/web/showcase/
 
+      - name: Create GitHub Pages SPA fallback
+        run: |
+          cat > build/web/404.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>Redirecting...</title>
+              <script>
+                const showcaseBase = "/Pacman/showcase";
+                if (window.location.pathname.startsWith(`${showcaseBase}/`)) {
+                  const route = window.location.pathname.slice(showcaseBase.length) || "/";
+                  window.location.replace(`${showcaseBase}/#${route}${window.location.search}`);
+                } else {
+                  window.location.replace("/Pacman/");
+                }
+              </script>
+            </head>
+            <body>Redirecting...</body>
+          </html>
+          EOF
+
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
