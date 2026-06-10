@@ -9,7 +9,10 @@ BASE_DIR = Path(__file__).resolve().parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-pacman-secret-key")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS",
+    "localhost,127.0.0.1,.up.railway.app",
+).split(",")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -83,6 +86,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://irinakiseleva0.github.io",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
