@@ -19,6 +19,7 @@ class Assets:
     """
 
     _textures: dict[str, pygame.Surface] = {}
+    _scene_tags: dict[str, set[str]] = {}
     _wall_atlas_surface: pygame.Surface | None = None
     _wall_atlas: dict[str, dict[str, int]] | None = None
     _entity_atlas_surface: pygame.Surface | None = None
@@ -53,6 +54,32 @@ class Assets:
             surface = surface.copy()
         cls._textures[key] = surface
         return surface
+
+    @classmethod
+    def tag_for_scene(cls, path: str | bytes | Path, scene: str) -> None:
+        """
+        Mark an already loaded texture as belonging to a scene.
+        Call immediately after Assets.texture(path).
+
+        Example:
+            tex = Assets.texture("sprites/pacman/pacman_pos_1_up.png")
+            Assets.tag_for_scene("sprites/pacman/pacman_pos_1_up.png", "gameplay")
+        """
+        if scene == "global":
+            return
+        cls._scene_tags.setdefault(scene, set()).add(cls._to_path(path))
+
+    @classmethod
+    def texture_for_scene(cls, path: str | bytes | Path, scene: str) -> pygame.Surface:
+        """
+        Load a texture and immediately mark it as belonging to a scene.
+
+        Example:
+            tex = Assets.texture_for_scene("sprites/wall.png", "gameplay")
+        """
+        tex = cls.texture(path)
+        cls.tag_for_scene(path, scene)
+        return tex
 
     @classmethod
     def _texture_from_wall_atlas(cls, key: str) -> pygame.Surface | None:
@@ -142,6 +169,26 @@ class Assets:
         cls._textures.pop(cls._to_path(path), None)
 
     @classmethod
+    def unload_scene(cls, scene: str) -> None:
+        """
+        Unload textures tagged for a scene unless another scene still needs them.
+
+        Call when leaving a scene, for example from exit_tree / on_exit.
+        """
+        if scene == "global":
+            return
+
+        scene_paths = cls._scene_tags.pop(scene, set())
+
+        still_needed: set[str] = set()
+        for paths in cls._scene_tags.values():
+            still_needed |= paths
+
+        for path in scene_paths:
+            if path not in still_needed:
+                cls.unload_texture(path)
+
+    @classmethod
     def unload_all(cls) -> None:
         cls._textures.clear()
         cls._wall_atlas_surface = None
@@ -149,6 +196,7 @@ class Assets:
         cls._entity_atlas_surface = None
         cls._entity_atlas_map = None
         cls._entity_spritesheet = None
+        cls._scene_tags.clear()
 
     @classmethod
     def clear_cache(cls) -> None:
@@ -158,6 +206,7 @@ class Assets:
         cls._entity_atlas_surface = None
         cls._entity_atlas_map = None
         cls._entity_spritesheet = None
+        cls._scene_tags.clear()
 
     @classmethod
     def load_texture(cls, path: str | bytes | Path) -> pygame.Surface:

@@ -30,6 +30,11 @@ class Ghost(Actor):
         self.release_delay_ticks = 0
         self.returning_home = False
         self.slow_skip_tick = False
+        self._cached_shortest_paths: dict[tuple[int, int], int] | None = None
+        self._cached_frightened_paths: dict[tuple[int, int], int] | None = None
+        self._cache_pos: tuple[int, int] = (-1, -1)
+        self._cache_target: tuple[int, int] = (-1, -1)
+        self._cache_mode: str = ""
         self._path: list[tuple[int, int]] = []
         self._last_tile: tuple[int, int] = (-1, -1)
         self._target_tile: tuple[int, int] = (-1, -1)
@@ -417,6 +422,18 @@ class Ghost(Actor):
     def is_harmless(self) -> bool:
         return self.returning_home or self.respawn_lock_ticks > 0 or self.release_delay_ticks > 0
 
+    def _invalidate_path_cache(self) -> None:
+        self._cached_shortest_paths = None
+        self._cached_frightened_paths = None
+        self._cache_pos = (-1, -1)
+        self._cache_target = (-1, -1)
+        self._cache_mode = ""
+        self._path = []
+        self._last_tile = (-1, -1)
+        self._target_tile = (-1, -1)
+        self._path_options = {}
+        self._path_cache_depth = None
+
     def _update_mode(self) -> None:
         pacman = self.ctx.pacman
         previous_mode = self.mode
@@ -439,13 +456,6 @@ class Ghost(Actor):
             or max_depth != self._path_cache_depth
             or len(self._path) == 0
         )
-
-    def _invalidate_path_cache(self) -> None:
-        self._path = []
-        self._last_tile = (-1, -1)
-        self._target_tile = (-1, -1)
-        self._path_options = {}
-        self._path_cache_depth = None
 
     def _is_reverse_direction(self, dx: int, dy: int) -> bool:
         if self.returning_home:
@@ -602,10 +612,32 @@ class Ghost(Actor):
         reverse_move = (0, 0)
         reverse_score = float('inf')
         pacman = self.ctx.pacman
-        shortest_paths = self._cached_shortest_path_options(game_map, self.target_x, self.target_y)
-        frightened_paths = None
-        if self.mode == "frightened" and pacman is not None:
-            frightened_paths = self._shortest_path_options(game_map, pacman.x, pacman.y, max_depth=14)
+        current_pos = (self.x, self.y)
+        current_target = (self.target_x, self.target_y)
+        current_mode = self.mode
+
+        cache_stale = (
+            self._cached_shortest_paths is None
+            or current_pos != self._cache_pos
+            or current_target != self._cache_target
+            or current_mode != self._cache_mode
+        )
+
+        if cache_stale:
+            self._cached_shortest_paths = self._shortest_path_options(
+                game_map, self.target_x, self.target_y
+            )
+            self._cached_frightened_paths = None
+            if current_mode == "frightened" and pacman is not None:
+                self._cached_frightened_paths = self._shortest_path_options(
+                    game_map, pacman.x, pacman.y, max_depth=14
+                )
+            self._cache_pos = current_pos
+            self._cache_target = current_target
+            self._cache_mode = current_mode
+
+        shortest_paths = self._cached_shortest_paths
+        frightened_paths = self._cached_frightened_paths
 
         for dx, dy in directions:
             new_x = self.x + dx

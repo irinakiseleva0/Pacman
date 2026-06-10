@@ -47,6 +47,7 @@ class GameScene(Scene):
 
     def enter_tree(self) -> None:
         game_flow.enter_tree(self)
+        # TODO: call Assets.unload_scene("gameplay") from exit_tree if GameScene starts owning scene teardown.
 
     def update(self, dt: float) -> None:
         game_flow.update(self, dt)

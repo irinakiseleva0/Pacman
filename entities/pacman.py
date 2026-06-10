@@ -83,7 +83,7 @@ class Pacman(Actor):
             "DEATH": [f"{base}death/death_{i}.png" for i in range(1, 11)],
             "NONE": [],
         }
-        return {key: [Assets.texture(path) for path in value] for key, value in paths.items()}
+        return {key: [Assets.texture_for_scene(path, "gameplay") for path in value] for key, value in paths.items()}
 
     def _atlas_key(self) -> str | None:
         frame = self.pacman_sprite.frame_index
