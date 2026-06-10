@@ -1,5 +1,8 @@
 # Cyberpunk Pac-Man
 
+[![Deploy](https://github.com/irinakiseleva0/Pacman/actions/workflows/deploy.yml/badge.svg)](https://irinakiseleva0.github.io/Pacman)
+[![CI](https://github.com/irinakiseleva0/Pacman/actions/workflows/ci.yml/badge.svg)](https://github.com/irinakiseleva0/Pacman/actions)
+
 A Python/raylib arcade game that reimagines Pac-Man as a neon cyberpunk district run.
 
 The project keeps the classic Pac-Man loop: eat pellets, route through the maze, avoid ghosts, use power seeds, clear boards, and chase high scores. Around that core it adds a polished arcade shell with modes, progression, unlocks, animated UI, cyberpunk visual effects, and local save data.
@@ -144,3 +147,43 @@ Later:
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+---
+
+## Browser version (pygbag)
+
+The `pygbag` branch contains a WebAssembly port playable at
+[irinakiseleva0.github.io/Pacman](https://irinakiseleva0.github.io/Pacman).
+
+**Build locally:**
+
+```powershell
+git checkout pygbag
+pip install pygame pygbag
+python -m pygbag --build --width 800 --height 600 .
+python post_build.py
+```
+
+**Run locally after building:**
+
+```powershell
+python -m http.server 8000 --directory build/web
+```
+
+Then open `http://localhost:8000` in a browser.
+Do not open `index.html` directly via `file://` — pygbag requires an HTTP server.
+
+**Auto-deploy:** pushing to the `pygbag` branch triggers GitHub Actions,
+which builds and deploys to `gh-pages` automatically.
+
+---
+
+## Mobile layout
+
+The game includes a mobile touch control overlay.
+To enable it, set `layout_name = "mobile"` in `core/balance.py`
+or let the pygbag version detect it automatically based on screen width (≤480px).
+
+The D-pad renders in the bottom-left corner; pause button in the bottom-right.
+
+---

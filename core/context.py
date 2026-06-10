@@ -465,46 +465,16 @@ class GameContext:
 
     def challenge_unlocked(self, challenge_name: Optional[str] = None) -> bool:
         name = challenge_name or self.challenge_name
-        profile = self.profile
-        if name == "One Life District":
+        preset = CHALLENGE_PRESETS.get(name)
+        if preset is None:
+            return False
+        unlock_fn = getattr(preset, "unlock_fn", None)
+        if unlock_fn is None:
             return True
-        if name == "Score Rush":
-            return profile["total_runs"] >= 3
-        if name == "Ghost Hunt":
-            return profile["total_ghosts_eaten"] >= 10
-        if name == "Neon Sprint":
-            return profile["highest_level"] >= 2
-        if name == "Phantom Debt":
-            return profile["total_wins"] >= 1
-        if name == "District Ace":
-            return profile["best_score"] >= 3500
-        if name == "Midnight Relay":
-            return profile["total_levels_cleared"] >= 1
-        if name == "Credit Burner":
-            return profile["best_score"] >= 2000
-        if name == "Last Call":
-            return profile["total_ghosts_eaten"] >= 20
-        if name == "Redline Protocol":
-            return int(self.profile.get("challenge_credits", 0)) >= 18
-        if name == "Clock Reaper":
-            return self.mode_mastery_value("Time Attack") >= 9
-        if name == "Market Heist":
-            return profile["total_levels_cleared"] >= 2
-        if name == "Thread Needle":
-            return profile["total_runs"] >= 2 or profile["total_losses"] >= 1
-        if name == "Gate Crasher":
-            return self.mode_mastery_value("Arcade") >= 3
-        if name == "Blackout Harvest":
-            return profile["best_score"] >= 2800
-        if name == "Pulse Corridor":
-            return profile["total_losses"] >= 1 or profile["total_levels_cleared"] >= 3
-        if name == "Jackpot Circuit":
-            return profile["total_cherries"] >= 6
-        if name == "Spiral Dive":
-            return int(profile.get("challenge_credits", 0)) >= 9
-        if name == "Predator Window":
-            return profile["total_ghosts_eaten"] >= 30
-        return False
+        try:
+            return bool(unlock_fn(self.profile, self))
+        except Exception:
+            return False
 
     def challenge_entries(self) -> list[tuple[str, ChallengePreset, bool]]:
         return [

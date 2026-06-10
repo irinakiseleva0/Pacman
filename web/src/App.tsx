@@ -9,7 +9,7 @@ import {
   Target,
   Trophy,
 } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 import { FeatureCard } from "@/components/FeatureCard";
@@ -22,7 +22,8 @@ import { Progress } from "@/components/ui/progress";
 import { achievements } from "@/data/achievements";
 import { features } from "@/data/features";
 import { modes } from "@/data/modes";
-import { careerStats } from "@/data/scores";
+import { buildCareerStats, buildScoreHistory } from "@/data/scores";
+import { fetchScores } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import Daily from "@/pages/Daily";
 import Leaderboard from "@/pages/Leaderboard";
@@ -373,7 +374,11 @@ function ModesSection() {
   );
 }
 
-function DashboardSection() {
+function DashboardSection({
+  careerStats,
+}: {
+  careerStats: ReturnType<typeof buildCareerStats>;
+}) {
   return (
     <section className="px-5 py-20 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
@@ -570,6 +575,18 @@ function Footer() {
 }
 
 export default function App() {
+  const [careerStats, setCareerStats] = useState([] as ReturnType<typeof buildCareerStats>);
+  const [scoreHistory, setScoreHistory] = useState([] as ReturnType<typeof buildScoreHistory>);
+
+  useEffect(() => {
+    fetchScores({})
+      .then((scores) => {
+        setCareerStats(buildCareerStats(scores));
+        setScoreHistory(buildScoreHistory(scores));
+      })
+      .catch(() => {});
+  }, []);
+
   const path = window.location.pathname;
   if (path === "/leaderboard") {
     return <Leaderboard />;
@@ -594,9 +611,9 @@ export default function App() {
       <GamePreviewSection />
       <FeaturesSection />
       <ModesSection />
-      <DashboardSection />
+      <DashboardSection careerStats={careerStats} />
       <Suspense fallback={<ChartSkeleton />}>
-        <ScoreChartSection />
+        <ScoreChartSection scoreHistory={scoreHistory} />
       </Suspense>
       <ControlsSection />
       <Footer />

@@ -10,16 +10,20 @@ import {
 
 import { SectionTitle } from "@/components/SectionTitle";
 import { Card } from "@/components/ui/card";
-import { scoreHistory } from "@/data/scores";
+import type { ScorePoint } from "@/data/scores";
 
-export default function ScoreChartSection() {
+export default function ScoreChartSection({
+  scoreHistory,
+}: {
+  scoreHistory: ScorePoint[];
+}) {
   return (
     <section className="px-4 py-16 sm:px-8 sm:py-20 lg:px-10">
       <div className="mx-auto max-w-7xl">
         <SectionTitle
           eyebrow="Score telemetry"
           title="Run History Chart"
-          description="Recharts powers a responsive score trend panel for Arcade, Endless, and Challenge mock data."
+          description="Recharts powers a responsive score trend panel from the live leaderboard API."
         />
         <Card className="overflow-hidden border-neon-cyan/20 bg-white/[0.045] p-4 shadow-glow sm:p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -28,7 +32,7 @@ export default function ScoreChartSection() {
                 Score signal
               </p>
               <p className="mt-2 text-sm text-slate-400">
-                Mock run history, split from the initial bundle.
+                Live run history, split from the initial bundle.
               </p>
             </div>
             <div className="flex flex-wrap gap-3 text-xs text-slate-300">
