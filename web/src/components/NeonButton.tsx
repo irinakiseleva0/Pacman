@@ -1,4 +1,4 @@
-import { type ComponentPropsWithoutRef } from "react";
+import { cloneElement, isValidElement, type ComponentPropsWithoutRef, type ReactElement, type ReactNode } from "react";
 import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
@@ -20,20 +20,39 @@ export function NeonButton({
   className,
   glow = "yellow",
   children,
+  asChild,
   ...props
 }: NeonButtonProps) {
+  const content = (innerChildren: ReactNode) => (
+    <>
+      <span className="absolute inset-0 -translate-x-full bg-white/25 transition-transform duration-500 group-hover:translate-x-full" />
+      <span className="relative z-10 flex items-center gap-2">{innerChildren}</span>
+    </>
+  );
+  const buttonClassName = cn(
+    "group relative min-h-11 overflow-hidden border font-display uppercase tracking-[0.18em] focus-visible:ring-offset-2 focus-visible:ring-offset-neon-ink",
+    glowStyles[glow],
+    className,
+  );
+
+  if (asChild && isValidElement(children)) {
+    const child = children as ReactElement<{ children?: ReactNode }>;
+    return (
+      <motion.div whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+        <Button className={buttonClassName} asChild {...props}>
+          {cloneElement(child, undefined, content(child.props.children))}
+        </Button>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
       <Button
-        className={cn(
-          "group relative min-h-11 overflow-hidden border font-display uppercase tracking-[0.18em] focus-visible:ring-offset-2 focus-visible:ring-offset-neon-ink",
-          glowStyles[glow],
-          className,
-        )}
+        className={buttonClassName}
         {...props}
       >
-        <span className="absolute inset-0 -translate-x-full bg-white/25 transition-transform duration-500 group-hover:translate-x-full" />
-        <span className="relative z-10 flex items-center gap-2">{children}</span>
+        {content(children)}
       </Button>
     </motion.div>
   );
