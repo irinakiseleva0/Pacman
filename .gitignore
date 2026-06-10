@@ -1,11 +1,15 @@
 .venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
 .idea/
 .vscode/
 profile.json
 scores.json
 data/saves/*.json
+data/saves/tmp*/
+data/saves/.test_tmp/
 !data/saves/.gitkeep
 web/vite-dev*.log
 build/
