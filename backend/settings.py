@@ -9,10 +9,16 @@ BASE_DIR = Path(__file__).resolve().parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-pacman-secret-key")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = os.environ.get(
-    "DJANGO_ALLOWED_HOSTS",
-    "localhost,127.0.0.1,.up.railway.app",
-).split(",")
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS",
+        "localhost,127.0.0.1,.up.railway.app",
+    ).split(",")
+    if host.strip()
+]
+if ".up.railway.app" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(".up.railway.app")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
