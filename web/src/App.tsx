@@ -30,13 +30,12 @@ import Profile from "@/pages/Profile";
 
 const ScoreChartSection = lazy(() => import("@/components/ScoreChartSection"));
 const basePath = import.meta.env.BASE_URL;
-const appPath = (path: string) => `${basePath.replace(/\/$/, "")}${path}`;
+const appPath = (path: string) => `${basePath}#${path}`;
 const assetPath = (path: string) => `${basePath}${path.replace(/^\//, "")}`;
+const gamePath = basePath.endsWith("/showcase/") ? basePath.replace(/showcase\/$/, "") : "/game/index.html";
 const routePath = () => {
-  const pathname = window.location.pathname;
-  return pathname.startsWith(basePath)
-    ? `/${pathname.slice(basePath.length).replace(/^\/+/, "")}`
-    : pathname;
+  const hashPath = window.location.hash.replace(/^#/, "");
+  return hashPath.startsWith("/") ? hashPath : "/";
 };
 
 const reveal = {
@@ -166,7 +165,7 @@ function BrowserGameSection() {
         <div className="overflow-hidden rounded-lg border border-neon-cyan/25 bg-black shadow-[0_0_80px_rgba(51,246,255,0.16)]">
           <iframe
             className="block aspect-[16/10] w-full bg-black"
-            src={assetPath("/game/index.html")}
+            src={gamePath}
             title="Cyberpunk Pac-Man browser build"
           />
         </div>
@@ -522,7 +521,7 @@ function PlayPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <NeonButton glow="cyan" asChild>
-                <a href={assetPath("/game/index.html")}>
+                <a href={gamePath}>
                   <Play className="h-4 w-4" />
                   Direct Build
                 </a>
@@ -545,7 +544,7 @@ function PlayPage() {
         <div className="overflow-hidden rounded-lg border border-neon-cyan/30 bg-black shadow-glow">
           <iframe
             className="block h-[calc(100vh-196px)] min-h-[520px] w-full bg-black"
-            src={assetPath("/game/index.html")}
+            src={gamePath}
             title="Cyberpunk Pac-Man browser build"
           />
         </div>

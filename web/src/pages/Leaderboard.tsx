@@ -103,7 +103,7 @@ export default function Leaderboard() {
                     <tr key={`${row.id ?? index}-${row.seed}`} className="border-b border-white/5">
                       <td className="px-5 py-4 font-display text-neon-yellow">#{index + 1}</td>
                       <td className="px-5 py-4">
-                        <a className="text-neon-cyan hover:underline" href={`/profile/${row.player?.username ?? row.username ?? "unknown"}`}>
+                        <a className="text-neon-cyan hover:underline" href={`#/profile/${row.player?.username ?? row.username ?? "unknown"}`}>
                           {row.player?.username ?? row.username ?? "unknown"}
                         </a>
                       </td>
@@ -146,9 +146,9 @@ export default function Leaderboard() {
 export function DashboardNav() {
   return (
     <nav className="flex flex-wrap items-center gap-3 text-sm text-slate-300">
-      <a className="font-display text-neon-yellow" href="/">Cyberpunk Pac-Man</a>
-      <a className="hover:text-neon-cyan" href="/leaderboard">Leaderboard</a>
-      <a className="hover:text-neon-cyan" href="/daily">Daily</a>
+      <a className="font-display text-neon-yellow" href="#/">Cyberpunk Pac-Man</a>
+      <a className="hover:text-neon-cyan" href="#/leaderboard">Leaderboard</a>
+      <a className="hover:text-neon-cyan" href="#/daily">Daily</a>
     </nav>
   );
 }
