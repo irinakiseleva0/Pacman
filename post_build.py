@@ -42,6 +42,28 @@ html = html_path.read_text(encoding="utf-8")
 html = re.sub(r'platform\.fopen\("[^"]+\.apk"', f'platform.fopen("{apk_name}"', html)
 html = re.sub(r'platform\.fopen\("[^"]+\.tar\.gz"', f'platform.fopen("{archive_name}"', html)
 html = re.sub(r'Loading [^<\n]+ from [^<\n]+', f'Loading pacman from {apk_name}', html)
+html = html.replace("platform.window.transfer.hidden = true", "platform.window.transfer.hidden = True")
+html = html.replace("platform.window.MM.UME = true", "platform.window.MM.UME = True")
+
+if "platform.window.MM.UME = True" not in html:
+    html = html.replace(
+        "    # test/wait user media interaction\n"
+        "    if not platform.window.MM.UME:",
+        "    # test/wait user media interaction\n"
+        "    platform.window.MM.UME = True\n\n"
+        "    if not platform.window.MM.UME:",
+        1,
+    )
+
+if "    platform.window.infobox.style.display = \"none\"\n    platform.window.config.gui_divider = 1\n    platform.window.window_resize()\n\n    await shell.source(main" not in html:
+    html = html.replace(
+        "    await shell.source(main, callback=ui_callback)",
+        "    platform.window.infobox.style.display = \"none\"\n"
+        "    platform.window.config.gui_divider = 1\n"
+        "    platform.window.window_resize()\n\n"
+        "    await shell.source(main, callback=ui_callback)",
+        1,
+    )
 
 # 1. Restore exact canvas size
 html = re.sub(r'fb_width\s*:\s*"[^"]*"', 'fb_width : "800"', html)
