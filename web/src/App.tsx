@@ -117,13 +117,13 @@ function HeroSection() {
               </a>
             </NeonButton>
             <NeonButton glow="cyan" asChild>
-              <a href="play">
+              <a href="#/play">
                 <Play className="h-4 w-4" />
                 Play Web Build
               </a>
             </NeonButton>
             <NeonButton glow="purple" asChild>
-              <a href="daily">
+              <a href="#/daily">
                 <Trophy className="h-4 w-4" />
                 Daily
               </a>
@@ -164,13 +164,13 @@ function BrowserGameSection() {
         </div>
         <div className="mt-5 flex flex-wrap gap-3">
           <NeonButton glow="cyan" asChild>
-            <a href="play">
+            <a href="#/play">
               <Play className="h-4 w-4" />
               Open Player
             </a>
           </NeonButton>
           <NeonButton glow="yellow" asChild>
-            <a href="leaderboard">
+            <a href="#/leaderboard">
               <LayoutDashboard className="h-4 w-4" />
               Leaderboard
             </a>
@@ -508,7 +508,7 @@ function PlayPage() {
             <div>
               <a
                 className="rounded-sm font-display text-xs uppercase tracking-[0.18em] text-neon-cyan transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan"
-                href="/"
+                href="#/"
               >
                 Cyberpunk Pac-Man
               </a>
@@ -524,13 +524,13 @@ function PlayPage() {
                 </a>
               </NeonButton>
               <NeonButton glow="yellow" asChild>
-                <a href="leaderboard">
+                <a href="#/leaderboard">
                   <LayoutDashboard className="h-4 w-4" />
                   Leaderboard
                 </a>
               </NeonButton>
               <NeonButton glow="purple" asChild>
-                <a href="daily">
+                <a href="#/daily">
                   <Trophy className="h-4 w-4" />
                   Daily
                 </a>
@@ -562,7 +562,7 @@ function Footer() {
           <a className="rounded-sm transition hover:text-neon-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan" href="https://github.com/">
             GitHub
           </a>
-          <a className="rounded-sm transition hover:text-neon-yellow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-yellow" href="leaderboard">
+          <a className="rounded-sm transition hover:text-neon-yellow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-yellow" href="#/leaderboard">
             Leaderboard
           </a>
           <a className="rounded-sm transition hover:text-neon-purple focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-purple" href="../README.md">
@@ -587,10 +587,9 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  const rawPath = window.location.pathname;
-  // Strip the Vite base prefix so routing works on GitHub Pages
-  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-  const path = base ? rawPath.replace(base, "") || "/" : rawPath;
+  // Hash-based routing: /Pacman/showcase/#/play → path = "/play"
+  const hash = window.location.hash; // e.g. "#/play" or ""
+  const path = hash.startsWith("#") ? hash.slice(1) || "/" : "/";
   if (path === "/leaderboard") {
     return <Leaderboard />;
   }
