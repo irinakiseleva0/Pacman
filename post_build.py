@@ -208,6 +208,11 @@ loader_style = '''        #transfer {
 html = re.sub(r'\s*#transfer\s*\{.*?\}\s*#transfer::before\s*\{.*?\}\s*#status\s*\{.*?\}\s*#progress\s*\{.*?\}\s*#progress::-webkit-progress-bar\s*\{.*?\}\s*#progress::-webkit-progress-value\s*\{.*?\}\s*#progress::-moz-progress-bar\s*\{.*?\}\s*#infobox\s*\{.*?\}\s*',
               '\n', html, flags=re.DOTALL)
 html = html.replace("</style>", f"{canvas_rendering_style}{loader_style}    </style>", 1)
+html = re.sub(
+    r'\s*<script src="https://pygame-web\.github\.io/cdn/0\.9\.3//browserfs\.min\.js"></script>\s*',
+    '\n',
+    html,
+)
 
 resize_script = '''<script>
 var _orig_window_resize = window._orig_window_resize ||
