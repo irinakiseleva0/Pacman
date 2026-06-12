@@ -93,7 +93,7 @@ class Game:
         if real_w <= 480 or (real_h > real_w and real_w <= 768):
             self.ctx.apply_layout("mobile")
         else:
-            self.ctx.apply_layout("default")
+            self.ctx.apply_layout("desktop")
         pyray.set_target_fps(cfg.fps)
         self.ctx.camera = pyray.create_camera_2d()
         set_camera(self.ctx.camera)
@@ -121,7 +121,7 @@ class Game:
             if event.w <= 480 or (event.h > event.w and event.w <= 768):
                 self.ctx.apply_layout("mobile")
             else:
-                self.ctx.apply_layout("default")
+                self.ctx.apply_layout("desktop")
 
         dt = pyray.get_frame_time()
         ui_theme.set_visual_theme(self.ctx.theme_name())
