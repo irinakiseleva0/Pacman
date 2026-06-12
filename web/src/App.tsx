@@ -155,12 +155,26 @@ function BrowserGameSection() {
           title="Browser Build Embedded In The Showcase"
           description="The React shell now reserves a playable slot for the Pygbag-generated WebAssembly export, served from the Vite public game folder."
         />
-        <div className="overflow-hidden rounded-lg border border-neon-cyan/25 bg-black shadow-[0_0_80px_rgba(51,246,255,0.16)]">
-          <iframe
-            className="block aspect-[16/10] w-full bg-black"
-            src="https://irinakiseleva0.github.io/Pacman/"
-            title="Cyberpunk Pac-Man browser build"
-          />
+        <div className="flex flex-col items-center justify-center gap-6 rounded-lg border border-neon-cyan/25 bg-black/80 py-20 shadow-[0_0_80px_rgba(51,246,255,0.16)]">
+          <div className="text-center">
+            <p className="font-display text-xl font-bold uppercase tracking-widest text-neon-cyan">
+              WebAssembly Build
+            </p>
+            <p className="mt-3 max-w-md text-sm leading-6 text-slate-400">
+              The game uses SharedArrayBuffer and requires its own
+              browser context to run. Opens in a new tab.
+            </p>
+          </div>
+          <NeonButton glow="cyan" asChild>
+            <a
+              href="https://irinakiseleva0.github.io/Pacman/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Play className="h-4 w-4" />
+              Launch Game
+            </a>
+          </NeonButton>
         </div>
         <div className="mt-5 flex flex-wrap gap-3">
           <NeonButton glow="cyan" asChild>
@@ -538,12 +552,26 @@ function PlayPage() {
             </div>
           </div>
         </div>
-        <div className="overflow-hidden rounded-lg border border-neon-cyan/30 bg-black shadow-glow">
-          <iframe
-            className="block h-[calc(100vh-196px)] min-h-[520px] w-full bg-black"
-            src="https://irinakiseleva0.github.io/Pacman/"
-            title="Cyberpunk Pac-Man browser build"
-          />
+        <div className="flex flex-col items-center justify-center gap-6 rounded-lg border border-neon-cyan/30 bg-black/80 py-32 shadow-glow">
+          <div className="text-center">
+            <p className="font-display text-2xl font-black uppercase tracking-widest text-neon-yellow">
+              PACMAN
+            </p>
+            <p className="mt-4 max-w-md text-sm leading-6 text-slate-400">
+              Pygbag WebAssembly build — requires its own browser
+              context for SharedArrayBuffer support.
+            </p>
+          </div>
+          <NeonButton glow="cyan" asChild>
+            <a
+              href="https://irinakiseleva0.github.io/Pacman/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Play className="h-4 w-4" />
+              Launch in New Tab
+            </a>
+          </NeonButton>
         </div>
       </div>
     </main>
