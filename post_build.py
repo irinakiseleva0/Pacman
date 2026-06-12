@@ -47,6 +47,8 @@ html = re.sub(r'Folder\s+:\s+[^\n]+', "Folder  : pacman", html)
 html = re.sub(r'bundle = "[^"]+"', 'bundle = "pacman"', html)
 html = re.sub(r'archive\s*:\s*"[^"]+"', 'archive : "pacman"', html)
 html = re.sub(r'<title>[^<]*</title>', '<title>pacman</title>', html, count=1)
+html = re.sub(r'ume_block\s*:\s*1', 'ume_block : 0', html)
+html = html.replace('if not platform.window.MM.UME:', 'if False and not platform.window.MM.UME:')
 html = html.replace("platform.window.transfer.hidden = true", "platform.window.transfer.hidden = True")
 html = html.replace("platform.window.MM.UME = true", "platform.window.MM.UME = True")
 
