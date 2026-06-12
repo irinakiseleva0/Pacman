@@ -158,7 +158,7 @@ function BrowserGameSection() {
         <div className="overflow-hidden rounded-lg border border-neon-cyan/25 bg-black shadow-[0_0_80px_rgba(51,246,255,0.16)]">
           <iframe
             className="block aspect-[16/10] w-full bg-black"
-            src="game/index.html"
+            src="https://irinakiseleva0.github.io/Pacman/"
             title="Cyberpunk Pac-Man browser build"
           />
         </div>
@@ -518,7 +518,7 @@ function PlayPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <NeonButton glow="cyan" asChild>
-                <a href="game/index.html">
+                <a href="https://irinakiseleva0.github.io/Pacman/" target="_blank" rel="noreferrer">
                   <Play className="h-4 w-4" />
                   Direct Build
                 </a>
@@ -541,7 +541,7 @@ function PlayPage() {
         <div className="overflow-hidden rounded-lg border border-neon-cyan/30 bg-black shadow-glow">
           <iframe
             className="block h-[calc(100vh-196px)] min-h-[520px] w-full bg-black"
-            src="game/index.html"
+            src="https://irinakiseleva0.github.io/Pacman/"
             title="Cyberpunk Pac-Man browser build"
           />
         </div>
