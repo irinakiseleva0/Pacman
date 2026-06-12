@@ -1,5 +1,8 @@
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://127.0.0.1:8000";
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
+
+// When API_BASE_URL is empty, fetch calls become relative (e.g. /api/scores/)
+// which will 404 on GitHub Pages — components already handle this with try/catch.
 
 export type Player = {
   id?: number;
