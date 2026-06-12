@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [pygbag]
+    branches: [pygbag, main]
   workflow_dispatch:
 
 permissions:
@@ -14,15 +14,29 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout pygbag branch (game build)
         uses: actions/checkout@v4
         with:
           ref: pygbag
+          path: game_src
+
+      - name: Checkout main branch (showcase build)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: showcase_src
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: showcase_src/web/package-lock.json
 
       - name: Install pygame and pygbag
         run: |
@@ -30,21 +44,40 @@ jobs:
           pip install pygame pygbag
 
       - name: Install game dependencies
-        run: |
-          pip install -r requirements.txt
+        working-directory: game_src
+        run: pip install -r requirements.txt
 
       - name: Build with pygbag
-        run: |
-          python -m pygbag --build --width 800 --height 600 .
+        working-directory: game_src
+        run: python -m pygbag --build --width 800 --height 600 .
 
       - name: Patch web build
+        working-directory: game_src
+        run: python post_build.py
+
+      - name: Install showcase dependencies
+        working-directory: showcase_src/web
+        run: npm ci
+
+      - name: Build showcase
+        working-directory: showcase_src/web
+        env:
+          VITE_API_BASE_URL: ""
+        run: npm run build
+
+      - name: Assemble final deploy directory
         run: |
-          python post_build.py
+          mkdir -p deploy
+          # Game at root (irinakiseleva0.github.io/Pacman/)
+          cp -r game_src/build/web/. deploy/
+          # Showcase at /Pacman/showcase/
+          mkdir -p deploy/showcase
+          cp -r showcase_src/web/dist/. deploy/showcase/
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
+          publish_dir: ./deploy
           publish_branch: gh-pages
           force_orphan: true
