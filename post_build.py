@@ -56,20 +56,26 @@ html = re.sub(r'autorun\s*:\s*\d+', 'autorun : 1', html)
 # 4. Disable UME (media user action) requirement
 html = re.sub(r'ume_block\s*:\s*1', 'ume_block : 0', html)
 
-# 5. Ensure BrowserFS is present before pythons.js
-browserfs_tag = '<script src="https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js"></script>'
-# Always inject fresh before pythons.js
+# 5. Fix pygbag double-slash bug in browserfs URL
 html = html.replace(
-    '<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
-    f'{browserfs_tag}\n<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
-    1,
+    'https://pygame-web.github.io/cdn/0.9.3//browserfs.min.js',
+    'https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js',
 )
 
-# 6. Black background, no grey
+# 6. Ensure BrowserFS loads before pythons.js
+browserfs_tag = '<script src="https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js"></script>'
+if browserfs_tag not in html:
+    html = html.replace(
+        '<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
+        f'{browserfs_tag}\n<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
+        1,
+    )
+
+# 7. Black background, no grey
 html = re.sub(r'background-color\s*:\s*powderblue',
               'background-color: #000000', html)
 
-# 7. Body fullscreen
+# 8. Body fullscreen
 html = re.sub(
     r'(body\s*\{[^}]*font-family[^}]*\})',
     '''body {
@@ -84,7 +90,7 @@ html = re.sub(
     html, flags=re.DOTALL
 )
 
-# 8. Center canvas with letterbox
+# 9. Center canvas with letterbox
 html = re.sub(
     r'canvas\.emscripten\s*\{[^}]*\}',
     '''canvas.emscripten {
