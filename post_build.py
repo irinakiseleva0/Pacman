@@ -56,15 +56,16 @@ html = re.sub(r'autorun\s*:\s*\d+', 'autorun : 1', html)
 # 4. Disable UME (media user action) requirement
 html = re.sub(r'ume_block\s*:\s*1', 'ume_block : 0', html)
 
-# 5. Inject BrowserFS if missing (pygbag 0.9.3 bug — sometimes omits it)
+# 5. Ensure BrowserFS is present before pythons.js
 browserfs_tag = '<script src="https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js"></script>'
-if 'browserfs' not in html.lower():
-    log.warning("BrowserFS script missing from pygbag output — injecting it")
-    html = html.replace(
-        '<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
-        f'{browserfs_tag}\n<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
-        1,
-    )
+# Remove any existing browserfs script (may have wrong path/double-slash)
+html = re.sub(r'<script[^>]*browserfs[^>]*></script>', '', html)
+# Always inject fresh before pythons.js
+html = html.replace(
+    '<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
+    f'{browserfs_tag}\n<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
+    1,
+)
 
 # 6. Black background, no grey
 html = re.sub(r'background-color\s*:\s*powderblue',
