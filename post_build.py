@@ -200,6 +200,9 @@ loader_style = '''        #transfer {
 
 html = re.sub(r'\s*#transfer\s*\{.*?\}\s*#transfer::before\s*\{.*?\}\s*#status\s*\{.*?\}\s*#progress\s*\{.*?\}\s*#progress::-webkit-progress-bar\s*\{.*?\}\s*#progress::-webkit-progress-value\s*\{.*?\}\s*#progress::-moz-progress-bar\s*\{.*?\}\s*#infobox\s*\{.*?\}\s*',
               '\n', html, flags=re.DOTALL)
+hidden_fix = '''        #transfer[hidden] { display: none !important; }
+'''
+loader_style = loader_style + hidden_fix
 html = html.replace(
     "</style>", f"{canvas_rendering_style}{loader_style}    </style>", 1)
 
