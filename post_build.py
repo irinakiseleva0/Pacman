@@ -46,6 +46,12 @@ html = re.sub(r'platform\.fopen\("[^"]+\.tar\.gz"',
 html = re.sub(r'Title\s+:\s+[^\n]+', 'Title   : pacman', html)
 html = re.sub(r'Folder\s+:\s+[^\n]+', 'Folder  : pacman', html)
 html = re.sub(r'bundle\s*=\s*"[^"]+"', 'bundle = "pacman"', html)
+# Also fix bundle name in embedded Python custom_site code
+html = html.replace('bundle = "game_src"', 'bundle = "pacman"')
+html = html.replace(
+    'platform.document.body.style.background = "#7f7f7f"',
+    'platform.document.body.style.background = "#000000"',
+)
 html = re.sub(r'archive\s*:\s*"[^"]+"', 'archive : "pacman"', html)
 html = re.sub(r'Loading [^<\n]+ from [^<\n]+',
               f'Loading pacman from {apk_name}', html)
@@ -63,13 +69,6 @@ html = re.sub(r'autorun\s*:\s*\d+', 'autorun : 1', html)
 # 4. Disable UME (media user action) requirement
 html = re.sub(r'ume_block\s*:\s*1', 'ume_block : 0', html)
 
-# 5. Fix browserfs — remove all existing, inject once before pythons.js
-html = re.sub(r'<script[^>]*browserfs\.min\.js[^>]*></script>\s*', '', html)
-html = html.replace(
-    '<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
-    '<script src="https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js"></script>\n<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
-    1,
-)
 # 7. Black background, no grey
 html = re.sub(r'background-color\s*:\s*powderblue',
               'background-color: #000000', html)
@@ -109,14 +108,6 @@ html = re.sub(
         }''',
     html, flags=re.DOTALL
 )
-# 10. Add required submit button inside #transfer for pygbag
-html = re.sub(
-    r'(<div[^>]*id=["\']transfer["\'][^>]*>)',
-    r'\1<button type="submit" style="display:none"></button>',
-    html,
-    count=1,
-)
-
 viewport_meta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
 resource_hints = f'''    <link rel="preconnect" href="https://pygame-web.github.io" crossorigin>
     <link rel="dns-prefetch" href="//pygame-web.github.io">
