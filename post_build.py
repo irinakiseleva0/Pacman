@@ -39,9 +39,12 @@ archive_name = _normalize_artifact("*.tar.gz", "pacman.tar.gz")
 (build_dir / ".nojekyll").write_text("", encoding="utf-8")
 
 html = html_path.read_text(encoding="utf-8")
-html = re.sub(r'platform\.fopen\("[^"]+\.apk"', f'platform.fopen("{apk_name}"', html)
-html = re.sub(r'platform\.fopen\("[^"]+\.tar\.gz"', f'platform.fopen("{archive_name}"', html)
-html = re.sub(r'Loading [^<\n]+ from [^<\n]+', f'Loading pacman from {apk_name}', html)
+html = re.sub(r'platform\.fopen\("[^"]+\.apk"',
+              f'platform.fopen("{apk_name}"', html)
+html = re.sub(r'platform\.fopen\("[^"]+\.tar\.gz"',
+              f'platform.fopen("{archive_name}"', html)
+html = re.sub(r'Loading [^<\n]+ from [^<\n]+',
+              f'Loading pacman from {apk_name}', html)
 
 # 1. Restore exact canvas size
 html = re.sub(r'fb_width\s*:\s*"[^"]*"', 'fb_width : "800"', html)
@@ -56,21 +59,13 @@ html = re.sub(r'autorun\s*:\s*\d+', 'autorun : 1', html)
 # 4. Disable UME (media user action) requirement
 html = re.sub(r'ume_block\s*:\s*1', 'ume_block : 0', html)
 
-# 5. Fix pygbag double-slash bug in browserfs URL
+# 5. Fix browserfs — remove all existing, inject once before pythons.js
+html = re.sub(r'<script[^>]*browserfs\.min\.js[^>]*></script>\s*', '', html)
 html = html.replace(
-    'https://pygame-web.github.io/cdn/0.9.3//browserfs.min.js',
-    'https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js',
+    '<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
+    '<script src="https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js"></script>\n<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
+    1,
 )
-
-# 6. Ensure BrowserFS loads before pythons.js
-browserfs_tag = '<script src="https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js"></script>'
-if browserfs_tag not in html:
-    html = html.replace(
-        '<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
-        f'{browserfs_tag}\n<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
-        1,
-    )
-
 # 7. Black background, no grey
 html = re.sub(r'background-color\s*:\s*powderblue',
               'background-color: #000000', html)
@@ -118,10 +113,14 @@ resource_hints = f'''    <link rel="preconnect" href="https://pygame-web.github.
 '''
 html = re.sub(r'\s*<meta name="viewport" content="width=device-width, initial-scale=1\.0,\s*maximum-scale=1\.0,\s*user-scalable=no">\s*',
               '\n', html, flags=re.DOTALL)
-html = re.sub(r'\s*<link rel="preconnect" href="https://pygame-web\.github\.io" crossorigin>\s*', '\n', html)
-html = re.sub(r'\s*<link rel="dns-prefetch" href="//pygame-web\.github\.io">\s*', '\n', html)
-html = re.sub(r'\s*<link rel="preload" href="[^"]+\.tar\.gz" as="fetch"(?: crossorigin(?:="[^"]*")?)?>\s*', '\n', html)
-html = html.replace("</head>", f"    {viewport_meta}\n{resource_hints}</head>", 1)
+html = re.sub(
+    r'\s*<link rel="preconnect" href="https://pygame-web\.github\.io" crossorigin>\s*', '\n', html)
+html = re.sub(
+    r'\s*<link rel="dns-prefetch" href="//pygame-web\.github\.io">\s*', '\n', html)
+html = re.sub(
+    r'\s*<link rel="preload" href="[^"]+\.tar\.gz" as="fetch"(?: crossorigin(?:="[^"]*")?)?>\s*', '\n', html)
+html = html.replace(
+    "</head>", f"    {viewport_meta}\n{resource_hints}</head>", 1)
 
 canvas_rendering_style = '''        canvas {
             image-rendering: pixelated;
@@ -199,7 +198,8 @@ loader_style = '''        #transfer {
 
 html = re.sub(r'\s*#transfer\s*\{.*?\}\s*#transfer::before\s*\{.*?\}\s*#status\s*\{.*?\}\s*#progress\s*\{.*?\}\s*#progress::-webkit-progress-bar\s*\{.*?\}\s*#progress::-webkit-progress-value\s*\{.*?\}\s*#progress::-moz-progress-bar\s*\{.*?\}\s*#infobox\s*\{.*?\}\s*',
               '\n', html, flags=re.DOTALL)
-html = html.replace("</style>", f"{canvas_rendering_style}{loader_style}    </style>", 1)
+html = html.replace(
+    "</style>", f"{canvas_rendering_style}{loader_style}    </style>", 1)
 
 resize_script = '''<script>
 var _orig_window_resize = window._orig_window_resize ||
