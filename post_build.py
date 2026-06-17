@@ -105,6 +105,13 @@ html = re.sub(
         }''',
     html, flags=re.DOTALL
 )
+# 10. Add required submit button inside #transfer for pygbag
+html = re.sub(
+    r'(<div[^>]*id=["\']transfer["\'][^>]*>)',
+    r'\1<button type="submit" style="display:none"></button>',
+    html,
+    count=1,
+)
 
 viewport_meta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
 resource_hints = f'''    <link rel="preconnect" href="https://pygame-web.github.io" crossorigin>
