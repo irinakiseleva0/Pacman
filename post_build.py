@@ -58,8 +58,6 @@ html = re.sub(r'ume_block\s*:\s*1', 'ume_block : 0', html)
 
 # 5. Ensure BrowserFS is present before pythons.js
 browserfs_tag = '<script src="https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js"></script>'
-# Remove any existing browserfs script (may have wrong path/double-slash)
-html = re.sub(r'<script[^>]*browserfs[^>]*></script>', '', html)
 # Always inject fresh before pythons.js
 html = html.replace(
     '<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
