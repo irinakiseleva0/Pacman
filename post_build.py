@@ -53,11 +53,24 @@ html = re.sub(r'fb_ar\s*:\s*[\d.]+', 'fb_ar   :  1.333', html)
 # 3. Autorun — no click required
 html = re.sub(r'autorun\s*:\s*\d+', 'autorun : 1', html)
 
-# 4. Black background, no grey
+# 4. Disable UME (media user action) requirement
+html = re.sub(r'ume_block\s*:\s*1', 'ume_block : 0', html)
+
+# 5. Inject BrowserFS if missing (pygbag 0.9.3 bug — sometimes omits it)
+browserfs_tag = '<script src="https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js"></script>'
+if 'browserfs' not in html.lower():
+    log.warning("BrowserFS script missing from pygbag output — injecting it")
+    html = html.replace(
+        '<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
+        f'{browserfs_tag}\n<script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js"',
+        1,
+    )
+
+# 6. Black background, no grey
 html = re.sub(r'background-color\s*:\s*powderblue',
               'background-color: #000000', html)
 
-# 5. Body fullscreen
+# 7. Body fullscreen
 html = re.sub(
     r'(body\s*\{[^}]*font-family[^}]*\})',
     '''body {
@@ -72,7 +85,7 @@ html = re.sub(
     html, flags=re.DOTALL
 )
 
-# 6. Center canvas with letterbox
+# 8. Center canvas with letterbox
 html = re.sub(
     r'canvas\.emscripten\s*\{[^}]*\}',
     '''canvas.emscripten {
