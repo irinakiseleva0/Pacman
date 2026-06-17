@@ -42,35 +42,6 @@ html = html_path.read_text(encoding="utf-8")
 html = re.sub(r'platform\.fopen\("[^"]+\.apk"', f'platform.fopen("{apk_name}"', html)
 html = re.sub(r'platform\.fopen\("[^"]+\.tar\.gz"', f'platform.fopen("{archive_name}"', html)
 html = re.sub(r'Loading [^<\n]+ from [^<\n]+', f'Loading pacman from {apk_name}', html)
-html = re.sub(r'Title\s+:\s+[^\n]+', "Title   : pacman", html)
-html = re.sub(r'Folder\s+:\s+[^\n]+', "Folder  : pacman", html)
-html = re.sub(r'bundle = "[^"]+"', 'bundle = "pacman"', html)
-html = re.sub(r'archive\s*:\s*"[^"]+"', 'archive : "pacman"', html)
-html = re.sub(r'<title>[^<]*</title>', '<title>pacman</title>', html, count=1)
-html = re.sub(r'ume_block\s*:\s*1', 'ume_block : 0', html)
-html = html.replace('if not platform.window.MM.UME:', 'if False and not platform.window.MM.UME:')
-html = html.replace("platform.window.transfer.hidden = true", "platform.window.transfer.hidden = True")
-html = html.replace("platform.window.MM.UME = true", "platform.window.MM.UME = True")
-
-if "platform.window.MM.UME = True" not in html:
-    html = html.replace(
-        "    # test/wait user media interaction\n"
-        "    if not platform.window.MM.UME:",
-        "    # test/wait user media interaction\n"
-        "    platform.window.MM.UME = True\n\n"
-        "    if not platform.window.MM.UME:",
-        1,
-    )
-
-if "    platform.window.infobox.style.display = \"none\"\n    platform.window.config.gui_divider = 1\n    platform.window.window_resize()\n\n    await shell.source(main" not in html:
-    html = html.replace(
-        "    await shell.source(main, callback=ui_callback)",
-        "    platform.window.infobox.style.display = \"none\"\n"
-        "    platform.window.config.gui_divider = 1\n"
-        "    platform.window.window_resize()\n\n"
-        "    await shell.source(main, callback=ui_callback)",
-        1,
-    )
 
 # 1. Restore exact canvas size
 html = re.sub(r'fb_width\s*:\s*"[^"]*"', 'fb_width : "800"', html)
@@ -79,13 +50,14 @@ html = re.sub(r'fb_height\s*:\s*"[^"]*"', 'fb_height : "600"', html)
 # 2. Fix aspect ratio
 html = re.sub(r'fb_ar\s*:\s*[\d.]+', 'fb_ar   :  1.333', html)
 
+# 3. Autorun — no click required
 html = re.sub(r'autorun\s*:\s*\d+', 'autorun : 1', html)
 
-# 3. Black background, no grey
+# 4. Black background, no grey
 html = re.sub(r'background-color\s*:\s*powderblue',
               'background-color: #000000', html)
 
-# 4. Body fullscreen
+# 5. Body fullscreen
 html = re.sub(
     r'(body\s*\{[^}]*font-family[^}]*\})',
     '''body {
@@ -100,7 +72,7 @@ html = re.sub(
     html, flags=re.DOTALL
 )
 
-# 5. Center canvas with letterbox
+# 6. Center canvas with letterbox
 html = re.sub(
     r'canvas\.emscripten\s*\{[^}]*\}',
     '''canvas.emscripten {
@@ -124,12 +96,13 @@ html = re.sub(
 viewport_meta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
 resource_hints = f'''    <link rel="preconnect" href="https://pygame-web.github.io" crossorigin>
     <link rel="dns-prefetch" href="//pygame-web.github.io">
-    <link rel=\"preload\" href=\"{archive_name}\" as=\"fetch\">\n'''
+    <link rel="preload" href="{archive_name}" as="fetch">
+'''
 html = re.sub(r'\s*<meta name="viewport" content="width=device-width, initial-scale=1\.0,\s*maximum-scale=1\.0,\s*user-scalable=no">\s*',
               '\n', html, flags=re.DOTALL)
 html = re.sub(r'\s*<link rel="preconnect" href="https://pygame-web\.github\.io" crossorigin>\s*', '\n', html)
 html = re.sub(r'\s*<link rel="dns-prefetch" href="//pygame-web\.github\.io">\s*', '\n', html)
-html = re.sub(r'\s*<link rel="preload" href="[^"]+\.tar\.gz" as="fetch" crossorigin="anonymous">\s*', '\n', html)
+html = re.sub(r'\s*<link rel="preload" href="[^"]+\.tar\.gz" as="fetch"(?: crossorigin(?:="[^"]*")?)?>\s*', '\n', html)
 html = html.replace("</head>", f"    {viewport_meta}\n{resource_hints}</head>", 1)
 
 canvas_rendering_style = '''        canvas {
@@ -209,11 +182,6 @@ loader_style = '''        #transfer {
 html = re.sub(r'\s*#transfer\s*\{.*?\}\s*#transfer::before\s*\{.*?\}\s*#status\s*\{.*?\}\s*#progress\s*\{.*?\}\s*#progress::-webkit-progress-bar\s*\{.*?\}\s*#progress::-webkit-progress-value\s*\{.*?\}\s*#progress::-moz-progress-bar\s*\{.*?\}\s*#infobox\s*\{.*?\}\s*',
               '\n', html, flags=re.DOTALL)
 html = html.replace("</style>", f"{canvas_rendering_style}{loader_style}    </style>", 1)
-html = re.sub(
-    r'\s*<script src="https://pygame-web\.github\.io/cdn/0\.9\.3//browserfs\.min\.js"></script>\s*',
-    '\n',
-    html,
-)
 
 resize_script = '''<script>
 var _orig_window_resize = window._orig_window_resize ||
@@ -254,10 +222,6 @@ setTimeout(window.window_resize, 3000);
 html = re.sub(r'\s*<script>\s*var _orig_window_resize = .*?</script>\s*',
               '\n', html, flags=re.DOTALL)
 html = html.replace("</body>", f"{resize_script}\n</body>", 1)
-
-favicon_tag = '<link rel="icon" href="data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'50\' r=\'48\' fill=\'%23000\'/><circle cx=\'50\' cy=\'50\' r=\'36\' fill=\'%23FFE66D\'/><polygon points=\'50,50 98,30 98,70\' fill=\'%23000\'/></svg>" type="image/svg+xml">'
-if '<link rel="icon"' not in html:
-    html = html.replace("</head>", f"    {favicon_tag}\n</head>", 1)
 
 html_path.write_text(html, encoding="utf-8")
 log.info("patched build/web/index.html successfully")
