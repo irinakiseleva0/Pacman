@@ -79,6 +79,8 @@ html = re.sub(r'fb_height\s*:\s*"[^"]*"', 'fb_height : "600"', html)
 # 2. Fix aspect ratio
 html = re.sub(r'fb_ar\s*:\s*[\d.]+', 'fb_ar   :  1.333', html)
 
+html = re.sub(r'autorun\s*:\s*\d+', 'autorun : 1', html)
+
 # 3. Black background, no grey
 html = re.sub(r'background-color\s*:\s*powderblue',
               'background-color: #000000', html)
@@ -122,8 +124,7 @@ html = re.sub(
 viewport_meta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
 resource_hints = f'''    <link rel="preconnect" href="https://pygame-web.github.io" crossorigin>
     <link rel="dns-prefetch" href="//pygame-web.github.io">
-    <link rel="preload" href="{archive_name}" as="fetch" crossorigin="anonymous">
-'''
+    <link rel=\"preload\" href=\"{archive_name}\" as=\"fetch\">\n'''
 html = re.sub(r'\s*<meta name="viewport" content="width=device-width, initial-scale=1\.0,\s*maximum-scale=1\.0,\s*user-scalable=no">\s*',
               '\n', html, flags=re.DOTALL)
 html = re.sub(r'\s*<link rel="preconnect" href="https://pygame-web\.github\.io" crossorigin>\s*', '\n', html)
