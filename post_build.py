@@ -43,6 +43,10 @@ html = re.sub(r'platform\.fopen\("[^"]+\.apk"',
               f'platform.fopen("{apk_name}"', html)
 html = re.sub(r'platform\.fopen\("[^"]+\.tar\.gz"',
               f'platform.fopen("{archive_name}"', html)
+html = re.sub(r'Title\s+:\s+[^\n]+', 'Title   : pacman', html)
+html = re.sub(r'Folder\s+:\s+[^\n]+', 'Folder  : pacman', html)
+html = re.sub(r'bundle\s*=\s*"[^"]+"', 'bundle = "pacman"', html)
+html = re.sub(r'archive\s*:\s*"[^"]+"', 'archive : "pacman"', html)
 html = re.sub(r'Loading [^<\n]+ from [^<\n]+',
               f'Loading pacman from {apk_name}', html)
 
