@@ -8,6 +8,7 @@ import {
   Sparkles,
   Target,
   Trophy,
+  Zap,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -535,6 +536,12 @@ function PlayPage() {
                 <a href="https://irinakiseleva0.github.io/Pacman/" target="_blank" rel="noreferrer">
                   <Play className="h-4 w-4" />
                   Direct Build
+                </a>
+              </NeonButton>
+              <NeonButton glow="yellow" asChild>
+                <a href="game.html" target="_blank" rel="noreferrer">
+                  <Zap className="h-4 w-4" />
+                  JS VERSION
                 </a>
               </NeonButton>
               <NeonButton glow="yellow" asChild>
