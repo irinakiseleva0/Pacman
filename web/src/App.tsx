@@ -559,26 +559,38 @@ function PlayPage() {
             </div>
           </div>
         </div>
-        <div className="flex flex-col items-center justify-center gap-6 rounded-lg border border-neon-cyan/30 bg-black/80 py-32 shadow-glow">
-          <div className="text-center">
-            <p className="font-display text-2xl font-black uppercase tracking-widest text-neon-yellow">
-              PACMAN
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {/* JS Version */}
+          <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-neon-yellow/30 bg-black/80 py-16 shadow-glow">
+            <p className="font-display text-lg font-black uppercase tracking-widest text-neon-yellow">
+              JS VERSION
             </p>
-            <p className="mt-4 max-w-md text-sm leading-6 text-slate-400">
-              Pygbag WebAssembly build — requires its own browser
-              context for SharedArrayBuffer support.
+            <p className="max-w-xs text-center text-sm leading-6 text-slate-400">
+              Native JavaScript — 60 FPS, no lag, instant load.
             </p>
+            <NeonButton glow="yellow" asChild>
+              <a href="game.html" target="_blank" rel="noreferrer">
+                <Zap className="h-4 w-4" />
+                Play Now
+              </a>
+            </NeonButton>
           </div>
-          <NeonButton glow="cyan" asChild>
-            <a
-              href="https://irinakiseleva0.github.io/Pacman/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Play className="h-4 w-4" />
-              Launch in New Tab
-            </a>
-          </NeonButton>
+
+          {/* Python Version */}
+          <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-neon-cyan/30 bg-black/80 py-16 shadow-glow">
+            <p className="font-display text-lg font-black uppercase tracking-widest text-neon-cyan">
+              PYTHON VERSION
+            </p>
+            <p className="max-w-xs text-center text-sm leading-6 text-slate-400">
+              Original Python/pygame via WebAssembly. Full game with all features.
+            </p>
+            <NeonButton glow="cyan" asChild>
+              <a href="https://irinakiseleva0.github.io/Pacman/" target="_blank" rel="noreferrer">
+                <Play className="h-4 w-4" />
+                Launch Build
+              </a>
+            </NeonButton>
+          </div>
         </div>
       </div>
     </main>
