@@ -585,7 +585,11 @@ function PlayPage() {
               Original Python/pygame via WebAssembly. Full game with all features.
             </p>
             <NeonButton glow="cyan" asChild>
-              <a href="https://irinakiseleva0.github.io/Pacman/" target="_blank" rel="noreferrer">
+              <a
+                href="https://irinakiseleva0.github.io/Pacman/"
+                target="_blank"
+                rel="noreferrer"
+              >
                 <Play className="h-4 w-4" />
                 Launch Build
               </a>
