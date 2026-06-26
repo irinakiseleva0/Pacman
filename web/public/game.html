@@ -295,16 +295,19 @@
       bgCtx.fill();
     }
 
-    const leftPanelWidth = w * 0.18;
+    const leftPanelWidth = w * 0.15;
     bgCtx.save();
-    bgCtx.fillStyle = "rgba(0, 5, 20, 0.75)";
+    bgCtx.fillStyle = "rgba(0, 8, 25, 0.6)";
     bgCtx.fillRect(0, 0, leftPanelWidth, h);
-    bgCtx.strokeStyle = "rgba(0,238,255,0.2)";
+    bgCtx.save();
+    bgCtx.globalAlpha = 0.4;
+    bgCtx.strokeStyle = "#00eeff";
     bgCtx.lineWidth = 1;
     bgCtx.beginPath();
     bgCtx.moveTo(leftPanelWidth + 0.5, 0);
     bgCtx.lineTo(leftPanelWidth + 0.5, h);
     bgCtx.stroke();
+    bgCtx.restore();
     bgCtx.fillStyle = "rgba(0,238,255,0.08)";
     for (let px = 12; px < leftPanelWidth - 8; px += 16) {
       for (let py = 12; py < h; py += 16) {
@@ -324,17 +327,6 @@
       bgCtx.lineTo(Math.min(leftPanelWidth - 18, lx + length), ly);
       bgCtx.stroke();
     }
-    bgCtx.restore();
-
-    bgCtx.save();
-    const accent = bgCtx.createLinearGradient(w - 3, 0, w - 3, h);
-    accent.addColorStop(0, "#ff00cc");
-    accent.addColorStop(1, "#6600ff");
-    bgCtx.globalAlpha = 0.85;
-    bgCtx.shadowColor = "#ff00cc";
-    bgCtx.shadowBlur = 12;
-    bgCtx.fillStyle = accent;
-    bgCtx.fillRect(w - 3, 0, 3, h);
     bgCtx.restore();
 
     const labelX = w - 120;
@@ -366,6 +358,28 @@
     vignette.addColorStop(1, "rgba(0,0,0,0.65)");
     bgCtx.fillStyle = vignette;
     bgCtx.fillRect(0, 0, w, h);
+
+    bgCtx.save();
+    const leftAccent = bgCtx.createLinearGradient(0, 0, 0, h);
+    leftAccent.addColorStop(0, "#00eeff");
+    leftAccent.addColorStop(1, "#0044ff");
+    bgCtx.globalAlpha = 0.6;
+    bgCtx.shadowColor = "#00eeff";
+    bgCtx.shadowBlur = 15;
+    bgCtx.fillStyle = leftAccent;
+    bgCtx.fillRect(0, 0, 3, h);
+    bgCtx.restore();
+
+    bgCtx.save();
+    const accent = bgCtx.createLinearGradient(w - 4, 0, w - 4, h);
+    accent.addColorStop(0, "#ff00ff");
+    accent.addColorStop(1, "#aa00ff");
+    bgCtx.globalAlpha = 1.0;
+    bgCtx.shadowColor = "#ff00ff";
+    bgCtx.shadowBlur = 20;
+    bgCtx.fillStyle = accent;
+    bgCtx.fillRect(w - 4, 0, 4, h);
+    bgCtx.restore();
   }
 
   function backgroundLoop() {
