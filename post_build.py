@@ -207,39 +207,29 @@ html = html.replace(
     "</style>", f"{canvas_rendering_style}{loader_style}    </style>", 1)
 
 resize_script = '''<script>
-var _orig_window_resize = window._orig_window_resize ||
-                          window.window_resize || function(){};
-window._orig_window_resize = _orig_window_resize;
-window.window_resize = function() {
-    _orig_window_resize.apply(this, arguments);
-    var c = document.getElementById('canvas');
+function fitCanvas() {
+    var c = document.getElementById("canvas");
     if (!c) return;
-    var dpr = window.devicePixelRatio || 1;
     var sw = window.innerWidth;
     var sh = window.innerHeight;
     var scale = Math.min(sw / 800, sh / 600);
     var cw = Math.round(800 * scale);
     var ch = Math.round(600 * scale);
-    c.width  = Math.round(800 * scale * dpr);
-    c.height = Math.round(600 * scale * dpr);
-    c.style.cssText = [
-        'position:fixed',
-        'left:' + Math.round((sw - cw) / 2) + 'px',
-        'top:' + Math.round((sh - ch) / 2) + 'px',
-        'width:' + cw + 'px',
-        'height:' + ch + 'px',
-        'margin:0',
-        'transform:none',
-        'z-index:5',
-        'border:0',
-        'image-rendering:pixelated',
-        'image-rendering:crisp-edges'
-    ].join(';');
-};
-window.addEventListener('resize', window.window_resize);
-setTimeout(window.window_resize, 500);
-setTimeout(window.window_resize, 1500);
-setTimeout(window.window_resize, 3000);
+    c.style.position = "fixed";
+    c.style.left = Math.round((sw - cw) / 2) + "px";
+    c.style.top = Math.round((sh - ch) / 2) + "px";
+    c.style.width = cw + "px";
+    c.style.height = ch + "px";
+    c.style.margin = "0";
+    c.style.transform = "none";
+    c.style.zIndex = "5";
+    c.style.border = "0";
+    c.style.imageRendering = "pixelated";
+}
+window.addEventListener("resize", fitCanvas);
+[500, 1000, 2000, 3000, 5000, 8000].forEach(function(t) {
+    setTimeout(fitCanvas, t);
+});
 </script>'''
 
 html = re.sub(r'\s*<script>\s*var _orig_window_resize = .*?</script>\s*',
