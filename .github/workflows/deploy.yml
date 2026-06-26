@@ -62,6 +62,8 @@ jobs:
       - name: Build showcase
         working-directory: showcase_src/web
         env:
+          # Set to the Railway backend origin, e.g. https://<service-name>.up.railway.app.
+          # backend/Procfile and backend/railway.json do not store the generated public URL.
           VITE_API_BASE_URL: ""
         run: npm run build
 

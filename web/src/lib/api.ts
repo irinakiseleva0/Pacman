@@ -1,8 +1,11 @@
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
+// Set VITE_API_BASE_URL to the Railway backend origin, for example:
+// https://<service-name>.up.railway.app
+// No concrete Railway public URL is stored in backend/Procfile or backend/railway.json.
 // When API_BASE_URL is empty, fetch calls become relative (e.g. /api/scores/)
-// which will 404 on GitHub Pages — components already handle this with try/catch.
+// which will 404 on GitHub Pages; components already handle this with try/catch.
 
 export type Player = {
   id?: number;
