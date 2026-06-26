@@ -16,8 +16,10 @@
 
     canvas {
       display: block;
-      width: 100vw;
-      height: 100vh;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       background: #02030b;
     }
 
@@ -130,16 +132,45 @@
   let started;
   let deathTimer;
   let levelFlashTimer;
+  let menuIndex;
+
+  const MENU_OPTIONS = ["EASY", "NORMAL", "HARD"];
+  const particles = Array.from({ length: 20 }, (_, i) => ({
+    x: (i * 53 + 19) % 340,
+    y: (i * 89 + 31) % 520,
+    speed: 5 + (i % 5) * 1.6,
+    drift: (i % 2 === 0 ? 1 : -1) * (2 + (i % 3))
+  }));
+  const goldenDots = [
+    { x: 0.18, y: 0.78, delay: 0 },
+    { x: 0.76, y: 0.68, delay: 0.8 },
+    { x: 0.28, y: 0.24, delay: 1.5 },
+    { x: 0.84, y: 0.34, delay: 2.2 }
+  ];
+  const skyline = [
+    { x: 0.03, w: 0.15, h: 0.22 },
+    { x: 0.20, w: 0.18, h: 0.34 },
+    { x: 0.42, w: 0.13, h: 0.26 },
+    { x: 0.59, w: 0.19, h: 0.42 },
+    { x: 0.82, w: 0.14, h: 0.30 }
+  ];
 
   function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(window.innerWidth * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    tile = Math.floor(Math.min(window.innerWidth / COLS, (window.innerHeight - 56) / ROWS));
-    tile = Math.max(tile, 12);
-    offsetX = Math.floor((window.innerWidth - tile * COLS) / 2);
-    offsetY = Math.floor((window.innerHeight - tile * ROWS) / 2) + 18;
+    const cellSize = Math.floor(Math.min(window.innerWidth / 28, window.innerHeight / 31));
+    canvas.width = cellSize * 28;
+    canvas.height = cellSize * 31;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    tile = cellSize;
+    offsetX = 0;
+    offsetY = 0;
+  }
+
+  function canvasWidth() {
+    return canvas.width;
+  }
+
+  function canvasHeight() {
+    return canvas.height;
   }
 
   function makeGrid() {
@@ -378,20 +409,20 @@
 
   function drawBackground() {
     ctx.fillStyle = "#02030b";
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.fillRect(0, 0, canvasWidth(), canvasHeight());
     ctx.save();
-    ctx.strokeStyle = "rgba(0,238,255,0.05)";
+    ctx.strokeStyle = "rgba(0,238,255,0.04)";
     ctx.lineWidth = 1;
-    for (let x = 0.5; x < window.innerWidth; x += 28) {
+    for (let x = 0.5; x < canvasWidth(); x += tile) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
-      ctx.lineTo(x, window.innerHeight);
+      ctx.lineTo(x, canvasHeight());
       ctx.stroke();
     }
-    for (let y = 0.5; y < window.innerHeight; y += 28) {
+    for (let y = 0.5; y < canvasHeight(); y += tile) {
       ctx.beginPath();
       ctx.moveTo(0, y);
-      ctx.lineTo(window.innerWidth, y);
+      ctx.lineTo(canvasWidth(), y);
       ctx.stroke();
     }
     ctx.restore();
@@ -404,8 +435,8 @@
         const cell = grid[y][x];
         if (cell === WALL) {
           ctx.shadowColor = "#00eeff";
-          ctx.shadowBlur = 14;
-          ctx.fillStyle = "rgba(0, 238, 255, 0.14)";
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = "#0a2a3a";
           ctx.strokeStyle = "#00eeff";
           ctx.lineWidth = Math.max(1.5, tile * 0.08);
           ctx.beginPath();
@@ -545,23 +576,113 @@
     ctx.save();
     ctx.font = "bold 14px 'Courier New', monospace";
     ctx.textBaseline = "middle";
-    const label = "SCORE " + score;
-    const panelWidth = ctx.measureText(label).width + 24;
-    ctx.fillStyle = "rgba(0, 238, 255, 0.10)";
-    ctx.strokeStyle = "rgba(0, 238, 255, 0.55)";
-    ctx.shadowColor = "#00eeff";
-    ctx.shadowBlur = 9;
+    ctx.fillStyle = "rgba(5, 10, 25, 0.92)";
+    ctx.fillRect(0, 0, canvasWidth(), Math.max(34, tile * 1.15));
+    ctx.strokeStyle = "rgba(0, 238, 255, 0.28)";
     ctx.beginPath();
-    roundRectPath(14, 12, panelWidth, 28, 3);
+    ctx.moveTo(0, Math.max(34, tile * 1.15));
+    ctx.lineTo(canvasWidth(), Math.max(34, tile * 1.15));
+    ctx.stroke();
+    ctx.fillStyle = "#00eeff";
+    ctx.shadowColor = "#00eeff";
+    ctx.shadowBlur = 8;
+    ctx.fillText("SCORE", 16, 19);
+    ctx.fillStyle = "#00eeff";
+    ctx.fillText(String(score).padStart(5, "0"), 80, 19);
+    ctx.shadowBlur = 0;
+    for (let i = 0; i < lives; i++) {
+      drawHudPacIcon(canvasWidth() - 24 - i * 22, 19);
+    }
+    ctx.restore();
+  }
+
+  function drawStartBackground() {
+    const t = pulseTime;
+    ctx.save();
+    ctx.fillStyle = "#02030b";
+    ctx.fillRect(0, 0, canvasWidth(), canvasHeight());
+    ctx.strokeStyle = "rgba(0,238,255,0.04)";
+    ctx.lineWidth = 1;
+    for (let x = 0.5; x < canvasWidth(); x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvasHeight());
+      ctx.stroke();
+    }
+    for (let y = 0.5; y < canvasHeight(); y += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvasWidth(), y);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "#0a0f1a";
+    for (const building of skyline) {
+      const x = building.x * canvasWidth();
+      const w = building.w * canvasWidth();
+      const h = building.h * canvasHeight();
+      ctx.fillRect(x, canvasHeight() - h, w, h);
+      ctx.fillStyle = "rgba(0,238,255,0.08)";
+      for (let wx = x + 8; wx < x + w - 8; wx += 16) {
+        for (let wy = canvasHeight() - h + 14; wy < canvasHeight() - 16; wy += 22) {
+          ctx.fillRect(wx, wy, 4, 7);
+        }
+      }
+      ctx.fillStyle = "#0a0f1a";
+    }
+
+    ctx.fillStyle = "rgba(0,238,255,0.4)";
+    for (const particle of particles) {
+      const x = (particle.x + t * particle.drift + canvasWidth()) % canvasWidth();
+      const y = (particle.y - t * particle.speed + canvasHeight()) % canvasHeight();
+      ctx.beginPath();
+      ctx.arc(x, y, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (const dot of goldenDots) {
+      const local = (t + dot.delay) % 3.2;
+      const alpha = Math.max(0, 1 - local / 3.2);
+      const y = dot.y * canvasHeight() - local * 28;
+      ctx.fillStyle = `rgba(255, 230, 109, ${alpha * 0.85})`;
+      ctx.shadowColor = "#ffe66d";
+      ctx.shadowBlur = 10 * alpha;
+      ctx.beginPath();
+      ctx.arc(dot.x * canvasWidth(), y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawSeparator(x, y, w) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(0,238,255,0.65)";
+    ctx.shadowColor = "#00eeff";
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w, y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawMenuButton(x, y, w, h, label, selected) {
+    ctx.save();
+    ctx.fillStyle = selected ? "#00eeff" : "rgba(2, 3, 11, 0.86)";
+    ctx.strokeStyle = "#00eeff";
+    ctx.shadowColor = selected ? "#00eeff" : "rgba(0,238,255,0.35)";
+    ctx.shadowBlur = selected ? 14 : 6;
+    ctx.beginPath();
+    roundRectPath(x, y, w, h, 5);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "#00eeff";
-    ctx.fillText(label, 26, 27);
     ctx.shadowBlur = 0;
-    for (let i = 0; i < lives; i++) {
-      drawHudPacIcon(window.innerWidth - 24 - i * 22, 27);
-    }
+    ctx.fillStyle = selected ? "#02030b" : "#ffffff";
+    ctx.font = "bold 14px 'Courier New', monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, x + w / 2, y + h / 2);
     ctx.restore();
   }
 
@@ -573,50 +694,77 @@
     ctx.shadowBlur = 16;
     ctx.fillStyle = "#00eeff";
     ctx.font = "bold 14px 'Courier New', monospace";
-    ctx.fillText("CYBER DISTRICT", window.innerWidth / 2, y - 58);
+    ctx.fillText("CYBER DISTRICT", canvasWidth() / 2, y - 58);
     ctx.shadowColor = "#ffffff";
     ctx.shadowBlur = 18;
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 56px 'Courier New', monospace";
-    ctx.fillText("PAC-MAN", window.innerWidth / 2, y);
+    ctx.fillText("PAC-MAN", canvasWidth() / 2, y);
     ctx.restore();
   }
 
   function drawStartScreen() {
     ctx.save();
-    ctx.fillStyle = "rgba(2, 3, 11, 0.86)";
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-    drawBrand(window.innerHeight / 2 - 24);
+    drawStartBackground();
+    const panelWidth = 340;
+    const panelHeight = 396;
+    const panelX = (canvasWidth() - panelWidth) / 2;
+    const panelY = (canvasHeight() - panelHeight) / 2;
+    ctx.fillStyle = "rgba(5,10,25,0.92)";
+    ctx.strokeStyle = "rgba(0,238,255,0.3)";
+    ctx.shadowColor = "rgba(0,238,255,0.35)";
+    ctx.shadowBlur = 24;
+    ctx.beginPath();
+    roundRectPath(panelX, panelY, panelWidth, panelHeight, 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#ff9900";
+    ctx.font = "bold 11px 'Courier New', monospace";
+    ctx.fillText("CYBER DISTRICT", canvasWidth() / 2, panelY + 50);
+    ctx.shadowColor = "#00eeff";
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 52px 'Courier New', monospace";
+    ctx.fillText("PAC-MAN", canvasWidth() / 2, panelY + 105);
+    drawSeparator(panelX + 38, panelY + 148, panelWidth - 76);
+
+    for (let i = 0; i < MENU_OPTIONS.length; i++) {
+      drawMenuButton(panelX + 58, panelY + 176 + i * 48, panelWidth - 116, 34, MENU_OPTIONS[i], i === menuIndex);
+    }
+
+    drawSeparator(panelX + 38, panelY + 334, panelWidth - 76);
     if (Math.floor(Date.now() / 420) % 2 === 0) {
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
       ctx.shadowColor = "#00eeff";
       ctx.shadowBlur = 14;
       ctx.fillStyle = "#00eeff";
-      ctx.font = "bold 16px 'Courier New', monospace";
-      ctx.fillText("PRESS SPACE TO START", window.innerWidth / 2, window.innerHeight / 2 + 74);
+      ctx.font = "bold 13px 'Courier New', monospace";
+      ctx.fillText("PRESS ENTER TO START", canvasWidth() / 2, panelY + 362);
     }
     ctx.restore();
   }
 
   function drawGameOverScreen() {
     ctx.save();
-    ctx.fillStyle = "rgba(2, 3, 11, 0.82)";
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-    drawBrand(window.innerHeight / 2 - 86);
+    ctx.fillStyle = "rgba(0,0,0,0.8)";
+    ctx.fillRect(0, 0, canvasWidth(), canvasHeight());
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.shadowColor = "#ff4d4d";
-    ctx.shadowBlur = 18;
+    ctx.shadowBlur = 20;
     ctx.fillStyle = "#ff4d4d";
-    ctx.font = "bold 42px 'Courier New', monospace";
-    ctx.fillText("GAME OVER", window.innerWidth / 2, window.innerHeight / 2 + 8);
+    ctx.font = "bold 48px 'Courier New', monospace";
+    ctx.fillText("GAME OVER", canvasWidth() / 2, canvasHeight() / 2 - 34);
     ctx.shadowColor = "#00eeff";
     ctx.fillStyle = "#00eeff";
-    ctx.font = "bold 16px 'Courier New', monospace";
-    ctx.fillText("SCORE " + score, window.innerWidth / 2, window.innerHeight / 2 + 54);
+    ctx.font = "bold 18px 'Courier New', monospace";
+    ctx.fillText("SCORE: " + score, canvasWidth() / 2, canvasHeight() / 2 + 18);
     if (Math.floor(Date.now() / 420) % 2 === 0) {
-      ctx.fillText("PRESS SPACE", window.innerWidth / 2, window.innerHeight / 2 + 92);
+      ctx.fillText("PRESS SPACE TO RESTART", canvasWidth() / 2, canvasHeight() / 2 + 66);
     }
     ctx.restore();
   }
@@ -624,33 +772,36 @@
   function drawLevelCompleteScreen() {
     ctx.save();
     ctx.fillStyle = "rgba(2, 3, 11, 0.74)";
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.fillRect(0, 0, canvasWidth(), canvasHeight());
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.shadowColor = "#ffffff";
     ctx.shadowBlur = 18;
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 38px 'Courier New', monospace";
-    ctx.fillText("LEVEL CLEAR", window.innerWidth / 2, window.innerHeight / 2 - 20);
+    ctx.fillText("LEVEL CLEAR", canvasWidth() / 2, canvasHeight() / 2 - 20);
     ctx.shadowColor = "#00eeff";
     ctx.fillStyle = "#00eeff";
     ctx.font = "bold 16px 'Courier New', monospace";
-    ctx.fillText("SCORE " + score, window.innerWidth / 2, window.innerHeight / 2 + 26);
+    ctx.fillText("SCORE " + score, canvasWidth() / 2, canvasHeight() / 2 + 26);
     if (Math.floor(Date.now() / 420) % 2 === 0) {
-      ctx.fillText("PRESS SPACE", window.innerWidth / 2, window.innerHeight / 2 + 62);
+      ctx.fillText("PRESS SPACE", canvasWidth() / 2, canvasHeight() / 2 + 62);
     }
     ctx.restore();
   }
 
   function render() {
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.clearRect(0, 0, canvasWidth(), canvasHeight());
+    if (!started) {
+      drawStartScreen();
+      return;
+    }
     drawBackground();
     drawMaze();
     drawDots();
     for (const ghost of ghosts) drawGhost(ghost);
     drawPac();
     drawHud();
-    if (!started) drawStartScreen();
     if (gameOver) drawGameOverScreen();
     if (levelComplete) drawLevelCompleteScreen();
   }
@@ -663,9 +814,27 @@
     requestAnimationFrame(loop);
   }
 
+  window.addEventListener("load", resize);
   window.addEventListener("resize", resize);
   window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
+    if (!started) {
+      if (key === "arrowup" || key === "w") {
+        menuIndex = (menuIndex + MENU_OPTIONS.length - 1) % MENU_OPTIONS.length;
+        event.preventDefault();
+        return;
+      }
+      if (key === "arrowdown" || key === "s") {
+        menuIndex = (menuIndex + 1) % MENU_OPTIONS.length;
+        event.preventDefault();
+        return;
+      }
+      if (key === "enter" || key === " ") {
+        started = true;
+        event.preventDefault();
+        return;
+      }
+    }
     const map = {
       arrowleft: "left",
       a: "left",
@@ -680,10 +849,7 @@
       wantedDir = map[key];
       event.preventDefault();
     }
-    if ((key === "enter" || key === " ") && !started) {
-      started = true;
-      event.preventDefault();
-    } else if ((key === "enter" || key === " ") && (gameOver || levelComplete)) {
+    if ((key === "enter" || key === " ") && (gameOver || levelComplete)) {
       newGame();
       started = true;
       event.preventDefault();
@@ -691,6 +857,7 @@
   });
 
   started = false;
+  menuIndex = 1;
   resize();
   newGame();
   requestAnimationFrame(loop);
