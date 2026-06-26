@@ -237,10 +237,12 @@
 
     let x = 0;
     let index = 0;
+    const buildingBandTop = h * 0.70;
+    const maxBuildingHeight = h * 0.30;
     while (x < w) {
       const bw = 60 + (index * 37) % 81;
-      const bh = 150 + (index * 53) % 201;
-      const top = h - bh;
+      const bh = Math.min(maxBuildingHeight, 150 + (index * 53) % 201);
+      const top = Math.max(buildingBandTop, h - bh);
       bgCtx.fillStyle = index % 2 === 0 ? "#050d1a" : "#080f22";
       bgCtx.fillRect(x, top, bw, bh);
       bgCtx.save();
@@ -293,7 +295,7 @@
       bgCtx.fill();
     }
 
-    const accent = bgCtx.createLinearGradient(w - 1, 0, w - 1, h);
+    const accent = bgCtx.createLinearGradient(w - 2, 0, w - 2, h);
     accent.addColorStop(0, "#ff00cc");
     accent.addColorStop(1, "#6600ff");
     bgCtx.save();
@@ -856,10 +858,10 @@
 
   function drawStartScreen() {
     ctx.save();
-    const panelWidth = 340;
+    const panelWidth = 380;
     const panelHeight = 430;
     const panelX = (canvasWidth() - panelWidth) / 2;
-    const panelY = Math.max(18, (canvasHeight() - panelHeight) / 2 - 12);
+    const panelY = Math.max(18, canvasHeight() * 0.42 - panelHeight / 2);
     ctx.fillStyle = "rgba(5,10,25,0.92)";
     ctx.strokeStyle = "rgba(0,238,255,0.3)";
     ctx.shadowColor = "rgba(0,238,255,0.35)";
