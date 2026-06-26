@@ -16,11 +16,15 @@
 
     canvas {
       display: block;
+    }
+
+    #game {
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: #02030b;
+      z-index: 1;
+      background: transparent;
     }
 
     .scanline-overlay,
@@ -48,6 +52,7 @@
   </style>
 </head>
 <body>
+<canvas id="bg" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;"></canvas>
 <canvas id="game"></canvas>
 <div class="vignette-overlay" aria-hidden="true"></div>
 <div class="scanline-overlay" aria-hidden="true"></div>
@@ -55,6 +60,8 @@
 (() => {
   "use strict";
 
+  const bgCanvas = document.getElementById("bg");
+  const bgCtx = bgCanvas.getContext("2d");
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
   const COLS = 28;
@@ -154,6 +161,17 @@
     { x: 0.59, w: 0.19, h: 0.42 },
     { x: 0.82, w: 0.14, h: 0.30 }
   ];
+  const bgParticles = Array.from({ length: 25 }, (_, i) => {
+    const seed = i * 97 + 31;
+    return {
+      x: (seed * 17) % 1000,
+      y: (seed * 43) % 800,
+      radius: 1.5 + (seed % 16) / 10,
+      vx: -0.2 + ((seed * 7) % 41) / 100,
+      vy: -0.3 - ((seed * 11) % 51) / 100,
+      color: i % 10 < 7 ? "rgba(0,238,255,0.5)" : "rgba(255,170,0,0.6)"
+    };
+  });
 
   function resize() {
     const cellSize = Math.floor(Math.min(window.innerWidth / 28, window.innerHeight / 31));
@@ -165,12 +183,116 @@
     offsetY = 0;
   }
 
+  function resizeBackground() {
+    const dpr = window.devicePixelRatio || 1;
+    bgCanvas.width = Math.floor(window.innerWidth * dpr);
+    bgCanvas.height = Math.floor(window.innerHeight * dpr);
+    bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
   function canvasWidth() {
     return canvas.width;
   }
 
   function canvasHeight() {
     return canvas.height;
+  }
+
+  function drawCityBackground() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    bgCtx.clearRect(0, 0, w, h);
+    bgCtx.fillStyle = "#02030b";
+    bgCtx.fillRect(0, 0, w, h);
+
+    bgCtx.save();
+    bgCtx.strokeStyle = "rgba(0,238,255,0.04)";
+    bgCtx.lineWidth = 1;
+    for (let x = 0.5; x < w; x += 48) {
+      bgCtx.beginPath();
+      bgCtx.moveTo(x, 0);
+      bgCtx.lineTo(x, h);
+      bgCtx.stroke();
+    }
+    for (let y = 0.5; y < h; y += 48) {
+      bgCtx.beginPath();
+      bgCtx.moveTo(0, y);
+      bgCtx.lineTo(w, y);
+      bgCtx.stroke();
+    }
+    bgCtx.restore();
+
+    let x = 0;
+    let index = 0;
+    while (x < w) {
+      const bw = 60 + (index * 37) % 81;
+      const bh = 80 + (index * 53) % 201;
+      bgCtx.fillStyle = index % 2 === 0 ? "#050d1a" : "#070f20";
+      bgCtx.fillRect(x, h - bh, bw, bh);
+      const windowColor = index % 3 === 0 ? "rgba(255,170,0,0.2)" : "rgba(0,238,255,0.15)";
+      bgCtx.fillStyle = windowColor;
+      for (let wx = x + 12; wx < x + bw - 10; wx += 18) {
+        for (let wy = h - bh + 18; wy < h - 14; wy += 22) {
+          if ((Math.floor(wx + wy + index) % 4) !== 0) {
+            bgCtx.fillRect(wx, wy, 2, 2);
+          }
+        }
+      }
+      x += bw;
+      index++;
+    }
+
+    bgCtx.save();
+    bgCtx.strokeStyle = "rgba(0,0,0,0.12)";
+    bgCtx.lineWidth = 1;
+    for (let y = 0.5; y < h; y += 3) {
+      bgCtx.beginPath();
+      bgCtx.moveTo(0, y);
+      bgCtx.lineTo(w, y);
+      bgCtx.stroke();
+    }
+    bgCtx.restore();
+
+    for (const particle of bgParticles) {
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      if (particle.y < -8) {
+        particle.y = h + 8;
+        particle.x = (particle.x + 137) % Math.max(w, 1);
+      }
+      if (particle.x < -8) particle.x = w + 8;
+      if (particle.x > w + 8) particle.x = -8;
+      bgCtx.fillStyle = particle.color;
+      bgCtx.beginPath();
+      bgCtx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+      bgCtx.fill();
+    }
+
+    const accent = bgCtx.createLinearGradient(w - 2, 0, w - 2, h);
+    accent.addColorStop(0, "#ff00aa");
+    accent.addColorStop(1, "#8800ff");
+    bgCtx.fillStyle = accent;
+    bgCtx.fillRect(w - 2, 0, 2, h);
+
+    bgCtx.fillStyle = "rgba(5,10,25,0.54)";
+    bgCtx.fillRect(0, 0, 200, h);
+    bgCtx.fillStyle = "rgba(0,238,255,0.08)";
+    for (let px = 14; px < 194; px += 16) {
+      for (let py = 14; py < h; py += 16) {
+        bgCtx.fillRect(px, py, 2, 2);
+      }
+    }
+
+    const vignette = bgCtx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.12, w / 2, h / 2, Math.max(w, h) * 0.62);
+    vignette.addColorStop(0, "rgba(0,0,0,0)");
+    vignette.addColorStop(1, "rgba(0,0,0,0.65)");
+    bgCtx.fillStyle = vignette;
+    bgCtx.fillRect(0, 0, w, h);
+  }
+
+  function backgroundLoop() {
+    drawCityBackground();
+    requestAnimationFrame(backgroundLoop);
   }
 
   function makeGrid() {
@@ -705,7 +827,6 @@
 
   function drawStartScreen() {
     ctx.save();
-    drawStartBackground();
     const panelWidth = 340;
     const panelHeight = 396;
     const panelX = (canvasWidth() - panelWidth) / 2;
@@ -814,8 +935,13 @@
     requestAnimationFrame(loop);
   }
 
-  window.addEventListener("load", resize);
-  window.addEventListener("resize", resize);
+  function resizeAll() {
+    resize();
+    resizeBackground();
+  }
+
+  window.addEventListener("load", resizeAll);
+  window.addEventListener("resize", resizeAll);
   window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
     if (!started) {
@@ -858,8 +984,9 @@
 
   started = false;
   menuIndex = 1;
-  resize();
+  resizeAll();
   newGame();
+  requestAnimationFrame(backgroundLoop);
   requestAnimationFrame(loop);
 })();
 </script>
