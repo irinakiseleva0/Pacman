@@ -185,8 +185,10 @@
 
   function resizeBackground() {
     const dpr = window.devicePixelRatio || 1;
-    bgCanvas.width = Math.floor(window.innerWidth * dpr);
-    bgCanvas.height = Math.floor(window.innerHeight * dpr);
+    bgCanvas.style.width = window.innerWidth + "px";
+    bgCanvas.style.height = window.innerHeight + "px";
+    bgCanvas.width = Math.max(1, Math.floor(window.innerWidth * dpr));
+    bgCanvas.height = Math.max(1, Math.floor(window.innerHeight * dpr));
     bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
@@ -199,8 +201,8 @@
   }
 
   function drawCityBackground() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const w = bgCanvas.clientWidth || window.innerWidth;
+    const h = bgCanvas.clientHeight || window.innerHeight;
     bgCtx.clearRect(0, 0, w, h);
     bgCtx.fillStyle = "#02030b";
     bgCtx.fillRect(0, 0, w, h);
@@ -226,14 +228,17 @@
     let index = 0;
     while (x < w) {
       const bw = 60 + (index * 37) % 81;
-      const bh = 80 + (index * 53) % 201;
+      const bh = 150 + (index * 53) % 201;
+      const top = h - bh;
       bgCtx.fillStyle = index % 2 === 0 ? "#050d1a" : "#070f20";
-      bgCtx.fillRect(x, h - bh, bw, bh);
-      const windowColor = index % 3 === 0 ? "rgba(255,170,0,0.2)" : "rgba(0,238,255,0.15)";
-      bgCtx.fillStyle = windowColor;
-      for (let wx = x + 12; wx < x + bw - 10; wx += 18) {
-        for (let wy = h - bh + 18; wy < h - 14; wy += 22) {
-          if ((Math.floor(wx + wy + index) % 4) !== 0) {
+      bgCtx.fillRect(x, top, bw, bh);
+      for (let wx = x + 10; wx < x + bw - 8; wx += 12) {
+        for (let wy = top + 16; wy < h - 10; wy += 14) {
+          const lit = (Math.floor(wx * 3 + wy * 5 + index * 19) % 5) !== 0;
+          if (lit) {
+            bgCtx.fillStyle = (Math.floor(wx + wy + index) % 3) === 0
+              ? "rgba(255,170,0,0.25)"
+              : "rgba(0,238,255,0.2)";
             bgCtx.fillRect(wx, wy, 2, 2);
           }
         }
@@ -269,8 +274,8 @@
     }
 
     const accent = bgCtx.createLinearGradient(w - 2, 0, w - 2, h);
-    accent.addColorStop(0, "#ff00aa");
-    accent.addColorStop(1, "#8800ff");
+    accent.addColorStop(0, "rgba(204,0,255,0.28)");
+    accent.addColorStop(1, "rgba(136,0,255,0.28)");
     bgCtx.fillStyle = accent;
     bgCtx.fillRect(w - 2, 0, 2, h);
 
@@ -828,9 +833,9 @@
   function drawStartScreen() {
     ctx.save();
     const panelWidth = 340;
-    const panelHeight = 396;
+    const panelHeight = 430;
     const panelX = (canvasWidth() - panelWidth) / 2;
-    const panelY = (canvasHeight() - panelHeight) / 2;
+    const panelY = Math.max(18, (canvasHeight() - panelHeight) / 2 - 12);
     ctx.fillStyle = "rgba(5,10,25,0.92)";
     ctx.strokeStyle = "rgba(0,238,255,0.3)";
     ctx.shadowColor = "rgba(0,238,255,0.35)";
@@ -846,25 +851,25 @@
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#ff9900";
     ctx.font = "bold 11px 'Courier New', monospace";
-    ctx.fillText("CYBER DISTRICT", canvasWidth() / 2, panelY + 50);
+    ctx.fillText("CYBER DISTRICT", canvasWidth() / 2, panelY + 54);
     ctx.shadowColor = "#00eeff";
     ctx.shadowBlur = 16;
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 52px 'Courier New', monospace";
-    ctx.fillText("PAC-MAN", canvasWidth() / 2, panelY + 105);
-    drawSeparator(panelX + 38, panelY + 148, panelWidth - 76);
+    ctx.fillText("PAC-MAN", canvasWidth() / 2, panelY + 112);
+    drawSeparator(panelX + 38, panelY + 160, panelWidth - 76);
 
     for (let i = 0; i < MENU_OPTIONS.length; i++) {
-      drawMenuButton(panelX + 58, panelY + 176 + i * 48, panelWidth - 116, 34, MENU_OPTIONS[i], i === menuIndex);
+      drawMenuButton(panelX + 58, panelY + 190 + i * 50, panelWidth - 116, 36, MENU_OPTIONS[i], i === menuIndex);
     }
 
-    drawSeparator(panelX + 38, panelY + 334, panelWidth - 76);
+    drawSeparator(panelX + 38, panelY + 360, panelWidth - 76);
     if (Math.floor(Date.now() / 420) % 2 === 0) {
       ctx.shadowColor = "#00eeff";
       ctx.shadowBlur = 14;
       ctx.fillStyle = "#00eeff";
       ctx.font = "bold 13px 'Courier New', monospace";
-      ctx.fillText("PRESS ENTER TO START", canvasWidth() / 2, panelY + 362);
+      ctx.fillText("PRESS ENTER TO START", canvasWidth() / 2, panelY + 392);
     }
     ctx.restore();
   }
