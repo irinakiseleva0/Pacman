@@ -224,21 +224,41 @@
     }
     bgCtx.restore();
 
+    bgCtx.save();
+    bgCtx.fillStyle = "rgba(0,238,255,0.08)";
+    for (let dx = 0; dx <= w; dx += 32) {
+      for (let dy = 0; dy <= h; dy += 32) {
+        bgCtx.beginPath();
+        bgCtx.arc(dx, dy, 0.8, 0, Math.PI * 2);
+        bgCtx.fill();
+      }
+    }
+    bgCtx.restore();
+
     let x = 0;
     let index = 0;
     while (x < w) {
       const bw = 60 + (index * 37) % 81;
       const bh = 150 + (index * 53) % 201;
       const top = h - bh;
-      bgCtx.fillStyle = index % 2 === 0 ? "#050d1a" : "#070f20";
+      bgCtx.fillStyle = index % 2 === 0 ? "#050d1a" : "#080f22";
       bgCtx.fillRect(x, top, bw, bh);
-      for (let wx = x + 10; wx < x + bw - 8; wx += 12) {
-        for (let wy = top + 16; wy < h - 10; wy += 14) {
-          const lit = (Math.floor(wx * 3 + wy * 5 + index * 19) % 5) !== 0;
+      bgCtx.save();
+      bgCtx.globalAlpha = 0.3;
+      bgCtx.strokeStyle = "#00eeff";
+      bgCtx.lineWidth = 0.5;
+      bgCtx.strokeRect(x + 0.5, top + 0.5, bw - 1, bh - 1);
+      bgCtx.restore();
+      for (let wx = x + 8; wx < x + bw - 8; wx += 10) {
+        for (let wy = top + 12; wy < h - 8; wy += 12) {
+          const lit = (Math.floor(wx * 7 + wy * 11 + index * 23) % 10) >= 4;
           if (lit) {
-            bgCtx.fillStyle = (Math.floor(wx + wy + index) % 3) === 0
-              ? "rgba(255,170,0,0.25)"
-              : "rgba(0,238,255,0.2)";
+            const tone = Math.floor(wx + wy + index) % 3;
+            bgCtx.fillStyle = tone === 0
+              ? "rgba(0,238,255,0.35)"
+              : tone === 1
+                ? "rgba(255,170,0,0.4)"
+                : "rgba(255,255,255,0.2)";
             bgCtx.fillRect(wx, wy, 2, 2);
           }
         }
@@ -273,16 +293,20 @@
       bgCtx.fill();
     }
 
-    const accent = bgCtx.createLinearGradient(w - 2, 0, w - 2, h);
-    accent.addColorStop(0, "rgba(204,0,255,0.28)");
-    accent.addColorStop(1, "rgba(136,0,255,0.28)");
+    const accent = bgCtx.createLinearGradient(w - 1, 0, w - 1, h);
+    accent.addColorStop(0, "#ff00cc");
+    accent.addColorStop(1, "#6600ff");
+    bgCtx.save();
+    bgCtx.globalAlpha = 0.8;
     bgCtx.fillStyle = accent;
     bgCtx.fillRect(w - 2, 0, 2, h);
+    bgCtx.restore();
 
-    bgCtx.fillStyle = "rgba(5,10,25,0.54)";
-    bgCtx.fillRect(0, 0, 200, h);
+    const leftPanelWidth = w * 0.3;
+    bgCtx.fillStyle = "rgba(0,5,15,0.3)";
+    bgCtx.fillRect(0, 0, leftPanelWidth, h);
     bgCtx.fillStyle = "rgba(0,238,255,0.08)";
-    for (let px = 14; px < 194; px += 16) {
+    for (let px = 14; px < leftPanelWidth - 6; px += 16) {
       for (let py = 14; py < h; py += 16) {
         bgCtx.fillRect(px, py, 2, 2);
       }
