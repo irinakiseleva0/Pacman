@@ -528,7 +528,7 @@ function PlayPage() {
                 Cyberpunk Pac-Man
               </a>
               <p className="mt-2 text-sm text-slate-300">
-                Browser build runs from the generated Pygbag package.
+                Two versions available: native JS (60 FPS) and Python/WebAssembly build.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
