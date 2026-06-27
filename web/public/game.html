@@ -54,9 +54,28 @@
 <body>
 <canvas id="bg" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;"></canvas>
 <canvas id="game"></canvas>
+<div id="left-line" style="
+  position: fixed;
+  top: 0; left: 0;
+  width: 3px; height: 100vh;
+  background: linear-gradient(to bottom, #00eeff, #0044ff);
+  opacity: 0.7;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 0 12px #00eeff;
+"></div>
+<div id="right-line" style="
+  position: fixed;
+  top: 0; right: 0;
+  width: 4px; height: 100vh;
+  background: linear-gradient(to bottom, #ff00ff, #aa00ff);
+  opacity: 1.0;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 0 20px #ff00ff;
+"></div>
 <div class="vignette-overlay" aria-hidden="true"></div>
 <div class="scanline-overlay" aria-hidden="true"></div>
-<canvas id="edge" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:11;pointer-events:none;"></canvas>
 <script>
 (() => {
   "use strict";
@@ -65,8 +84,6 @@
   const bgCtx = bgCanvas.getContext("2d");
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
-  const edgeCanvas = document.getElementById("edge");
-  const edgeCtx = edgeCanvas.getContext("2d");
   const COLS = 28;
   const ROWS = 31;
   const WALL = 1;
@@ -193,11 +210,6 @@
     bgCanvas.width = Math.max(1, Math.floor(window.innerWidth * dpr));
     bgCanvas.height = Math.max(1, Math.floor(window.innerHeight * dpr));
     bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    edgeCanvas.style.width = window.innerWidth + "px";
-    edgeCanvas.style.height = window.innerHeight + "px";
-    edgeCanvas.width = Math.max(1, Math.floor(window.innerWidth * dpr));
-    edgeCanvas.height = Math.max(1, Math.floor(window.innerHeight * dpr));
-    edgeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   function canvasWidth() {
@@ -366,61 +378,10 @@
     vignette.addColorStop(1, "rgba(0,0,0,0.65)");
     bgCtx.fillStyle = vignette;
     bgCtx.fillRect(0, 0, w, h);
-
-    bgCtx.save();
-    const leftAccent = bgCtx.createLinearGradient(0, 0, 0, h);
-    leftAccent.addColorStop(0, "#00eeff");
-    leftAccent.addColorStop(1, "#0044ff");
-    bgCtx.globalAlpha = 0.6;
-    bgCtx.shadowColor = "#00eeff";
-    bgCtx.shadowBlur = 15;
-    bgCtx.fillStyle = leftAccent;
-    bgCtx.fillRect(0, 0, 3, h);
-    bgCtx.restore();
-
-    bgCtx.save();
-    const accent = bgCtx.createLinearGradient(w - 4, 0, w - 4, h);
-    accent.addColorStop(0, "#ff00ff");
-    accent.addColorStop(1, "#aa00ff");
-    bgCtx.globalAlpha = 1.0;
-    bgCtx.shadowColor = "#ff00ff";
-    bgCtx.shadowBlur = 20;
-    bgCtx.fillStyle = accent;
-    bgCtx.fillRect(w - 4, 0, 4, h);
-    bgCtx.restore();
-  }
-
-  function drawEdgeAccents() {
-    const w = edgeCanvas.clientWidth || window.innerWidth;
-    const h = edgeCanvas.clientHeight || window.innerHeight;
-    edgeCtx.clearRect(0, 0, w, h);
-
-    edgeCtx.save();
-    const leftAccent = edgeCtx.createLinearGradient(0, 0, 0, canvas.height);
-    leftAccent.addColorStop(0, "#00eeff");
-    leftAccent.addColorStop(1, "#0044ff");
-    edgeCtx.globalAlpha = 0.6;
-    edgeCtx.shadowColor = "#00eeff";
-    edgeCtx.shadowBlur = 15;
-    edgeCtx.fillStyle = leftAccent;
-    edgeCtx.fillRect(0, 0, 3, h);
-    edgeCtx.restore();
-
-    edgeCtx.save();
-    const rightAccent = edgeCtx.createLinearGradient(canvas.width - 4, 0, canvas.width - 4, canvas.height);
-    rightAccent.addColorStop(0, "#ff00ff");
-    rightAccent.addColorStop(1, "#aa00ff");
-    edgeCtx.globalAlpha = 1.0;
-    edgeCtx.shadowColor = "#ff00ff";
-    edgeCtx.shadowBlur = 20;
-    edgeCtx.fillStyle = rightAccent;
-    edgeCtx.fillRect(w - 4, 0, 4, h);
-    edgeCtx.restore();
   }
 
   function backgroundLoop() {
     drawCityBackground();
-    drawEdgeAccents();
     requestAnimationFrame(backgroundLoop);
   }
 
